@@ -141,6 +141,8 @@ contains
         nytl = mpg%divFcP(2,2)
         iret = nf_def_dim(ncid, 'nytl', nytl, nytldim)
         call check_cdf_status(iret)
+      endif
+      if (maxval(mpg%strDiv).ge.3) then
         nytr = mpg%divFcP(3,2)
         iret = nf_def_dim(ncid, 'nytr', nytr, nytrdim)
         call check_cdf_status(iret)
@@ -808,6 +810,8 @@ contains
           iret = nf_def_var(ncid, 'tmb3dtl', NCDOUBLE, 3, dims, tmb3dtlid)
           call check_cdf_status(iret)
         endif
+      endif
+      if(maxval(mpg%strDiv).ge.3) then
         dims(1) = nytrdim
         dims(2) = nsdim
         dims(3) = timedim
@@ -2211,7 +2215,7 @@ contains
       endif
 
       ! upper outboard divertor quantities
-      if(maxval(mpg%strDiv).ge.4) then
+      if(maxval(mpg%strDiv).ge.3) then
         iret = nf_put_att_text(ncid, na3dtrid, 'long_name', 46, 'fluid species density, upper outboard divertor')
         call check_cdf_status(iret)
         iret = nf_put_att_text(ncid, na3dtrid, 'units', 4, 'm^-3')
