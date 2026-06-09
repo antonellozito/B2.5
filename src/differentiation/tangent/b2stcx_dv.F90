@@ -322,7 +322,7 @@ SUBROUTINE B2STCX_NODIFF(ncv, nfc, ns, is0, ismain, switch, geo, mpg, na&
             smq0(icv, 1, is0) = smq0(icv, 1, is0) - (1.0_R8+rg0)*t2
           END IF
           rcxmo(icv, is) = rcxmo(icv, is) + t1*ua(icv, is)
-          rcxmo(icv, is0) = rcxmo(icv, is0) - t2*ua(icv, is)
+          rcxmo(icv, is0) = rcxmo(icv, is0) - t2*ua(icv, is0)
           rcxmoreg(mpg%cvreg(icv), is) = rcxmoreg(mpg%cvreg(icv), is) + &
 &           t1*ua(icv, is)
           rcxmoreg(mpg%cvreg(icv), is0) = rcxmoreg(mpg%cvreg(icv), is0) &
@@ -1020,7 +1020,7 @@ SUBROUTINE B2STCX_DV(ncv, nfc, ns, is0, ismain, switch, switchd, geo, &
             smq0(icv, 1, is0) = smq0(icv, 1, is0) - (1.0_R8+rg0)*t2
           END IF
           rcxmo(icv, is) = rcxmo(icv, is) + t1*ua(icv, is)
-          rcxmo(icv, is0) = rcxmo(icv, is0) - t2*ua(icv, is)
+          rcxmo(icv, is0) = rcxmo(icv, is0) - t2*ua(icv, is0)
           rcxmoreg(mpg%cvreg(icv), is) = rcxmoreg(mpg%cvreg(icv), is) + &
 &           t1*ua(icv, is)
           rcxmoreg(mpg%cvreg(icv), is0) = rcxmoreg(mpg%cvreg(icv), is0) &
@@ -1130,4 +1130,3 @@ CONTAINS
   END FUNCTION ROXA
 
 END SUBROUTINE B2STCX_DV
-
