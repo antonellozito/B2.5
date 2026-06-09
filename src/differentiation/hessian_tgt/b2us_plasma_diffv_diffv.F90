@@ -25349,13 +25349,13 @@ CONTAINS
       arg1 = ncv*ns
       CALL CFWURE(nout, arg1, st%srw%rrana, 'rrana')
       arg1 = ncv*ns
-      CALL CFWURE(nout, arg1, st%srw%rrana, 'rcxna')
+      CALL CFWURE(nout, arg1, st%srw%rcxna, 'rcxna')
       arg1 = ncv*ns
       CALL CFWURE(nout, arg1, st%srw%rsamo, 'rsamo')
       arg1 = ncv*ns
       CALL CFWURE(nout, arg1, st%srw%rramo, 'rramo')
       arg1 = ncv*ns
-      CALL CFWURE(nout, arg1, st%srw%rramo, 'rcxmo')
+      CALL CFWURE(nout, arg1, st%srw%rcxmo, 'rcxmo')
       arg1 = ncv*ns
       CALL CFWURE(nout, arg1, st%srw%rsahi, 'rsahi')
       arg1 = ncv*ns
