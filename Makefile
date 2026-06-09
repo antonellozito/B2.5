@@ -1091,7 +1091,12 @@ endif
 	done; \
 	echo "$$lll" | eval sed "$$E" >> ${OBJDIR}/LISTOBJ
 
-${OBJDIR}/LISTOBJ: listobj
+# Rebuild LISTOBJ only when the module structure changes (.new_modules is
+# updated whenever modules are added or removed), not on every invocation.
+# listobj is still phony so it can be called explicitly; LISTOBJ as a real
+# file target avoids the "always stale" behaviour of a phony prerequisite.
+${OBJDIR}/LISTOBJ: ${SRCDIR}/modules/.new_modules
+	$(MAKE) listobj
 
 VERSION: ${SRCDIR}/include/git_version_B25.h
 
@@ -1123,8 +1128,6 @@ endif
 	touch ${OBJDIR}/dependencies
 	${MAKE} tags
 	${MAKE} VERSION
-	${MAKE} local
-	${MAKE} listobj
 	${MAKE} depend
 
 include ${OBJDIR}/dependencies
