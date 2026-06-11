@@ -821,11 +821,13 @@ endif
 ifeq ($(COMPILER),pgf90)
 ${OBJDIR}/b2ytdr.o : b2ytdr.F
 	@- /bin/rm -f $*.f $*.o $*.${MOD}
+# b2ytdr.F has no OpenMP directives; strip -mp% from FPOPTS to avoid a
+# NVHPC fort1 ICE (SIGSEGV) when compiling this large file with OpenMP enabled.
 ifeq ($(strip $(CPP)),)
 ifndef SOLPS_DEBUG
-	${FC} ${FPOPTS} -O0 -Mbackslash ${FFLAGSEXTRA} ${DEFINES} ${DPFINES} ${EQUIVS} ${SOLPSINCLUDE} -c $<
+	${FC} $(filter-out -mp%,${FPOPTS}) -O0 -Mbackslash ${FFLAGSEXTRA} ${DEFINES} ${DPFINES} ${EQUIVS} ${SOLPSINCLUDE} -c $<
 else
-	${FC} ${FPOPTS} -O0 -Mbackslash -C -g -Mchkptr -Mchkstk ${FFLAGSEXTRA} ${DEFINES} ${DPFINES} ${EQUIVS} ${SOLPSINCLUDE} -c $<
+	${FC} $(filter-out -mp%,${FPOPTS}) -O0 -Mbackslash -C -g -Mchkptr -Mchkstk ${FFLAGSEXTRA} ${DEFINES} ${DPFINES} ${EQUIVS} ${SOLPSINCLUDE} -c $<
 endif
 else
 ifeq ($(strip $(SED)),)
@@ -834,9 +836,9 @@ else
 	-${CPP} ${DEFINES} ${DPFINES} ${EQUIVS} -P ${SOLPSINCLUDE} $< | ${SED} > $*.f
 endif
 ifndef SOLPS_DEBUG
-	${FC} ${FPOPTS} -O0 -Mbackslash ${FFLAGSEXTRA} -c ${MODINCLUDE} ${INCMODS} -module ${OBJDIR} -o $*.o $*.f
+	${FC} $(filter-out -mp%,${FPOPTS}) -O0 -Mbackslash ${FFLAGSEXTRA} -c ${MODINCLUDE} ${INCMODS} -module ${OBJDIR} -o $*.o $*.f
 else
-	${FC} ${FPOPTS} -O0 -Mbackslash -C -g -Mchkptr -Mchkstk ${FFLAGSEXTRA} -c ${MODINCLUDE} ${INCMODS} -module ${OBJDIR} -o $*.o $*.f
+	${FC} $(filter-out -mp%,${FPOPTS}) -O0 -Mbackslash -C -g -Mchkptr -Mchkstk ${FFLAGSEXTRA} -c ${MODINCLUDE} ${INCMODS} -module ${OBJDIR} -o $*.o $*.f
 endif
 endif
 endif

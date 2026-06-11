@@ -378,8 +378,8 @@
       w6 = cmplx(xshi-xslo,yshi-yslo,R8)*w5/(2.0_R8*ii)+
      &     cmplx(xslo+xshi,yslo+yshi,R8)/2.0_R8
 *   ..poloidal coordinates
-      crx0 = real(w6)
-      cry0 = aimag(w6)
+      crx0 = real(w6,R8)
+      cry0 = real(aimag(w6),R8)
 *   ..magnetic field
       psi0 = gpsi(w0y)
       fbz0 = gfbz(w0y)
@@ -440,8 +440,8 @@
 *   ..invert w2=ii to find wm1, xm, ym
       w1 = (ii-shift1)/(1.0_R8-conjg(shift1)*ii)
       wm1 = (2.0_R8/pi)*ii*log(1.0_R8+(w1+ii)*ii/snl)
-      xm = real(wm1-wm0)
-      ym = aimag(wm1-wm0)
+      xm = real(wm1-wm0,R8)
+      ym = real(aimag(wm1-wm0),R8)
 *   ..live with a Sun f77 (1992, SC1.0) compiler error
 *     (!! using 'f77 -fast' or 'f77 -O' on the Sparc it turns out that,
 *     without the following no-op call to dummyz, the variable wm0 is
