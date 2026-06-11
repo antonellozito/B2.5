@@ -387,6 +387,23 @@
 * ..return
       call subend ()
       return
+
+      contains
+
+      complex(kind=R8) function fracr(w0,s0) result(cres)
+      implicit none
+      complex(kind=R8), intent(in) :: w0, s0
+      cres = (w0+s0)/(CMPLX(s0%RE,-s0%IM,KIND=R8)*w0+1.0_R8)
+      return
+      end function fracr
+
+      complex(kind=R8) function fraci(w0,s0) result(cres)
+      implicit none
+      complex(kind=R8), intent(in) :: w0, s0
+      cres = (w0+s0)/(1.0_R8-s0*w0)
+      return
+      end function fraci
+
       end subroutine b2agsp
 
 *-----------------------------------------------------------------------
@@ -502,21 +519,6 @@
      &  fm3((tb-t0)/(tb-ta),fb,-dfb*(tb-ta),fa))
       return
       end function fm4
-
-      complex(kind=R8) function fracr(w0,s0)
-      implicit none
-      complex(kind=R8) w0, s0
-      intrinsic conjg
-      fracr = (w0+s0)/(conjg(s0)*w0+1.0_R8)
-      return
-      end function fracr
-
-      complex(kind=R8) function fraci(w0,s0)
-      implicit none
-      complex(kind=R8) w0, s0
-      fraci = (w0+s0)/(1.0_R8-s0*w0)
-      return
-      end function fraci
 
       function f0xa0(t0)
       implicit none
