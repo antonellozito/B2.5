@@ -112,6 +112,8 @@ else
  endif
 endif
 
+$(shell awk 'FNR==1{if(!/^OBJS *=/){e=1;exit}} END{exit e}' \
+        ${OBJDIR}/LISTOBJ 2>/dev/null || rm -f ${OBJDIR}/LISTOBJ)
 ifeq ($(shell [ -e ${OBJDIR}/LISTOBJ ] && echo yes || echo no ),yes)
   include ${OBJDIR}/LISTOBJ
 endif
@@ -1129,11 +1131,12 @@ ${OBJDIR}/dependencies: ${SRCDIR}/modules/.new_modules
 ifeq ($(shell [ -d ${OBJDIR} ] && echo yes || echo no ),no)
 	-mkdir -p ${OBJDIR}
 endif
-	touch ${OBJDIR}/dependencies
+	printf '# Dummy dependencies file for B2.5\n' > ${OBJDIR}/dependencies
 	${MAKE} tags
 	${MAKE} VERSION
 	${MAKE} depend
 
+$(shell [ -s ${OBJDIR}/dependencies ] || rm -f ${OBJDIR}/dependencies)
 include ${OBJDIR}/dependencies
 ifeq ($(shell [ -e ${SRCB2}/config/dependencies.local ] && echo yes || echo no ),yes)
 include ${SRCB2}/config/dependencies.local
