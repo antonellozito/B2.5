@@ -143,6 +143,8 @@ else
  endif
 endif
 
+$(shell awk 'FNR==1{if(!/^OBJS *=/){e=1;exit}} END{exit e}' \
+        ${OBJDIR}/LISTOBJ 2>/dev/null || rm -f ${OBJDIR}/LISTOBJ)
 ifeq ($(shell [ -e ${OBJDIR}/LISTOBJ ] && echo yes || echo no ),yes)
   include ${OBJDIR}/LISTOBJ
 endif
@@ -1228,7 +1230,9 @@ endif
 	${BLD} $@ ${SOLPS4OBJS}
 
 ${OBJDIR}/b2rw.o: ${OBJDIR}/eirdiag.${MOD}
+${OBJDIR}/init.o: ${OBJDIR}/eirdiag.${MOD}
 ${OBJDIR}/default.o: ${OBJDIR}/ceirsrt.${MOD}
+${OBJDIR}/user_default.o: ${OBJDIR}/eirdiag.${MOD}
 
 ifneq (${MOD},o)
 ${OBJDIR}/adsp.${MOD}: ${OBJDIR}/cadgeo.${MOD} ${OBJDIR}/clogau.${MOD} ${OBJDIR}/comusr.${MOD} ${OBJDIR}/cpes.${MOD} ${OBJDIR}/ctrcei.${MOD} ${OBJDIR}/comprt.${MOD}
@@ -1370,7 +1374,12 @@ endif
 	done; \
 	echo "$$lll" | eval sed "$$E" >> ${OBJDIR}/LISTOBJ
 
-${OBJDIR}/LISTOBJ: listobj
+# Rebuild LISTOBJ only when the module structure changes (.new_modules is
+# updated whenever modules are added or removed), not on every invocation.
+# listobj is still phony so it can be called explicitly; LISTOBJ as a real
+# file target avoids the "always stale" behaviour of a phony prerequisite.
+${OBJDIR}/LISTOBJ: ${SRCDIR}/modules/.new_modules
+	$(MAKE) listobj
 
 VERSION: ${SRCDIR}/include/git_version_B25.h
 
@@ -1399,7 +1408,7 @@ ${OBJDIR}/dependencies: ${SRCDIR}/modules/.new_modules
 ifeq ($(shell [ -d ${OBJDIR} ] && echo yes || echo no ),no)
 	-mkdir -p ${OBJDIR}
 endif
-	touch ${OBJDIR}/dependencies
+	printf '# Dummy dependencies file for B2.5\n' > ${OBJDIR}/dependencies
 	${MAKE} tags
 	${MAKE} VERSION
 	${MAKE} local
@@ -1418,6 +1427,7 @@ ${AMDIR}/dc.fnn: ${AMDIR}/retrieve_fnn_datasets
 ${AMDIR}/dw.fnn: ${AMDIR}/retrieve_fnn_datasets
 	cd ${AMDIR} ; ./retrieve_fnn_datasets
 
+$(shell [ -s ${OBJDIR}/dependencies ] || rm -f ${OBJDIR}/dependencies)
 include ${OBJDIR}/dependencies
 ifeq ($(shell [ -e ${SRCB2}/config/dependencies.local ] && echo yes || echo no ),yes)
 include ${SRCB2}/config/dependencies.local
