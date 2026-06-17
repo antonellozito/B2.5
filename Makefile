@@ -645,6 +645,9 @@ ${OBJDIR}/eirmod_openmp.${MOD}:
 ${OBJDIR}/eirmod_parmmod.${MOD}:
 	@ln -sf ${EIRDIR}/eirmod_parmmod.${MOD} ${OBJDIR}
 
+${OBJDIR}/eirmod_pressureloop.${MOD}:
+	@ln -sf ${EIRDIR}/eirmod_pressureloop.${MOD} ${OBJDIR}
+
 ${OBJDIR}/eirmod_precision.${MOD}:
 	@ln -sf ${EIRDIR}/eirmod_precision.${MOD} ${OBJDIR}
 
