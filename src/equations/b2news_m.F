@@ -238,6 +238,11 @@ c     .    (nhist.gt.1 .and. (neutr_avg.gt.1 .or. nrelax.gt.1)) .or.
 c     .    (nrelax.gt.1 .and. (neutr_avg.gt.1 .or. nhist.gt.1))),
 c     .   'Cannot have simultaneous multiple Eirene averaging schemes!')
 !       call ipgeti ('b2news_re_compute_pb', re_compute_pb)              !srv 15.02.10
+       if(switch%iout_iter_po.ne.0.and.switch%max_iter_po.gt.0) then     !srv 15.02.26 {
+         open(700,file='output/norms_of_bcpot11_during_iterations.dat')
+         write(700,"(2a,2x,a,5x,4x,a,3x,a)") '  ncall', '  ipot ', ' time ', 
+     &                  'max|res|', 'conv '                                   
+       endif                                                             !srv 15.02.26 }
       endif
 *   ..test nCv, nFc, ns
       call xertst (0.lt.nCv.and.0.lt.nFc, 'faulty argument nCv, nFv')
@@ -271,9 +276,6 @@ c     .   'Cannot have simultaneous multiple Eirene averaging schemes!')
 *    ..test present state
         call b2xvps (nCv, nFc, ns, st%pl, st%dv)
         call b2xvsg (nCv*ns, st%dv%kinrgy, 1, 'kinrgy', '.ge.')
-       if(switch%iout_iter_po.ne.0) then                                 !srv 15.02.26 {
-         open(700,file='output/norms_of_bcpot11_during_iterations.dat')
-       endif                                                             !srv 15.02.26 }
       endif
 *   ..set rxf0/1/2/3
 *     Note: The potential equation needs an accurate solution on each
