@@ -1284,8 +1284,8 @@ c b2stbc_phys
       s % b2stbc_cor9 = 0.0_R8
       s % stab_coeff_sheath_te = 0.0_R8
       s % stab_coeff_sheath_ti = 0.0_R8
-      s % bcpot11_epsr = 1.0e-2_R8                                        !srv 15.02.26
-      s % bcpot11_epsa = 1.0e-2_R8                                        !srv 15.02.26
+      s % bcpot11_epsr = 1.0e-4_R8                                        !srv 15.02.26
+      s % bcpot11_epsa = 1.0e-4_R8                                        !srv 15.02.26
 
 c b2trno
       s % b2trno_alpha_stoch =  1.0_R8       !srv 17.12.13
