@@ -2,7 +2,7 @@
 *.specification
       subroutine b2stbc_phys (nCv, nFc, nVx, ns, ismain, ismain0,
      &  switch, geo, mpg, pl, dv, co, rt, st_ext, srw,
-     &  wrong_flow, main_call, praverage)
+     &  wrong_flow, main_call, praverage, bc_for_equations)             !srv 15.02.26
       use b2mod_types
       use b2mod_math
       use b2mod_boundary_namelist
@@ -14,6 +14,7 @@
       use b2mod_b2cmpb
       use b2mod_boundary_sources                                        !srv 26.02.18
       use b2mod_switches
+      use b2mod_convergence                                             !srv 15.02.26
       use b2us_geo
       use b2us_map
       use b2us_plasma
@@ -51,6 +52,7 @@
       type (B2Coeff), intent (inout) :: co
       type (B2StateExt), intent (in) :: st_ext
       logical main_call                                              !xpb
+      character(3) :: bc_for_equations                               !srv 15.02.26
 *   ..output arguments (unspecified on entry)
       type (B2SourceWork), intent (inout) :: srw
       logical wrong_flow                                             !xpb
@@ -273,7 +275,7 @@ c       call ipgeti ('b2stbc_average_pr', istyle_average_pr)         !srv 08.08.
         fac_he_anom_bc = 3.0_R8/5.0_R8
       endif
 
-      call b2xppz (nCv, ns, dv%ne, pl%na, pl%te, pl%ti, pz, st_ext)!srv 18.01.02
+      call b2xppz (nCv, ns, dv%ne, pl%na, pl%te, pl%ti, pz, st_ext)  !srv 18.01.02
 
 *   ..pre-compute some quantities for core BCs with drifts
       call grad(nCv, nFc, nVx, 1, geo, mpg, geo%cvOnedBsq,
@@ -475,6 +477,33 @@ cwdk  now need to recompute full diamagnetic component for ud
 * -- LOOP OVER ALL BOUNDARIES
       DO IB = 1, NBC
 
+       select case(bc_for_equations)                                      !srv 15.02.26 {
+        case('all')
+          call b2stbc_phys_species(IB)
+          call b2stbc_phys_ene(IB)
+          call b2stbc_phys_eni(IB)
+          call b2stbc_phys_pot(IB)
+          call b2stbc_phys_enk(IB)
+          call b2stbc_phys_enz(IB)
+        case('spc')
+          call b2stbc_phys_species(IB)
+        case('ene')
+          call b2stbc_phys_ene(IB)
+        case('eni')
+          call b2stbc_phys_eni(IB)
+        case('pot')
+          call b2stbc_phys_pot(IB)
+        case('enk')
+          call b2stbc_phys_enk(IB)
+        case('enz')
+          call b2stbc_phys_enz(IB)
+        case default
+          CALL XERRAB
+     &     ('B2STBC -- incorrect value of bc_for_eqations')
+        end select                                                        !srv 15.02.26 }
+
+      enddo
+
 * -- Moving core tally according to B.C.
 * -- Must be done only once!
 
@@ -516,6 +545,136 @@ cwdk  now need to recompute full diamagnetic component for ud
           ENDIF
         ENDIF
 #endif
+      
+
+#ifdef WG_TODO
+* ---------------------------------------------------------------------
+*  INTERIOR BOUNDARY AT DEAD REGIONS
+*  ---------------------------------------------------------------------
+      DO IB=1,NNISO
+        DO IX=NXISO1(IB), NXISO2(IB)
+          DO IY=NYISO1(IB), NYISO2(IB)
+            DO IS=0, NS-1
+              sna0(IX,IY,0,IS)= UBIG*NIISO(IS)
+              sna0(IX,IY,1,IS)=-UBIG
+              smo0(ix,iy,0,is)= ubig*ne00*am(is)*0.0_R8*
+     .         sx(min(nx-1,ix),iy)
+              smo0(ix,iy,1,is)=-ubig*ne00*am(is)*
+     .         sx(min(nx-1,ix),iy)
+            end do
+            she0(IX,IY,0)= UBIG*NE(IX,IY)*TEISO*EV
+            she0(IX,IY,1)=-UBIG*NE(IX,IY)
+            shi0(IX,IY,0)= UBIG*NE(IX,IY)*TIISO*EV
+            shi0(IX,IY,1)=-UBIG*NE(IX,IY)
+            sch0(IX,IY,0)= UBIG*PHIISO
+            sch0(IX,IY,1)=-UBIG
+          end do
+        end do
+      end do
+#endif
+
+      if (switch%b2npmo_iout.eq.1 .or. switch%iout_b2wdat.eq.4) then               !srv 11.09.09 {
+       do is = 0, ns-1
+        write (chns,'(i3.3)') is
+        wrk0=srw%smo0(:,0,is)+
+     &       srw%smo0(:,1,is)*pl%ua(:,is)+
+     &       srw%smo0(:,2,is)*pl%na(:,is)*mp*am(is)+
+     &       srw%smo0(:,3,is)*pl%ua(:,is)*pl%na(:,is)*mp*am(is)
+        call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_smo'//chns)
+       enddo
+      endif
+      if ((switch%b2npco_iout.eq.1) .or.
+     &                           switch%iout_b2wdat.eq.4) then
+       do is = 0, ns-1
+        write (chns,'(i3.3)') is
+        wrk0=srw%sna0(:,0,is)+srw%sna0(:,1,is)*pl%na(:,is)
+        call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_sna'//chns)
+       enddo
+      endif
+      if (switch%b2npht_iout.eq.1 .or.
+     &                           switch%iout_b2wdat.eq.4) then
+       wrk0=srw%she0(:,0)+srw%she0(:,1)*pl%te+
+     &      srw%she0(:,2)*dv%ne + srw%she0(:,3)*pl%te*dv%ne
+       call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_she')
+       wrk0=srw%shi0(:,0)+srw%shi0(:,1)*pl%ti+
+     &      srw%shi0(:,2)*dv%ni(:,0)+srw%shi0(:,3)*pl%ti*dv%ni(:,0)
+       call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_shi')
+      endif
+      if ((switch%b2npp7_iout.eq.1 .or. switch%b2nppo_iout.eq.1) .or.
+     &                           switch%iout_b2wdat.eq.4) then
+       wrk0=srw%sch0(:,0)+srw%sch0(:,1)*pl%po+
+     &      srw%sch0(:,2)*dv%ne+srw%sch0(:,3)*pl%po*dv%ne
+       call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_sch')
+      endif
+
+      if (switch%b2stbc_iout.eq.1) then
+       do is = 0, ns-1
+        write (chns,'(i3.3)') is
+        do k=0,3
+          write (chk,'(i1)') k
+          call my_out_us(70,nCv,0,srw%smo0(1,k,is),
+     &               'b2stbc_phys_smo'//chk//chns)
+        enddo
+        do k=0,1
+          write (chk,'(i1)') k
+          call my_out_us(70,nCv,0,srw%sna0(1,k,is),
+     &               'b2stbc_phys_sna'//chk//chns)
+        enddo
+       enddo
+       do k=0,3
+         write (chk,'(i1)') k
+         call my_out_us(70,nCv,0,srw%sch0(1,k),'b2stbc_phys_sch'//chk)
+         call my_out_us(70,nCv,0,srw%she0(1,k),'b2stbc_phys_she'//chk)
+         call my_out_us(70,nCv,0,srw%shi0(1,k),'b2stbc_phys_shi'//chk)
+       enddo
+      endif                                                           !srv 11.09.09 }
+
+* ..return
+      if(ncall_b2stbc_phys.eq.0 .or. main_call)
+     &  ncall_b2stbc_phys = ncall_b2stbc_phys+1
+      call subend ()
+      return
+
+*-----------------------------------------------------------------------
+*.end b2stbc_phys
+
+      contains
+
+      subroutine csbc_is()                                             !srv 15.02.26 {
+        if (mompar(is,ib,2).lt.0.5_R8) then
+          cs = sqrt(pz(iCv1)/rz(iCv1))
+          csbc(iCv1,is) = cs
+        else
+          cs = sqrt((pl%te(iCv1)*rt%rza(iCv1,is)+pl%ti(iCv1))/
+     &      (am(is)*mp))
+          csbc(iCv1,is) = cs
+        endif
+      end subroutine csbc_is                                           !srv 15.02.26 }
+
+      subroutine vbc_is(cs)                                            !srv 15.02.26 {
+        real (kind=R8) :: cs  ! cs=csbc(iCv1,is)
+            wrk = geo%fcQalf(iFc,0)*geo%fcBb(iFc,0)/geo%fcBb(iFc,3)*
+     &            mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
+            vbnd = (dv%vaecrb(iFc,0,is)*geo%fcQalf(iFc,0) +
+     &              dv%vaecrb(iFc,1,is)*geo%fcQalf(iFc,1))*
+     &              mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
+            if (mompar(is,ib,2).lt.0.5_R8) then
+              t0 = 2.0_R8*cs*abs(wrk)
+              vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
+              vbc(iCv1,is) = cs*wrk - vbnd*sign(1.0_R8,wrk)
+            else
+              t0 = 2.0_R8*cs*abs(wrk)
+              vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
+              vbc(iCv1,is) = cs*wrk - vbnd*sign(1.0_R8,wrk)
+              vbc(iCv1,is) = max(vbc(iCv1,is)*sign(1.0_R8,wrk),
+     &                           wrk*pl%ua(iCv2,is))*sign(1.0_R8,wrk)
+            endif
+
+      end subroutine vbc_is                                          !srv 15.02.26 }
+
+      subroutine b2stbc_phys_species(ib)
+        integer ib
+        real (kind=R8) :: intvertex_s
         DO IS=0, NS-1
         if (is.eq.ns-1) then
           ishigh = .true.
@@ -1166,27 +1325,9 @@ c   (ionising_core option)
             iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                    ! number of the corresponding domain cell
             iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                          ! number of the guard cell face
             s1 = abs(geo%fcPbs(iFc))
-            wrk = geo%fcQalf(iFc,0)*geo%fcBb(iFc,0)/geo%fcBb(iFc,3)*
-     &            mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
-            vbnd = (dv%vaecrb(iFc,0,is)*geo%fcQalf(iFc,0) +
-     &              dv%vaecrb(iFc,1,is)*geo%fcQalf(iFc,1))*
-     &              mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
-            if (mompar(is,ib,2).lt.0.5_R8) then
-              cs = sqrt(pz(iCv1)/rz(iCv1))
-              t0 = 2.0_R8*cs*abs(wrk)
-              vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
-              vbc(iCv1,is) = cs*wrk-vbnd*sign(1.0_R8,wrk)
-              csbc(iCv1,is) = cs
-            else
-              cs = sqrt((pl%te(iCv1)*rt%rza(iCv1,is)+pl%ti(iCv1))/
-     &          (am(is)*mp))
-              t0 = 2.0_R8*cs*abs(wrk)
-              vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
-              vbc(iCv1,is) = cs*wrk-vbnd*sign(1.0_R8,wrk)
-              vbc(iCv1,is) = max(vbc(iCv1,is)*sign(1.0_R8,wrk),
-     &                           wrk*pl%ua(iCv2,is))*sign(1.0_R8,wrk)
-              csbc(iCv1,is) = cs
-            endif
+!            call csbc_vbc()                                             !srv 15.02.26
+            call csbc_is()                                               !srv 15.02.26
+            call vbc_is(csbc(iCv1,is))                                   !srv 15.02.26
             if (abs(wrk) < geo%Qalfmin) then
               srw%sna0(iCv1,0,is) = 0.0_R8
               srw%sna0(iCv1,1,is) =
@@ -3185,6 +3326,7 @@ cwdk      radial direction at N/S - unchanged for aligned grids)
               srw%smo0(iCv1,1,is)=
      .         -VBIG*am(is)*pl%na(iCv1,is)*geo%fcS(iFc)*geo%fcHz(iFc)
             else
+              call vbc_is(csbc(icv1,is))                                !srv 15.02.26
               srw%smo0(iCv1,0,is) = srw%smo0(iCv1,0,is) +               !srv 07.05.09 {
      &         (UBIG/EPSLON**2)*am(is)*mp*pl%na(iCv1,is)*
      &         mompar(is,ib,1)*vbc(iCv1,is)*geo%fcS(iFc)*geo%fcHz(iFc)
@@ -3387,7 +3529,13 @@ cwdk      radial direction at N/S - unchanged for aligned grids)
         end select
 * -- END LOOP OVER SPECIES
       enddo
-
+        
+      end subroutine b2stbc_phys_species
+      
+      subroutine b2stbc_phys_ene(ib)
+       integer ib
+       real (kind=R8) :: intvertex_s
+       
 * -- BOUNDARY CONDITIONS FOR ELECTRON ENERGY EQUATION --
 
       select case (BCENE(IB))
@@ -4970,8 +5118,14 @@ cwdk     * need to correct this BC for hybrid scheme
         write(*,*) BCENE(IB)
         call xerrab ('BCENE out of bounds')
 
-      end select
+      end select      
+       
+      end subroutine b2stbc_phys_ene
 
+      subroutine b2stbc_phys_eni(ib)
+        integer ib
+        real (kind=R8) :: intvertex_s
+      
 * -- BOUNDARY CONDITIONS FOR ION ENERGY EQUATIONS --
 
       select case (BCENI(IB))
@@ -5914,6 +6068,10 @@ cxpb code segment analog to b2tfhi
           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                   ! number of the guard cell
           iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                   ! number of the corresponding domain cell
           iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                         ! number of the guard cell face
+          do is=0,ns-1                                               !srv 15.02.26 {
+            call csbc_is()
+            call vbc_is(csbc(iCv1,is))
+          enddo                                                      !srv 15.02.26 }
           cs = sqrt(pz(iCv1)/rz(iCv1))
           t0 = 0.0_R8
           t1 = 0.0_R8
@@ -7054,7 +7212,13 @@ cwdk     * need to correct this BC for hybrid scheme
         write(*,*) BCENI(IB)
         call xerrab ('BCENI out of bounds')
 
-      end select
+      end select     
+      
+      end subroutine b2stbc_phys_eni
+         
+      subroutine b2stbc_phys_pot(ib)
+        integer ib
+        real (kind=R8) :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR POTENTIAL EQUATION --
 
@@ -7425,12 +7589,18 @@ c              fchi=0.0_R8
      &       'one must have BCCON=14 for all ion species!')
           enddo
         endif
+        conv_bcpot11 = .true.                                        !srv 15.02.26        
+        mrs = 0.0_8                                                  !srv 15.02.26
         do ibc = 1, mpg%bcCvP(ib,2)                                  ! loop over number of cells in the boundary
           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                   ! number of the guard cell
           iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                   ! number of the corresponding domain cell
           iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                         ! number of the guard cell face
           iVx1 = mpg%fcVx(iFc,1)
           iVx2 = mpg%fcVx(iFc,2)
+          do is=0,ns-1                                               !srv 15.02.26 {
+            call csbc_is()
+            call vbc_is(csbc(iCv1,is))
+          enddo                                                      !srv 15.02.26 }
           vte  = sqrt(pl%te(iCv1)/me)
           t0 = 0.0_R8
           wrk = geo%fcQalf(iFc,0)*geo%fcBb(iFc,0)/geo%fcBb(iFc,3)
@@ -7460,9 +7630,18 @@ c              fchi=0.0_R8
             seec = gammae
             t0 = max(fchi,(1.0_R8-seec)*fche)*qe/pl%te(iCv1)
 *    ..compute charge source
-            srw%sch0(iCv1,0) = srw%sch0(iCv1,0) +
-     &        (1.0_R8-seec)*fche-fchi + t0*pl%po(iCv1)
-            srw%sch0(iCv1,1) = srw%sch0(iCv1,1) - t0
+            srw%sch0(iCv1,0) = (1.0_R8-seec)*fche-fchi + t0*pl%po(iCv1)
+            srw%sch0(iCv1,1) = - t0
+*    ..compute the maximum difference between the left and right sides of the boundary condition
+            fch_sch = srw%sch0(iCv1,0) + srw%sch0(iCv1,1)*pl%po(icv1)   !srv 15.02.26 {
+            fch_bnd = dv%fch(iFc,0)  + dv%fch(iFc,1)
+            if(mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1).gt.0.0_R8) fch_bnd = - fch_bnd
+            res_bcpot11 = fch_sch - fch_bnd
+            if(abs(res_bcpot11) .ge. abs(fch_bnd)*switch%bcpot11_epsr + 
+     &                                            switch%bcpot11_epsa) then
+              conv_bcpot11=.false.
+            endif
+            mrs = max(mrs,abs(res_bcpot11))                             !srv 15.02.26 }
           endif
 #ifdef B25_EIRENE
 *     ..set sheath potential drop for Eirene
@@ -8302,7 +8481,15 @@ c end of implementation
            ENDIF
          endif
         endif                                                        !srv 01.02.09 }
-#endif
+#endif       
+        
+      end subroutine b2stbc_phys_pot
+
+      subroutine b2stbc_phys_enk(ib)
+        integer ib
+        real (kind=R8) :: intvertex_s
+        
+
 * -- BOUNDARY CONDITIONS FOR TURBULENT KINETIC ENERGY EQUATION --
 
       select case (BCENK(IB))
@@ -8696,6 +8883,12 @@ cwdk    Todo: corrections for BCCON.ne.14
         call xerrab ('BCENK out of bounds')
 
       end select
+        
+      end subroutine b2stbc_phys_enk
+        
+      subroutine b2stbc_phys_enz(ib)
+      integer ib
+      real (kind=R8) :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR TURBULENT ENSTROPHY EQUATION --
 
@@ -8914,99 +9107,8 @@ cwdk    Todo: corrections for BCCON.ne.14
 
       end select
 
-      enddo
-#ifdef WG_TODO
-* ---------------------------------------------------------------------
-*  INTERIOR BOUNDARY AT DEAD REGIONS
-*  ---------------------------------------------------------------------
-      DO IB=1,NNISO
-        DO IX=NXISO1(IB), NXISO2(IB)
-          DO IY=NYISO1(IB), NYISO2(IB)
-            DO IS=0, NS-1
-              sna0(IX,IY,0,IS)= UBIG*NIISO(IS)
-              sna0(IX,IY,1,IS)=-UBIG
-              smo0(ix,iy,0,is)= ubig*ne00*am(is)*0.0_R8*
-     .         sx(min(nx-1,ix),iy)
-              smo0(ix,iy,1,is)=-ubig*ne00*am(is)*
-     .         sx(min(nx-1,ix),iy)
-            end do
-            she0(IX,IY,0)= UBIG*NE(IX,IY)*TEISO*EV
-            she0(IX,IY,1)=-UBIG*NE(IX,IY)
-            shi0(IX,IY,0)= UBIG*NE(IX,IY)*TIISO*EV
-            shi0(IX,IY,1)=-UBIG*NE(IX,IY)
-            sch0(IX,IY,0)= UBIG*PHIISO
-            sch0(IX,IY,1)=-UBIG
-          end do
-        end do
-      end do
-#endif
-      if (switch%b2npmo_iout.eq.1 .or. switch%iout_b2wdat.eq.4) then               !srv 11.09.09 {
-       do is = 0, ns-1
-        write (chns,'(i3.3)') is
-        wrk0=srw%smo0(:,0,is)+
-     &       srw%smo0(:,1,is)*pl%ua(:,is)+
-     &       srw%smo0(:,2,is)*pl%na(:,is)*mp*am(is)+
-     &       srw%smo0(:,3,is)*pl%ua(:,is)*pl%na(:,is)*mp*am(is)
-        call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_smo'//chns)
-       enddo
-      endif
-      if ((switch%b2npco_iout.eq.1) .or.
-     &                           switch%iout_b2wdat.eq.4) then
-       do is = 0, ns-1
-        write (chns,'(i3.3)') is
-        wrk0=srw%sna0(:,0,is)+srw%sna0(:,1,is)*pl%na(:,is)
-        call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_sna'//chns)
-       enddo
-      endif
-      if (switch%b2npht_iout.eq.1 .or.
-     &                           switch%iout_b2wdat.eq.4) then
-       wrk0=srw%she0(:,0)+srw%she0(:,1)*pl%te+
-     &      srw%she0(:,2)*dv%ne + srw%she0(:,3)*pl%te*dv%ne
-       call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_she')
-       wrk0=srw%shi0(:,0)+srw%shi0(:,1)*pl%ti+
-     &      srw%shi0(:,2)*dv%ni(:,0)+srw%shi0(:,3)*pl%ti*dv%ni(:,0)
-       call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_shi')
-      endif
-      if ((switch%b2npp7_iout.eq.1 .or. switch%b2nppo_iout.eq.1) .or.
-     &                           switch%iout_b2wdat.eq.4) then
-       wrk0=srw%sch0(:,0)+srw%sch0(:,1)*pl%po+
-     &      srw%sch0(:,2)*dv%ne+srw%sch0(:,3)*pl%po*dv%ne
-       call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_sch')
-      endif
-
-      if (switch%b2stbc_iout.eq.1) then
-       do is = 0, ns-1
-        write (chns,'(i3.3)') is
-        do k=0,3
-          write (chk,'(i1)') k
-          call my_out_us(70,nCv,0,srw%smo0(1,k,is),
-     &               'b2stbc_phys_smo'//chk//chns)
-        enddo
-        do k=0,1
-          write (chk,'(i1)') k
-          call my_out_us(70,nCv,0,srw%sna0(1,k,is),
-     &               'b2stbc_phys_sna'//chk//chns)
-        enddo
-       enddo
-       do k=0,3
-         write (chk,'(i1)') k
-         call my_out_us(70,nCv,0,srw%sch0(1,k),'b2stbc_phys_sch'//chk)
-         call my_out_us(70,nCv,0,srw%she0(1,k),'b2stbc_phys_she'//chk)
-         call my_out_us(70,nCv,0,srw%shi0(1,k),'b2stbc_phys_shi'//chk)
-       enddo
-      endif                                                           !srv 11.09.09 }
-
-* ..return
-      if(ncall_b2stbc_phys.eq.0 .or. main_call)
-     &  ncall_b2stbc_phys = ncall_b2stbc_phys+1
-      call subend ()
-      return
-
-*-----------------------------------------------------------------------
-*.end b2stbc_phys
-
-      contains
-
+      end subroutine b2stbc_phys_enz
+      
       function sheath_g (t0)
       use b2mod_types
       implicit none

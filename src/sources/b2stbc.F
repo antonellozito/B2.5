@@ -3,7 +3,7 @@
 
       subroutine b2stbc (nCv, nFc, nVx, ns, ismain, ismain0,
      &  switch, geo, mpg, pl, dv, co, rt, st_ext, sr, srw,
-     &  psnc, psnl, wrong_flow, main_call)
+     &  psnc, psnl, wrong_flow, main_call, bc_for_equations)             !srv 15.02.26
       use b2mod_types
       use b2mod_constants
 #ifndef FIXED_POINT
@@ -51,6 +51,7 @@
       type (B2StateExt), intent (in) :: st_ext
       type (B2PlasmaSnapshot), intent (inout) :: psnc, psnl
       logical main_call                                                  !xpb
+      character(3) :: bc_for_equations                                   !srv 15.02.26
 *   ..output arguments (unspecified on entry)
       type (B2SourceWork), intent (inout) :: srw
       logical wrong_flow                                                 !xpb
@@ -150,24 +151,62 @@
      .   'WARNING! Kinetic secondary emission expects HYDROGEN plasmas!'
       endif
 *   ..initialise sources to 0
-      call sfill (nCv*2*ns, 0.0_R8, srw%sna0, 1)
-      call sfill (nCv*4*ns, 0.0_R8, srw%smo0, 1)
-      call sfill (nCv*2, 0.0_R8, srw%sne0, 1)
-      call sfill (nCv*4, 0.0_R8, srw%she0, 1)
-      call sfill (nCv*4, 0.0_R8, srw%shi0, 1)
-      call sfill (nCv*4, 0.0_R8, srw%shn0, 1)
-      call sfill (nCv*4, 0.0_R8, srw%sch0, 1)
-      call sfill (nCv*4, 0.0_R8, srw%skt0, 1)
-      call sfill (nCv*4, 0.0_R8, srw%szt0, 1)
+      select case (bc_for_equations)                 !srv 15.02.26 {
+        case ('all')
+          call sfill (nCv*2*ns, 0.0_R8, srw%sna0, 1)
+          call sfill (nCv*4*ns, 0.0_R8, srw%smo0, 1)
+          call sfill (nCv*2, 0.0_R8, srw%sne0, 1)
+          call sfill (nCv*4, 0.0_R8, srw%she0, 1)
+          call sfill (nCv*4, 0.0_R8, srw%shi0, 1)
+          call sfill (nCv*4, 0.0_R8, srw%shn0, 1)
+          call sfill (nCv*4, 0.0_R8, srw%sch0, 1)
+          call sfill (nCv*4, 0.0_R8, srw%skt0, 1)
+          call sfill (nCv*4, 0.0_R8, srw%szt0, 1)
+        case ('spc')
+          call sfill (nCv*2*ns, 0.0_R8, srw%sna0, 1)
+          call sfill (nCv*4*ns, 0.0_R8, srw%smo0, 1)
+          call sfill (nCv*2, 0.0_R8, srw%sne0, 1)
+        case ('ene')
+          call sfill (nCv*4, 0.0_R8, srw%she0, 1)
+        case ('eni')
+          call sfill (nCv*4, 0.0_R8, srw%shi0, 1)
+        case ('enn')
+          call sfill (nCv*4, 0.0_R8, srw%shn0, 1)
+        case ('pot')
+          call sfill (nCv*4, 0.0_R8, srw%sch0, 1)
+        case ('enk')
+          call sfill (nCv*4, 0.0_R8, srw%skt0, 1)
+        case ('enz')
+          call sfill (nCv*4, 0.0_R8, srw%szt0, 1)
+        case default
+          CALL XERRAB
+     &     ('B2STBC -- incorrect value of bc_for_eqations')
+      end select                                                        !srv 15.02.26 }
 
 * ..compute standard form volume sources
 *   (This code placed here for want of a better location)
 *   ..low-level particle source
-      do is = 0, ns-1
-       call b2saxpy (nCv,switch%sna0ep,geo%cvVol,1,srw%sna0(1,0,is),1)
-      enddo
-      call b2saxpy (nCv, switch%she0ep, geo%cvVol, 1, srw%she0(1,0), 1)
-      call b2saxpy (nCv, switch%shi0ep, geo%cvVol, 1, srw%shi0(1,0), 1)
+      select case (bc_for_equations)                 !srv 15.02.26 {
+       case ('all')
+        do is = 0, ns-1
+         call b2saxpy (nCv,switch%sna0ep,geo%cvVol,1,srw%sna0(1,0,is),1)
+        enddo
+        call b2saxpy (nCv, switch%she0ep, geo%cvVol, 1, srw%she0(1,0), 1)
+        call b2saxpy (nCv, switch%shi0ep, geo%cvVol, 1, srw%shi0(1,0), 1)
+       case ('spc')
+        do is = 0, ns-1
+         call b2saxpy (nCv,switch%sna0ep,geo%cvVol,1,srw%sna0(1,0,is),1)
+        enddo
+       case ('ene')
+        call b2saxpy (nCv, switch%she0ep, geo%cvVol, 1, srw%she0(1,0), 1)
+       case ('eni')
+        call b2saxpy (nCv, switch%shi0ep, geo%cvVol, 1, srw%shi0(1,0), 1)
+       case ('enn','pot', 'enk', 'enz')
+        continue  
+       case default
+          CALL XERRAB
+     &     ('B2STBC -- incorrect value of bc_for_eqations')
+      end select                                                        !srv 15.02.26 }
 
 *   ..find the average pressure for inner flux surface           !sv 24.03.99
       if (omp(1).le.mpg%nCi) then
@@ -342,15 +381,17 @@
       endif
 #endif
       if(switch%b2stbc_boundary_namelist.ge.1) then
+       if(.not. (bc_for_equations.eq.'pot'))  then                       !srv 15.02.26
         if(lfeedback.or.switch%b2stbc_feedback.ne.0)
      &    call compute_feedback(nCv, nFc, ns, ismain,
      &     switch, geo, mpg, pl, dv, rt, sr, srw, psnc, psnl,
      &     main_call)
+       endif                                                             !srv 15.02.26
 
         if(ncall_b2stbc.eq.0) write(*,*) ' b2stbc_phys called'
         call b2stbc_phys(nCv, nFc, nVx, ns, ismain, ismain0,
      &   switch, geo, mpg, pl, dv, co, rt, st_ext, srw,
-     &   wrong_flow, main_call, praverage)
+     &   wrong_flow, main_call, praverage, bc_for_equations)             !srv 15.02.26
         if(wrong_flow) write(*,*)
      &        'b2stbc: wrong_flow returned from b2stbc_phys'
       endif
