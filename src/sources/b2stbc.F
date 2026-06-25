@@ -30,7 +30,7 @@
       use b2mod_ad
      & , only : my_out_folder,
 #ifdef DBG
-     &          my_out_sf,                                              !srv 27.06.21
+     &          my_out_sf,                                               !srv 27.06.21
 #endif
      &          ncall_b2stbc_phys, nsdmax
       use b2mod_math
@@ -51,7 +51,7 @@
       type (B2StateExt), intent (in) :: st_ext
       type (B2PlasmaSnapshot), intent (inout) :: psnc, psnl
       logical main_call                                                  !xpb
-      character(3) :: bc_for_equations                                   !srv 15.02.26
+      character*3 :: bc_for_equations                                    !srv 15.02.26
 *   ..output arguments (unspecified on entry)
       type (B2SourceWork), intent (inout) :: srw
       logical wrong_flow                                                 !xpb
@@ -180,7 +180,7 @@
           call sfill (nCv*4, 0.0_R8, srw%szt0, 1)
         case default
           CALL XERRAB
-     &     ('B2STBC -- incorrect value of bc_for_eqations')
+     &     ('B2STBC -- incorrect value of bc_for_equations')
       end select                                                        !srv 15.02.26 }
 
 * ..compute standard form volume sources
@@ -189,23 +189,29 @@
       select case (bc_for_equations)                 !srv 15.02.26 {
        case ('all')
         do is = 0, ns-1
-         call b2saxpy (nCv,switch%sna0ep,geo%cvVol,1,srw%sna0(1,0,is),1)
+         call b2saxpy (nCv, switch%sna0ep, geo%cvVol, 1,
+     .    srw%sna0(1,0,is), 1)
         enddo
-        call b2saxpy (nCv, switch%she0ep, geo%cvVol, 1, srw%she0(1,0), 1)
-        call b2saxpy (nCv, switch%shi0ep, geo%cvVol, 1, srw%shi0(1,0), 1)
+        call b2saxpy (nCv, switch%she0ep, geo%cvVol, 1,
+     .     srw%she0(1,0), 1)
+        call b2saxpy (nCv, switch%shi0ep, geo%cvVol, 1,
+     .     srw%shi0(1,0), 1)
        case ('spc')
         do is = 0, ns-1
-         call b2saxpy (nCv,switch%sna0ep,geo%cvVol,1,srw%sna0(1,0,is),1)
+         call b2saxpy (nCv, switch%sna0ep, geo%cvVol, 1,
+     .    srw%sna0(1,0,is),1)
         enddo
        case ('ene')
-        call b2saxpy (nCv, switch%she0ep, geo%cvVol, 1, srw%she0(1,0), 1)
+        call b2saxpy (nCv, switch%she0ep, geo%cvVol, 1,
+     .     srw%she0(1,0), 1)
        case ('eni')
-        call b2saxpy (nCv, switch%shi0ep, geo%cvVol, 1, srw%shi0(1,0), 1)
+        call b2saxpy (nCv, switch%shi0ep, geo%cvVol, 1,
+     .     srw%shi0(1,0), 1)
        case ('enn','pot', 'enk', 'enz')
-        continue  
+        continue
        case default
           CALL XERRAB
-     &     ('B2STBC -- incorrect value of bc_for_eqations')
+     &     ('B2STBC -- incorrect value of bc_for_equations')
       end select                                                        !srv 15.02.26 }
 
 *   ..find the average pressure for inner flux surface           !sv 24.03.99

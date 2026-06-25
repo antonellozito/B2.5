@@ -150,12 +150,12 @@ c The following switches are only used in 'WG-TODO' blocks, i.e. not yet convert
 c     ingeger, save :: nstg2 = 0
 !      real (kind=R8) ::                                                 !srv 04.06.99
 !     *   fna_nodrift(-1:nx,-1:ny,0:1,0:1,0:ns-1)                        !srv 04.06.99
-!     1  sna0(-1:nx,-1:ny,0:1,0:ns-1),                                    !xpb
-!     1  sne0(-1:nx,-1:ny,0:1),                                           !xpb
-!     2  shi0(-1:nx,-1:ny,0:3), she0(-1:nx,-1:ny,0:3),                    !xpb
-!     3  smo0(-1:nx,-1:ny,0:3,0:ns-1),                                    !xpb
-!     4  smq0(-1:nx,-1:ny,0:3,0:ns-1),                                    !xpb
-!     5  sch0(-1:nx,-1:ny,0:3),                                           !xpb
+!     1  sna0(-1:nx,-1:ny,0:1,0:ns-1),                                   !xpb
+!     1  sne0(-1:nx,-1:ny,0:1),                                          !xpb
+!     2  shi0(-1:nx,-1:ny,0:3), she0(-1:nx,-1:ny,0:3),                   !xpb
+!     3  smo0(-1:nx,-1:ny,0:3,0:ns-1),                                   !xpb
+!     4  smq0(-1:nx,-1:ny,0:3,0:ns-1),                                   !xpb
+!     5  sch0(-1:nx,-1:ny,0:3),                                          !xpb
 !      integer, save :: re_compute_pb = 1                                !srv 15.02.10
 *
 *-----------------------------------------------------------------------
@@ -240,8 +240,8 @@ c     .   'Cannot have simultaneous multiple Eirene averaging schemes!')
 !       call ipgeti ('b2news_re_compute_pb', re_compute_pb)              !srv 15.02.10
        if(switch%iout_iter_po.ne.0.and.switch%max_iter_po.gt.0) then     !srv 15.02.26 {
          open(700,file='output/norms_of_bcpot11_during_iterations.dat')
-         write(700,"(2a,2x,a,5x,4x,a,3x,a)") '  ncall', '  ipot ', ' time ', 
-     &                  'max|res|', 'conv '                                   
+         write(700,'(2a,2x,a,5x,4x,a,3x,a)') '  ncall',
+     &    '  ipot ', ' time ','max|res|', 'conv '
        endif                                                             !srv 15.02.26 }
       endif
 *   ..test nCv, nFc, ns
@@ -593,7 +593,6 @@ csw 11oct2012 added check on Coriolis force (taken from b2news)
 *   ..solve the potential equation
 *   ..apply the internal iterations if switch%max_iter_po > 0
          do ipot = 0, switch%max_iter_po                                 !srv 15.02.26
-              
           if (switch%fhe_vis_per.eq.0.0_R8.or..true.) then               !srv 06.07.00
             new_matrix = .false.
             do ireg = 0, mpg%nnreg(0)
@@ -621,24 +620,23 @@ csw 11oct2012 added check on Coriolis force (taken from b2news)
      &     st_ext)
 *   ..recompute source   (only sch is needed)
           if(switch%max_iter_po.eq.0) exit                               !srv 15.02.26 {
-          call b2stbc (nCv, nFc, nVx, ns, ismain, ismain0, 
-     &     switch, geo, mpg, st%pl, st%dv, st%co, st%rt, st_ext, 
-     &     st%sr, st%srw, st%psnc, st%psnl, wrong_flow, .true.,'pot')
+          call b2stbc (nCv, nFc, nVx, ns, ismain, ismain0,
+     &     switch, geo, mpg, st%pl, st%dv, st%co, st%rt, st_ext,
+     &     st%sr, st%srw, st%psnc, st%psnl, wrong_flow, .true., 'pot')
 *   .. store contributions from BC
-           st%sr%sch = st%srw%sch0
+          st%sr%sch = st%srw%sch0
           if(switch%iout_iter_po.ge.1.and.
-     &      mod(ncall_b2news_,switch%ntim_step_out).eq.0) 
-     &      write(700,"(2i6,es14.6,es14.6,2x,l1)") ncall_b2news_, ipot, tim, 
-     &                  mrs, conv_bcpot11                                   
-
+     &       mod(ncall_b2news_,switch%ntim_step_out).eq.0)
+     >     write(700,'(2i6,es14.6,es14.6,2x,l1)') ncall_b2news_,
+     &       ipot, tim, mrs, conv_bcpot11
           if(conv_bcpot11) then
             write(*,'(a,i5,a)') ' Convergence achieved within ',
      &                ipot,' iterations'
             exit
           endif
          enddo                         !  ipot
-         if(.not.conv_bcpot11) 
-     &     write(*,'(a,i5,a)') ' Convergence not achieved within ',
+         if(.not.conv_bcpot11)
+     >    write(*,'(a,i5,a)') ' Convergence not achieved within ',
      &                switch%max_iter_po,' iterations'                    !srv 15.02.26 }
 
 *   ..compute new residual following the tradition

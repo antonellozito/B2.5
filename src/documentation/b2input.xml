@@ -3903,7 +3903,7 @@
 				<default>0</default>
 				<type>integer</type>
 				<description>
-					If iout_iter_po.qe.1 then output file output/norms_of_bcpot11_during_iterations.dat will be produced containing information about cinvergence.
+					If iout_iter_po.eq.1 then output file output/norms_of_bcpot11_during_iterations.dat will be produced containing information about potential equation convergence.
 				</description>
 			</switch>
 			<switch>

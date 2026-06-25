@@ -52,7 +52,7 @@
       type (B2Coeff), intent (inout) :: co
       type (B2StateExt), intent (in) :: st_ext
       logical main_call                                              !xpb
-      character(3) :: bc_for_equations                               !srv 15.02.26
+      character*3 :: bc_for_equations                                !srv 15.02.26
 *   ..output arguments (unspecified on entry)
       type (B2SourceWork), intent (inout) :: srw
       logical wrong_flow                                             !xpb
@@ -148,7 +148,7 @@
 *   ..procedures
       intrinsic abs, sqrt
       real (kind=R8) ::
-     *  sy, intface_s, intvertex_s                                      !srv 24.08.08
+     *  sy, intface_s                                                   !srv 24.08.08
       external xertst, ipgeti, eseec0
       external ipgetr, b2xvsg, b2xvps, intface_s
 *   ..initialisation
@@ -377,11 +377,11 @@ cwdk code to be removed after full adaption to unstructured solver...
        ua2average(is) = ua2sum/volsum                             !srv 07.04.00 15.02.02
        uaaverage(is) = uasum/volsum                               !srv 07.04.00 15.02.02 16.04.02
        naaverage(is) = nasum/volsum
-      enddo                                                        !srv 22.01.02 }
+      enddo                                                       !srv 22.01.02 }
 #endif
 cwdk  ro and pr based on charged particles only!
 cwdk  no neutral contribution to sound speed definition
-      call b2xprz (nCv, ns, mp, am, pl%na, rz, st_ext)             !srv 01.02.09
+      call b2xprz (nCv, ns, mp, am, pl%na, rz, st_ext)            !srv 01.02.09
 !      call b2xppz (nCv, ns, dv%ne, pl%na, pl%te, pl%ti, pz, st_ext)
       wdia=(dv%ne*pl%te+dv%ni(:,1)*pl%ti)*geo%cvBb(:,2)
       do is = 0, st_ext%ns-1
@@ -396,7 +396,7 @@ cwdk do we want to keep this kind of back-mapping to SOLPS4???
             sx(ix,iy)=gs(rightix(ix,iy),rightiy(ix,iy),0)
             if (area_fix.ge.3)
      >       sx(ix,iy) = sx(ix,iy)*qc(rightix(ix,iy),rightiy(ix,iy),0)
-            sxhz(ix,iy)=gs(rightix(ix,iy),rightiy(ix,iy),0)*       !srv 24.08.08
+            sxhz(ix,iy)=gs(rightix(ix,iy),rightiy(ix,iy),0)*      !srv 24.08.08
      &                  hz(ix,iy)
 !     &                  hz(rightix(ix,iy),rightiy(ix,iy))
             if (area_fix.ge.3)
@@ -404,7 +404,7 @@ cwdk do we want to keep this kind of back-mapping to SOLPS4???
      >         qc(rightix(ix,iy),rightiy(ix,iy),0)
           else
             sx(ix,iy)=0.0_R8
-            sxhz(ix,iy)=0.0_R8                                     !srv 24.08.08
+            sxhz(ix,iy)=0.0_R8                                    !srv 24.08.08
           endif
           if (leftix(ix,iy).ne.-2) then
             do is = 0, ns-1
@@ -477,7 +477,7 @@ cwdk  now need to recompute full diamagnetic component for ud
 * -- LOOP OVER ALL BOUNDARIES
       DO IB = 1, NBC
 
-       select case(bc_for_equations)                                      !srv 15.02.26 {
+       select case(bc_for_equations)                                  !srv 15.02.26 {
         case('all')
           call b2stbc_phys_species(IB)
           call b2stbc_phys_ene(IB)
@@ -499,7 +499,7 @@ cwdk  now need to recompute full diamagnetic component for ud
           call b2stbc_phys_enz(IB)
         case default
           CALL XERRAB
-     &     ('B2STBC -- incorrect value of bc_for_eqations')
+     &     ('B2STBC -- incorrect value of bc_for_equations')
         end select                                                        !srv 15.02.26 }
 
       enddo
@@ -545,33 +545,6 @@ cwdk  now need to recompute full diamagnetic component for ud
           ENDIF
         ENDIF
 #endif
-      
-
-#ifdef WG_TODO
-* ---------------------------------------------------------------------
-*  INTERIOR BOUNDARY AT DEAD REGIONS
-*  ---------------------------------------------------------------------
-      DO IB=1,NNISO
-        DO IX=NXISO1(IB), NXISO2(IB)
-          DO IY=NYISO1(IB), NYISO2(IB)
-            DO IS=0, NS-1
-              sna0(IX,IY,0,IS)= UBIG*NIISO(IS)
-              sna0(IX,IY,1,IS)=-UBIG
-              smo0(ix,iy,0,is)= ubig*ne00*am(is)*0.0_R8*
-     .         sx(min(nx-1,ix),iy)
-              smo0(ix,iy,1,is)=-ubig*ne00*am(is)*
-     .         sx(min(nx-1,ix),iy)
-            end do
-            she0(IX,IY,0)= UBIG*NE(IX,IY)*TEISO*EV
-            she0(IX,IY,1)=-UBIG*NE(IX,IY)
-            shi0(IX,IY,0)= UBIG*NE(IX,IY)*TIISO*EV
-            shi0(IX,IY,1)=-UBIG*NE(IX,IY)
-            sch0(IX,IY,0)= UBIG*PHIISO
-            sch0(IX,IY,1)=-UBIG
-          end do
-        end do
-      end do
-#endif
 
       if (switch%b2npmo_iout.eq.1 .or. switch%iout_b2wdat.eq.4) then               !srv 11.09.09 {
        do is = 0, ns-1
@@ -583,16 +556,14 @@ cwdk  now need to recompute full diamagnetic component for ud
         call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_smo'//chns)
        enddo
       endif
-      if ((switch%b2npco_iout.eq.1) .or.
-     &                           switch%iout_b2wdat.eq.4) then
+      if (switch%b2npco_iout.eq.1 .or. switch%iout_b2wdat.eq.4) then
        do is = 0, ns-1
         write (chns,'(i3.3)') is
         wrk0=srw%sna0(:,0,is)+srw%sna0(:,1,is)*pl%na(:,is)
         call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_sna'//chns)
        enddo
       endif
-      if (switch%b2npht_iout.eq.1 .or.
-     &                           switch%iout_b2wdat.eq.4) then
+      if (switch%b2npht_iout.eq.1 .or. switch%iout_b2wdat.eq.4) then
        wrk0=srw%she0(:,0)+srw%she0(:,1)*pl%te+
      &      srw%she0(:,2)*dv%ne + srw%she0(:,3)*pl%te*dv%ne
        call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_she')
@@ -601,7 +572,7 @@ cwdk  now need to recompute full diamagnetic component for ud
        call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_shi')
       endif
       if ((switch%b2npp7_iout.eq.1 .or. switch%b2nppo_iout.eq.1) .or.
-     &                           switch%iout_b2wdat.eq.4) then
+     &     switch%iout_b2wdat.eq.4) then
        wrk0=srw%sch0(:,0)+srw%sch0(:,1)*pl%po+
      &      srw%sch0(:,2)*dv%ne+srw%sch0(:,3)*pl%po*dv%ne
        call my_out_us(70,nCv,0,wrk0,'b2stbc_phys_sch')
@@ -641,41 +612,46 @@ cwdk  now need to recompute full diamagnetic component for ud
       contains
 
       subroutine csbc_is()                                             !srv 15.02.26 {
-        if (mompar(is,ib,2).lt.0.5_R8) then
-          cs = sqrt(pz(iCv1)/rz(iCv1))
-          csbc(iCv1,is) = cs
-        else
-          cs = sqrt((pl%te(iCv1)*rt%rza(iCv1,is)+pl%ti(iCv1))/
-     &      (am(is)*mp))
-          csbc(iCv1,is) = cs
-        endif
+      implicit none
+      if (mompar(is,ib,2).lt.0.5_R8) then
+        cs = sqrt(pz(iCv1)/rz(iCv1))
+        csbc(iCv1,is) = cs
+      else
+        cs = sqrt((pl%te(iCv1)*rt%rza(iCv1,is)+pl%ti(iCv1))/
+     &    (am(is)*mp))
+        csbc(iCv1,is) = cs
+      endif
+      return
       end subroutine csbc_is                                           !srv 15.02.26 }
 
       subroutine vbc_is(cs)                                            !srv 15.02.26 {
-        real (kind=R8) :: cs  ! cs=csbc(iCv1,is)
-            wrk = geo%fcQalf(iFc,0)*geo%fcBb(iFc,0)/geo%fcBb(iFc,3)*
-     &            mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
-            vbnd = (dv%vaecrb(iFc,0,is)*geo%fcQalf(iFc,0) +
-     &              dv%vaecrb(iFc,1,is)*geo%fcQalf(iFc,1))*
-     &              mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
-            if (mompar(is,ib,2).lt.0.5_R8) then
-              t0 = 2.0_R8*cs*abs(wrk)
-              vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
-              vbc(iCv1,is) = cs*wrk - vbnd*sign(1.0_R8,wrk)
-            else
-              t0 = 2.0_R8*cs*abs(wrk)
-              vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
-              vbc(iCv1,is) = cs*wrk - vbnd*sign(1.0_R8,wrk)
-              vbc(iCv1,is) = max(vbc(iCv1,is)*sign(1.0_R8,wrk),
-     &                           wrk*pl%ua(iCv2,is))*sign(1.0_R8,wrk)
-            endif
-
+      implicit none
+      real (kind=R8) :: cs  ! cs=csbc(iCv1,is)
+      wrk = geo%fcQalf(iFc,0)*geo%fcBb(iFc,0)/geo%fcBb(iFc,3)*
+     &      mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
+      vbnd = (dv%vaecrb(iFc,0,is)*geo%fcQalf(iFc,0) +
+     &        dv%vaecrb(iFc,1,is)*geo%fcQalf(iFc,1))*
+     &       mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
+      if (mompar(is,ib,2).lt.0.5_R8) then
+        t0 = 2.0_R8*cs*abs(wrk)
+        vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
+        vbc(iCv1,is) = cs*wrk - vbnd*sign(1.0_R8,wrk)
+      else
+        t0 = 2.0_R8*cs*abs(wrk)
+        vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
+        vbc(iCv1,is) = cs*wrk - vbnd*sign(1.0_R8,wrk)
+        vbc(iCv1,is) = max(vbc(iCv1,is)*sign(1.0_R8,wrk),
+     &                 wrk*pl%ua(iCv2,is))*sign(1.0_R8,wrk)
+      endif
+      return
       end subroutine vbc_is                                          !srv 15.02.26 }
 
       subroutine b2stbc_phys_species(ib)
-        integer ib
-        real (kind=R8) :: intvertex_s
-        DO IS=0, NS-1
+      implicit none
+      integer ib
+      real (kind=R8), external :: intvertex_s
+
+      DO IS=0, NS-1
         if (is.eq.ns-1) then
           ishigh = .true.
         else
@@ -3529,13 +3505,15 @@ cwdk      radial direction at N/S - unchanged for aligned grids)
         end select
 * -- END LOOP OVER SPECIES
       enddo
-        
+
+      return
       end subroutine b2stbc_phys_species
-      
+
       subroutine b2stbc_phys_ene(ib)
-       integer ib
-       real (kind=R8) :: intvertex_s
-       
+      implicit none
+      integer ib
+      real (kind=R8), external :: intvertex_s
+
 * -- BOUNDARY CONDITIONS FOR ELECTRON ENERGY EQUATION --
 
       select case (BCENE(IB))
@@ -5118,14 +5096,16 @@ cwdk     * need to correct this BC for hybrid scheme
         write(*,*) BCENE(IB)
         call xerrab ('BCENE out of bounds')
 
-      end select      
-       
+      end select
+
+      return
       end subroutine b2stbc_phys_ene
 
       subroutine b2stbc_phys_eni(ib)
-        integer ib
-        real (kind=R8) :: intvertex_s
-      
+      implicit none
+      integer ib
+      real (kind=R8), external :: intvertex_s
+
 * -- BOUNDARY CONDITIONS FOR ION ENERGY EQUATIONS --
 
       select case (BCENI(IB))
@@ -7212,13 +7192,15 @@ cwdk     * need to correct this BC for hybrid scheme
         write(*,*) BCENI(IB)
         call xerrab ('BCENI out of bounds')
 
-      end select     
-      
+      end select
+
+      return
       end subroutine b2stbc_phys_eni
-         
+
       subroutine b2stbc_phys_pot(ib)
-        integer ib
-        real (kind=R8) :: intvertex_s
+      implicit none
+      integer ib
+      real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR POTENTIAL EQUATION --
 
@@ -7589,7 +7571,7 @@ c              fchi=0.0_R8
      &       'one must have BCCON=14 for all ion species!')
           enddo
         endif
-        conv_bcpot11 = .true.                                        !srv 15.02.26        
+        conv_bcpot11 = .true.                                        !srv 15.02.26
         mrs = 0.0_8                                                  !srv 15.02.26
         do ibc = 1, mpg%bcCvP(ib,2)                                  ! loop over number of cells in the boundary
           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                   ! number of the guard cell
@@ -7597,7 +7579,7 @@ c              fchi=0.0_R8
           iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                         ! number of the guard cell face
           iVx1 = mpg%fcVx(iFc,1)
           iVx2 = mpg%fcVx(iFc,2)
-          do is=0,ns-1                                               !srv 15.02.26 {
+          do is = 0, ns-1                                            !srv 15.02.26 {
             call csbc_is()
             call vbc_is(csbc(iCv1,is))
           enddo                                                      !srv 15.02.26 }
@@ -7631,14 +7613,16 @@ c              fchi=0.0_R8
             t0 = max(fchi,(1.0_R8-seec)*fche)*qe/pl%te(iCv1)
 *    ..compute charge source
             srw%sch0(iCv1,0) = (1.0_R8-seec)*fche-fchi + t0*pl%po(iCv1)
-            srw%sch0(iCv1,1) = - t0
+            srw%sch0(iCv1,1) = -t0
 *    ..compute the maximum difference between the left and right sides of the boundary condition
             fch_sch = srw%sch0(iCv1,0) + srw%sch0(iCv1,1)*pl%po(icv1)   !srv 15.02.26 {
-            fch_bnd = dv%fch(iFc,0)  + dv%fch(iFc,1)
-            if(mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1).gt.0.0_R8) fch_bnd = - fch_bnd
+            fch_bnd = dv%fch(iFc,0) + dv%fch(iFc,1)
+            if (mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1).gt.0.0_R8)
+     >       fch_bnd = - fch_bnd
             res_bcpot11 = fch_sch - fch_bnd
-            if(abs(res_bcpot11) .ge. abs(fch_bnd)*switch%bcpot11_epsr + 
-     &                                            switch%bcpot11_epsa) then
+            if (abs(res_bcpot11).ge.abs(fch_bnd)*switch%bcpot11_epsr +
+     &                                           switch%bcpot11_epsa)
+     >       then
               conv_bcpot11=.false.
             endif
             mrs = max(mrs,abs(res_bcpot11))                             !srv 15.02.26 }
@@ -8481,14 +8465,15 @@ c end of implementation
            ENDIF
          endif
         endif                                                        !srv 01.02.09 }
-#endif       
-        
+#endif
+
+      return
       end subroutine b2stbc_phys_pot
 
       subroutine b2stbc_phys_enk(ib)
-        integer ib
-        real (kind=R8) :: intvertex_s
-        
+      implicit none
+      integer ib
+      real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR TURBULENT KINETIC ENERGY EQUATION --
 
@@ -8883,12 +8868,14 @@ cwdk    Todo: corrections for BCCON.ne.14
         call xerrab ('BCENK out of bounds')
 
       end select
-        
+
+      return
       end subroutine b2stbc_phys_enk
-        
+
       subroutine b2stbc_phys_enz(ib)
+      implicit none
       integer ib
-      real (kind=R8) :: intvertex_s
+      real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR TURBULENT ENSTROPHY EQUATION --
 
@@ -9107,8 +9094,9 @@ cwdk    Todo: corrections for BCCON.ne.14
 
       end select
 
+      return
       end subroutine b2stbc_phys_enz
-      
+
       function sheath_g (t0)
       use b2mod_types
       implicit none
