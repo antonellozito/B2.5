@@ -4285,7 +4285,7 @@
 			</switch>
 			<switch>
 				<name>b2stbc_bcpot11_epsr</name>
-				<default>1.0e-2</default>
+				<default>1.0e-4</default>
 				<type>real</type>
 				<description>
 					Relative criterion for convergence of electric potential at the targets.
@@ -4293,7 +4293,7 @@
 			</switch>
 			<switch>
 				<name>b2stbc_bcpot11_epsa</name>
-				<default>1.0e-2</default>
+				<default>1.0e-4</default>
 				<type>real</type>
 				<description>
 					Absolute criterion for convergence of electric potential at the targets.
