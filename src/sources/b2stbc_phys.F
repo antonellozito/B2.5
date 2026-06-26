@@ -72,10 +72,9 @@
 *.declarations
 
 *   ..local variables
-      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2, is, ib, ibc, ib0,
-     &  ism, ibc0, k, isb, ibw
+      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2, is, ib, ibc, k
 #ifdef B25_EIRENE
-      integer isa, ix
+      integer ix
 #endif
 #ifdef WG_TODO
      & ,coreregno, coreregn2, ireg,
@@ -648,7 +647,10 @@ cwdk  now need to recompute full diamagnetic component for ud
 
       subroutine b2stbc_phys_species(ib)
       implicit none
-      integer ib
+      integer is, ib, ibc, ib0, ibc0, ibw, isb
+#ifdef B25_EIRENE
+      integer isa, ism, k
+#endif
       real (kind=R8), external :: intvertex_s
 
       DO IS=0, NS-1
@@ -3511,7 +3513,7 @@ cwdk      radial direction at N/S - unchanged for aligned grids)
 
       subroutine b2stbc_phys_ene(ib)
       implicit none
-      integer ib
+      integer ib, ibw, ibc, ibc0, ib0, is, ism
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR ELECTRON ENERGY EQUATION --
@@ -5103,7 +5105,7 @@ cwdk     * need to correct this BC for hybrid scheme
 
       subroutine b2stbc_phys_eni(ib)
       implicit none
-      integer ib
+      integer ib, ibw, ibc, ib0, ibc0, is
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR ION ENERGY EQUATIONS --
@@ -7199,7 +7201,7 @@ cwdk     * need to correct this BC for hybrid scheme
 
       subroutine b2stbc_phys_pot(ib)
       implicit none
-      integer ib
+      integer ib, ib0, ibc, ibc0, ibw, is
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR POTENTIAL EQUATION --
@@ -7556,6 +7558,7 @@ c              fchi=0.0_R8
           CALL XERRAB ('B2STBC -- BCPOT=10, NOT AVAILABLE FOR N,W,E')
         ENDIF
 #endif
+
 * -- BCPOT=11 -- SHEATH CONDITION, CURRENT CONTINUITY                !srv 01.02.09 {
 
       case (11)
@@ -7572,7 +7575,7 @@ c              fchi=0.0_R8
           enddo
         endif
         conv_bcpot11 = .true.                                        !srv 15.02.26
-        mrs = 0.0_8                                                  !srv 15.02.26
+        mrs = 0.0_R8                                                 !srv 15.02.26
         do ibc = 1, mpg%bcCvP(ib,2)                                  ! loop over number of cells in the boundary
           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                   ! number of the guard cell
           iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                   ! number of the corresponding domain cell
@@ -7618,7 +7621,7 @@ c              fchi=0.0_R8
             fch_sch = srw%sch0(iCv1,0) + srw%sch0(iCv1,1)*pl%po(icv1)   !srv 15.02.26 {
             fch_bnd = dv%fch(iFc,0) + dv%fch(iFc,1)
             if (mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1).gt.0.0_R8)
-     >       fch_bnd = - fch_bnd
+     >       fch_bnd = -fch_bnd
             res_bcpot11 = fch_sch - fch_bnd
             if (abs(res_bcpot11).ge.abs(fch_bnd)*switch%bcpot11_epsr +
      &                                           switch%bcpot11_epsa)
@@ -8472,7 +8475,7 @@ c end of implementation
 
       subroutine b2stbc_phys_enk(ib)
       implicit none
-      integer ib
+      integer ib, ibc, ib0, ibc0, is
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR TURBULENT KINETIC ENERGY EQUATION --
@@ -8874,7 +8877,7 @@ cwdk    Todo: corrections for BCCON.ne.14
 
       subroutine b2stbc_phys_enz(ib)
       implicit none
-      integer ib
+      integer ib, ibc, ib0, ibc0, is
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR TURBULENT ENSTROPHY EQUATION --
