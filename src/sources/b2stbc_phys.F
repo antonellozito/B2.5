@@ -4787,8 +4787,8 @@ cwdk    Todo: corrections for BCCON.ne.14
           iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
           iFc = mpg%cvFc(mpg%cvFcP(iCv1,1))
           T1 = (1.0_R8 - ENEPAR(IB,1)) * pl%te(iCv2)
-          srw%she0(iCv,0) = VBIG*NE00*T1*geo%fcS(iFc)
-          srw%she0(iCv,1) =-VBIG*NE00*geo%fcS(iFc)
+          srw%she0(iCv1,0) = VBIG*NE00*T1*geo%fcS(iFc)
+          srw%she0(iCv1,1) =-VBIG*NE00*geo%fcS(iFc)
         END DO
 
 * -- BCENE=19 -- PRESCRIBE THE DECAY LENGTH FOR THE ELECTRON TEMPERATURE
@@ -6354,8 +6354,8 @@ c see label 2980
           iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
           iFc = mpg%cvFc(mpg%cvFcP(iCv1,1))
           T1 = (1.0_R8 - ENIPAR(IB,1)) * pl%ti(iCv2)
-          srw%shi0(iCv,0) = VBIG*NE00*T1*geo%fcS(iFc)
-          srw%shi0(iCv,1) =-VBIG*NE00*geo%fcS(iFc)
+          srw%shi0(iCv1,0) = VBIG*NE00*T1*geo%fcS(iFc)
+          srw%shi0(iCv1,1) =-VBIG*NE00*geo%fcS(iFc)
         END DO
 
 * -- BCENI=19 -- PRESCRIBE THE DECAY LENGTH FOR THE ION TEMPERATURE
@@ -6807,7 +6807,7 @@ cwdk     * need to correct this BC for hybrid scheme
      .               (dv%fhi_mdf(iFc,0)+dv%fhi_mdf(iFc,1))
                     do is = 0, ns-1
                       totflux = totflux -
-     .                 pl%ti(iCv)*pl%na(iCv,is)*geo%fcS(iFc)*
+     .                 pl%ti(iCv1)*pl%na(iCv1,is)*geo%fcS(iFc)*
      .                  mpg%bcFcOr(mpg%bcCvP(ibw,1)+ibc-1)*
      &                 (dv%vaecrb(iFc,0,is)*geo%fcQalf(iFc,0)+
      &                  dv%vaecrb(iFc,1,is)*geo%fcQalf(iFc,1))
@@ -6880,10 +6880,10 @@ cwdk     * need to correct this BC for hybrid scheme
           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)
           iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
           iFc = mpg%cvFc(mpg%cvFcP(iCv1,1))
-          srw%shi0(iCv,0)=
+          srw%shi0(iCv1,0)=
      .     VBIG*NE00*ENIPAR(IB,1)*EV*geo%fcS(iFc)*
      .     ((1.0_R8-t3)+t3*pl%ti(iCv2)/tiave)
-          srw%shi0(iCv,1)=
+          srw%shi0(iCv1,1)=
      .    -VBIG*NE00*geo%fcS(iFc)
         ENDDO
 
@@ -7045,7 +7045,7 @@ cwdk     * need to correct this BC for hybrid scheme
      .               (dv%fhi_mdf(iFc,0)+dv%fhi_mdf(iFc,1))
                     do is = 0, ns-1
                       totflux = totflux -
-     .                 pl%ti(iCv)*pl%na(iCv,is)*geo%fcS(iFc)*
+     .                 pl%ti(iCv1)*pl%na(iCv1,is)*geo%fcS(iFc)*
      .                  mpg%bcFcOr(mpg%bcCvP(ibw,1)+ibc-1)*
      &                 (dv%vaecrb(iFc,0,is)*geo%fcQalf(iFc,0)+
      &                  dv%vaecrb(iFc,1,is)*geo%fcQalf(iFc,1))
@@ -9068,7 +9068,7 @@ cwdk    Todo: corrections for BCCON.ne.14
         if(ncall_b2stbc_phys.eq.0) then
           do ibc = 1, mpg%bcCvP(ib,2)
             iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-            call xertst(mpg%cvOnClosedSurface(iCv),
+            call xertst(mpg%cvOnClosedSurface(iCv1),
      .       'BCENZ=16 intended for core boundaries only!')
           enddo
           write(*,'(a,1p,g14.7,a,a,a)')
