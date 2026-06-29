@@ -155,7 +155,7 @@ c     ingeger, save :: nstg2 = 0
 !     2  shi0(-1:nx,-1:ny,0:3), she0(-1:nx,-1:ny,0:3),                   !xpb
 !     3  smo0(-1:nx,-1:ny,0:3,0:ns-1),                                   !xpb
 !     4  smq0(-1:nx,-1:ny,0:3,0:ns-1),                                   !xpb
-!     5  sch0(-1:nx,-1:ny,0:3),                                          !xpb
+!     5  sch0(-1:nx,-1:ny,0:3)                                           !xpb
 !      integer, save :: re_compute_pb = 1                                !srv 15.02.10
 *
 *-----------------------------------------------------------------------

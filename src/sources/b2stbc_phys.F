@@ -72,10 +72,7 @@
 *.declarations
 
 *   ..local variables
-      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2, is, ib, ibc, k
-#ifdef B25_EIRENE
-      integer ix
-#endif
+      integer iCv1, iFc, is, ib, ibc, k
 #ifdef WG_TODO
      & ,coreregno, coreregn2, ireg,
      1  bc_type16_ref, bc_type16_ix, bc_type16_iy, bc_type16_i,
@@ -97,11 +94,8 @@
       integer, save :: bc_type16_kinetic_energy = 0
       logical once_bccon(0:ns-1), once_bcene, once_bceni, once_bcpot    !srv 16.02.12 12.02.15 29.09.15
       real (kind=R8) ::
-     *  vte, s1, fche, fchi, t0, t1, t2,                                !srv 15.11.07
-     1  t3, t4, totflux, dsh, vt,
-     2  vbnd, totpar, teave, tiave, neave, niave, poave, weight,
      &  naua2sum(0:ns-1), naua2average(0:ns-1),
-     &  pzaverage, pzsum, volsum, totfluxi, totfluxn,
+     &  pzaverage, pzsum, volsum,
      &  vbc(nCv,0:ns-1), csbc(nCv,0:ns-1)
 #ifdef WG_TODO
      1  ,volave
@@ -113,7 +107,7 @@
 #endif
       real (kind=R8) :: bzsum, bzaverage                                !lk 20.11.07
       real (kind=R8) ::
-     *  wdia(nCv), wrk0(nCv), wrkf(nFc), wrk,
+     *  wdia(nCv), wrk0(nCv), wrkf(nFc),
 #ifdef WG_TODO
      *  uu(nFc,0:ns+st_ext%ns-1), zarg,
      *  ud(nFc,0:ns-1), !sx(-1:nx,-1:ny),
@@ -124,7 +118,6 @@
       real (kind=R8), save :: cor9 = 0.0_R8                             !srv 23.09.08
       real (kind=R8) :: fac_he_anom, fac_he_anom_bc
       character chns*3, chk*1                                           !srv 11.07.05
-      logical decay_length_ok, ishigh
 #ifdef WG_TODO
       logical fedback_species
       character*24 hlp_frm
@@ -132,8 +125,7 @@
      *  upout, uuout, uutest, zbar
 #endif
       real (kind=R8) ::
-     *  rz(nCv), cs, csb, a,                                            !srv 01.02.09
-     *  fchy_dia, fchy_inertia, seec                                    !srv 07.04.00
+     *  rz(nCv), cs, csb, a                                             !srv 01.02.09
       character*26 boundary_location(nbcd)
 #ifdef WG_TODO
       integer isfeedback, fix_fch_in_fhe_sheath, is_kinetic
@@ -499,7 +491,7 @@ cwdk  now need to recompute full diamagnetic component for ud
         case default
           CALL XERRAB
      &     ('B2STBC -- incorrect value of bc_for_equations')
-        end select                                                        !srv 15.02.26 }
+        end select                                                    !srv 15.02.26 }
 
       enddo
 
@@ -610,8 +602,11 @@ cwdk  now need to recompute full diamagnetic component for ud
 
       contains
 
-      subroutine csbc_is()                                             !srv 15.02.26 {
+      subroutine csbc_is(iCv1,ib,is)                                  !srv 15.02.26 {
       implicit none
+      integer iCv1, ib, is
+      real (kind=R8) :: cs
+
       if (mompar(is,ib,2).lt.0.5_R8) then
         cs = sqrt(pz(iCv1)/rz(iCv1))
         csbc(iCv1,is) = cs
@@ -621,11 +616,14 @@ cwdk  now need to recompute full diamagnetic component for ud
         csbc(iCv1,is) = cs
       endif
       return
-      end subroutine csbc_is                                           !srv 15.02.26 }
+      end subroutine csbc_is                                          !srv 15.02.26 }
 
-      subroutine vbc_is(cs)                                            !srv 15.02.26 {
+      subroutine vbc_is(ib,is,ibc,iCv1,iCv2,iFc,cs,wrk)               !srv 15.02.26 {
       implicit none
+      integer ib, is, ibc, iCv1, iCv2, iFc
       real (kind=R8) :: cs  ! cs=csbc(iCv1,is)
+      real (kind=R8) :: wrk, vbnd, t0
+
       wrk = geo%fcQalf(iFc,0)*geo%fcBb(iFc,0)/geo%fcBb(iFc,3)*
      &      mpg%bcFcOr(mpg%bcCvP(ib,1)+ibc-1)
       vbnd = (dv%vaecrb(iFc,0,is)*geo%fcQalf(iFc,0) +
@@ -640,18 +638,22 @@ cwdk  now need to recompute full diamagnetic component for ud
         vbnd = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
         vbc(iCv1,is) = cs*wrk - vbnd*sign(1.0_R8,wrk)
         vbc(iCv1,is) = max(vbc(iCv1,is)*sign(1.0_R8,wrk),
-     &                 wrk*pl%ua(iCv2,is))*sign(1.0_R8,wrk)
+     &                     wrk*pl%ua(iCv2,is))*sign(1.0_R8,wrk)
       endif
       return
-      end subroutine vbc_is                                          !srv 15.02.26 }
+      end subroutine vbc_is                                           !srv 15.02.26 }
 
       subroutine b2stbc_phys_species(ib)
       implicit none
       integer is, ib, ibc, ib0, ibc0, ibw, isb
+      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2
 #ifdef B25_EIRENE
-      integer isa, ism, k
+      integer isa, ism, ix, k
 #endif
+      real (kind=R8) :: s1, t0, t1, t2, t3, t4, vbnd,
+     .  totpar, totflux, totfluxn, totfluxi, wrk
       real (kind=R8), external :: intvertex_s
+      logical ishigh
 
       DO IS=0, NS-1
         if (is.eq.ns-1) then
@@ -684,7 +686,7 @@ cwdk  now need to recompute full diamagnetic component for ud
             if (mpg%cvOnClosedSurface(iCv)) then
              if(is.eq.ismain.and.switch%use_astra.ne.0) then
 #ifdef ASTRA
-              CONPAR(IS,IB,1) = neb_astra                               !srv 28.07.11
+              CONPAR(IS,IB,1) = neb_astra                             !srv 28.07.11
 #else
               call xerrab
      .         ('Compile with -DASTRA option to couple to ASTRA!')
@@ -694,9 +696,9 @@ cwdk  now need to recompute full diamagnetic component for ud
      .        'ionising_core switch usage inconsistent with BCCON = 1')
             ENDIF
           endif
-          do ibc = 1, mpg%bcCvP(ib,2)                                   ! loop over number of cells in the boundary
-            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                    ! number of the guard cell
-            iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                          ! number of the guard cell face
+          do ibc = 1, mpg%bcCvP(ib,2)                                 ! loop over number of cells in the boundary
+            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                  ! number of the guard cell
+            iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                        ! number of the guard cell face
             srw%sna0(iCv1,0,is) =
      .        VBIG*geo%fcS(iFc)*conpar(is,ib,1)
             srw%sna0(iCv1,1,is) =
@@ -1298,14 +1300,14 @@ c   (ionising_core option)
             call xertst(CONPAR(IS,IB,2).ge.0.0_R8,
      1       'BCCON = 14, CONPAR(,,2) < 0 not allowed!')
           endif
-          do ibc = 1, mpg%bcCvP(ib,2)                                   ! loop over number of cells in the boundary
-            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                    ! number of the guard cell
-            iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                    ! number of the corresponding domain cell
-            iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                          ! number of the guard cell face
+          do ibc = 1, mpg%bcCvP(ib,2)                                    ! loop over number of cells in the boundary
+            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                     ! number of the guard cell
+            iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                     ! number of the corresponding domain cell
+            iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                           ! number of the guard cell face
             s1 = abs(geo%fcPbs(iFc))
 !            call csbc_vbc()                                             !srv 15.02.26
-            call csbc_is()                                               !srv 15.02.26
-            call vbc_is(csbc(iCv1,is))                                   !srv 15.02.26
+            call csbc_is(iCv1,ib,is)                                     !srv 15.02.26
+            call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc(iCv1,is),wrk)       !srv 15.02.26
             if (abs(wrk) < geo%Qalfmin) then
               srw%sna0(iCv1,0,is) = 0.0_R8
               srw%sna0(iCv1,1,is) =
@@ -1523,7 +1525,7 @@ cwdk       * need to correct this BC for hybrid scheme
         case (17)
           CALL XERRAB ('B2STBC -- BCCON=17, NOT YET AVAILABLE')
 
-#ifdef ASTRA
+#if ( defined(ASTRA) && defined(WG_TODO) )
 * -- BCCON=18 -- PRESCRIBE THE MODIFIED TOTAL PARTICLE FLUX
 
         case (18)
@@ -3304,7 +3306,7 @@ cwdk      radial direction at N/S - unchanged for aligned grids)
               srw%smo0(iCv1,1,is)=
      .         -VBIG*am(is)*pl%na(iCv1,is)*geo%fcS(iFc)*geo%fcHz(iFc)
             else
-              call vbc_is(csbc(icv1,is))                                !srv 15.02.26
+              call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc(icv1,is),wrk)    !srv 15.02.26
               srw%smo0(iCv1,0,is) = srw%smo0(iCv1,0,is) +               !srv 07.05.09 {
      &         (UBIG/EPSLON**2)*am(is)*mp*pl%na(iCv1,is)*
      &         mompar(is,ib,1)*vbc(iCv1,is)*geo%fcS(iFc)*geo%fcHz(iFc)
@@ -3514,6 +3516,9 @@ cwdk      radial direction at N/S - unchanged for aligned grids)
       subroutine b2stbc_phys_ene(ib)
       implicit none
       integer ib, ibw, ibc, ibc0, ib0, is, ism
+      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2
+      real (kind=R8) :: vte, s1, t0, t1, t2, t3, t4,
+     .  neave, totpar, totflux, teave, weight, wrk
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR ELECTRON ENERGY EQUATION --
@@ -5106,7 +5111,11 @@ cwdk     * need to correct this BC for hybrid scheme
       subroutine b2stbc_phys_eni(ib)
       implicit none
       integer ib, ibw, ibc, ib0, ibc0, is
+      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2
+      real (kind=R8) :: t0, t1, t2, t3, t4, dsh, vt, vbnd,
+     .  niave, tiave, totpar, totflux, weight, wrk
       real (kind=R8), external :: intvertex_s
+      logical decay_length_ok
 
 * -- BOUNDARY CONDITIONS FOR ION ENERGY EQUATIONS --
 
@@ -6051,8 +6060,8 @@ cxpb code segment analog to b2tfhi
           iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                   ! number of the corresponding domain cell
           iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                         ! number of the guard cell face
           do is=0,ns-1                                               !srv 15.02.26 {
-            call csbc_is()
-            call vbc_is(csbc(iCv1,is))
+            call csbc_is(iCv1,ib,is)
+            call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc(iCv1,is),wrk)
           enddo                                                      !srv 15.02.26 }
           cs = sqrt(pz(iCv1)/rz(iCv1))
           t0 = 0.0_R8
@@ -6824,7 +6833,7 @@ cwdk     * need to correct this BC for hybrid scheme
      &        ' SENIPAR=',SENIPAR
             DO IBW=IB,NBC
               IF ((BCCHAR(IBW).EQ.'S'.or.BCCHAR(IBW).EQ.'A').AND.
-     &             BCENE(IBW).EQ.BCENE(IB)) THEN
+     &             BCENI(IBW).EQ.BCENI(IB)) THEN
                 DO ibc = 1, mpg%bcCvP(ibw,2)
                   iCv1 = mpg%bcCv(mpg%bcCvP(ibw,1)+ibc-1,1)
                   iCv2 = mpg%bcCv(mpg%bcCvP(ibw,1)+ibc-1,2)
@@ -7060,7 +7069,7 @@ cwdk     * need to correct this BC for hybrid scheme
      &        ' SENIPAR=',SENIPAR
             DO IBW=IB,NBC
               IF ((BCCHAR(IBW).EQ.'S'.or.BCCHAR(IBW).EQ.'A').AND.
-     &             BCENE(IBW).EQ.BCENE(IB)) THEN
+     &             BCENI(IBW).EQ.BCENI(IB)) THEN
                 DO ibc = 1, mpg%bcCvP(ibw,2)
                   iCv1 = mpg%bcCv(mpg%bcCvP(ibw,1)+ibc-1,1)
                   iCv2 = mpg%bcCv(mpg%bcCvP(ibw,1)+ibc-1,2)
@@ -7202,6 +7211,9 @@ cwdk     * need to correct this BC for hybrid scheme
       subroutine b2stbc_phys_pot(ib)
       implicit none
       integer ib, ib0, ibc, ibc0, ibw, is
+      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2
+      real (kind=R8) :: vte, vbnd, s1, fche, fchi, t0, t1, t2, t3, t4,
+     .  neave, poave, totpar, totflux, wrk, seec, fchy_dia, fchy_inertia
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR POTENTIAL EQUATION --
@@ -7583,8 +7595,8 @@ c              fchi=0.0_R8
           iVx1 = mpg%fcVx(iFc,1)
           iVx2 = mpg%fcVx(iFc,2)
           do is = 0, ns-1                                            !srv 15.02.26 {
-            call csbc_is()
-            call vbc_is(csbc(iCv1,is))
+            call csbc_is(iCv1,ib,is)
+            call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc(iCv1,is),wrk)
           enddo                                                      !srv 15.02.26 }
           vte  = sqrt(pl%te(iCv1)/me)
           t0 = 0.0_R8
@@ -8476,6 +8488,8 @@ c end of implementation
       subroutine b2stbc_phys_enk(ib)
       implicit none
       integer ib, ibc, ib0, ibc0, is
+      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2
+      real (kind=R8) :: t0, t1, t2, t3, t4, totpar, totflux
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR TURBULENT KINETIC ENERGY EQUATION --
@@ -8878,6 +8892,8 @@ cwdk    Todo: corrections for BCCON.ne.14
       subroutine b2stbc_phys_enz(ib)
       implicit none
       integer ib, ibc, ib0, ibc0, is
+      integer iCv, iCv1, iCv2, iFc, iVx1, iVx2
+      real (kind=R8) :: t0, t1, t2
       real (kind=R8), external :: intvertex_s
 
 * -- BOUNDARY CONDITIONS FOR TURBULENT ENSTROPHY EQUATION --

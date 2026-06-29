@@ -2266,13 +2266,13 @@ c b2stbc
        call xertst (0.0_R8.le.s%stab_coeff_sheath_ti,
      &              'faulty parameter b2stbc_stab_coeff_sheath_ti')
        call xertst (0.0_R8.le.s%bcpot11_epsa,
-     .  'faulty parameter b2stbc_phys: bcpot11_epsa')                    !srv 15.02.26 {
+     .              'faulty parameter b2stbc_phys: bcpot11_epsa')        !srv 15.02.26 {
        call xertst (0.0_R8.le.s%bcpot11_epsr,
-     .  'faulty parameter b2stbc_phys: bcpot11_epsr')                    !srv 15.02.26 }
+     .              'faulty parameter b2stbc_phys: bcpot11_epsr')        !srv 15.02.26 }
        call xertst (0.0_R8.ne.s%bcpot11_epsa.or.
      &              0.0_R8.ne.s%bcpot11_epsr,
-     .  'faulty parameter bstbc_phys: '//
-     &  'bcpot11_epsa/r cannot both be zero simultaneously')
+     .              'faulty parameter bstbc_phys: '//
+     &              'bcpot11_epsa/r cannot both be zero simultaneously')
 
 c b2sral
        call xertst (1.ne.s%b2sral_style,
@@ -2320,16 +2320,14 @@ c nsmin and nxmax
 
 c b2news
         call xertst (0.le.s%max_iter_po, 
-     &                   'faulty parameter max_iter_po')                 !srv 15.02.26
+     &   'faulty parameter max_iter_po')                                 !srv 15.02.26
         
         call xertst (0.eq.s%icase_ii.or.1.eq.s%icase_ii,
-     &                      'b2tlnl_ii should be 0 or 1')
-
+     &   'b2tlnl_ii should be 0 or 1')
         call xertst (0.eq.s%icase_ee .or. 2.eq.s%icase_ee,
-     &               'faulty input b2tlnl_ee')
-
+     &   'faulty input b2tlnl_ee')
         call xertst (0.eq.s%icase_ei .or. 3.eq.s%icase_ei,
-     &              'faulty input b2tlnl_ei')
+     &   'faulty input b2tlnl_ei')
 
        call xertst (s%b2mndr_na_min.gt.0.0_R8,
      &  'faulty parameter b2mndr_na_min')
