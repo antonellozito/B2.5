@@ -8918,7 +8918,7 @@ contains
               u = max ( u, state%pl%te(iCv)/ev )
               nepeak = max( nepeak, state%dv%ne(iCv) )
               nesum = nesum + geo%fcS(iFc)*state%dv%ne(iCv)
-              v = v + state%pl%te(iCv)/ev*geo%fcS(iFc)*state%pl%ne(iCv)
+              v = v + state%pl%te(iCv)/ev*geo%fcS(iFc)*state%dv%ne(iCv)
             end do
             if (nesum.gt.0.0_R8) v = v / nesum
 #  if ( IMAS_MINOR_VERSION > 34 || IMAS_MAJOR_VERSION > 3 )
