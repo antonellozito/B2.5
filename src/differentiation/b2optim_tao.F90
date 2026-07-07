@@ -735,6 +735,12 @@
         xold(1:npar_opt) = x_v(1:npar_opt)
       end if
 
+#if PETSC_VERSION_GE(3,23,0)
+      call VecRestoreArrayRead(XX,x_v,ierr)
+#else
+      call VecRestoreArrayReadF90(XX,x_v,ierr)
+#endif
+
       return
       end subroutine reset_drifts_params
 
