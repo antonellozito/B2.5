@@ -602,7 +602,7 @@ cwdk  now need to recompute full diamagnetic component for ud
 
       contains
 
-      subroutine csbc_is(iCv1,ib,is)                                  !srv 15.02.26 {
+      subroutine csbc_is(iCv1,ib,is,cs)                                !srv 15.02.26 {
       implicit none
       integer iCv1, ib, is
       real (kind=R8) :: cs
@@ -1305,8 +1305,7 @@ c   (ionising_core option)
             iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                     ! number of the corresponding domain cell
             iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                           ! number of the guard cell face
             s1 = abs(geo%fcPbs(iFc))
-!            call csbc_vbc()                                             !srv 15.02.26
-            call csbc_is(iCv1,ib,is)                                     !srv 15.02.26
+            call csbc_is(iCv1,ib,is,cs)                                  !srv 15.02.26
             call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc(iCv1,is),wrk)       !srv 15.02.26
             if (abs(wrk) < geo%Qalfmin) then
               srw%sna0(iCv1,0,is) = 0.0_R8
@@ -6060,7 +6059,7 @@ cxpb code segment analog to b2tfhi
           iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                   ! number of the corresponding domain cell
           iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                         ! number of the guard cell face
           do is=0,ns-1                                               !srv 15.02.26 {
-            call csbc_is(iCv1,ib,is)
+            call csbc_is(iCv1,ib,is,cs)
             call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc(iCv1,is),wrk)
           enddo                                                      !srv 15.02.26 }
           cs = sqrt(pz(iCv1)/rz(iCv1))
@@ -7595,7 +7594,7 @@ c              fchi=0.0_R8
           iVx1 = mpg%fcVx(iFc,1)
           iVx2 = mpg%fcVx(iFc,2)
           do is = 0, ns-1                                            !srv 15.02.26 {
-            call csbc_is(iCv1,ib,is)
+            call csbc_is(iCv1,ib,is,cs)
             call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc(iCv1,is),wrk)
           enddo                                                      !srv 15.02.26 }
           vte  = sqrt(pl%te(iCv1)/me)
