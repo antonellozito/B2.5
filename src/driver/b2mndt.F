@@ -73,6 +73,8 @@
      &          mdm_mdf, mu, mu_mdf, rmd2_mdf, znnucl
       use b2mod_frtf_nccorr
      & , only : corr_tfia, g_hs_style, corr_fria, alpha_hs_style
+      use b2mod_convergence
+     & , only : conv_bcpot11, mrs
 #endif
       use b2mod_ad
       use b2mod_subsys

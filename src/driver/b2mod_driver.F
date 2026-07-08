@@ -2228,6 +2228,8 @@ c new CDF movie option (1st frame at t=0)
      &          fac_vis_profile
       use b2mod_frtf_nccorr
      & , only : corr_tfia, g_hs_style, corr_fria, alpha_hs_style
+      use b2mod_convergence
+     & , only : conv_bcpot11, mrs
 #endif
       use b2mod_ad
 #ifdef IMAS
