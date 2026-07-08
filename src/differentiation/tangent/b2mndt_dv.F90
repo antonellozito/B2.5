@@ -236,6 +236,7 @@ SUBROUTINE B2MNDT_DV(nout, ncv, nfc, nvx, ns, ismain, ismain0, nscx, &
 & mum_mdf, rmu_mdf, mdm_mdf, mu, mu_mdf, rmd2_mdf, znnucl
   USE B2MOD_FRTF_NCCORR_DIFFV, ONLY : corr_tfia, corr_tfiad, g_hs_style,&
 & g_hs_styled, corr_fria, corr_friad, alpha_hs_style, alpha_hs_styled
+  USE B2MOD_CONVERGENCE, ONLY : conv_bcpot11, mrs
   USE B2MOD_AD_DIFFV
   USE B2MOD_SUBSYS
 !  Hint: nbdirsmax should be the maximum number of differentiation directions
@@ -1271,6 +1272,7 @@ SUBROUTINE B2MNDT_DV0(nout, ncv, nfc, nvx, ns, ismain, ismain0, nscx, &
 & mum_mdf, rmu_mdf, mdm_mdf, mu, mu_mdf, rmd2_mdf, znnucl
   USE B2MOD_FRTF_NCCORR_DIFFV, ONLY : corr_tfia, corr_tfiad, g_hs_style,&
 & g_hs_styled, corr_fria, corr_friad, alpha_hs_style, alpha_hs_styled
+  USE B2MOD_CONVERGENCE, ONLY : conv_bcpot11, mrs
   USE B2MOD_AD_DIFFV
   USE B2MOD_SUBSYS
 !  Hint: nCv should be the size of dimension 1 of array temp
@@ -2071,6 +2073,7 @@ SUBROUTINE B2MNDT_NODIFF(nout, ncv, nfc, nvx, ns, ismain, ismain0, nscx&
 & mum_mdf, rmu_mdf, mdm_mdf, mu, mu_mdf, rmd2_mdf, znnucl
   USE B2MOD_FRTF_NCCORR_DIFFV, ONLY : corr_tfia, g_hs_style, corr_fria, &
 & alpha_hs_style
+  USE B2MOD_CONVERGENCE, ONLY : conv_bcpot11, mrs
   USE B2MOD_AD_DIFFV
   USE B2MOD_SUBSYS
   USE B2MOD_DIFFSIZES

@@ -111,7 +111,7 @@ SUBROUTINE B2STBC_PHYS_NODIFF(ncv, nfc, nvx, ns, ismain, ismain0, switch&
 !srv 11.07.05
   CHARACTER :: chns*3, chk*1
 !srv 01.02.09
-  REAL(kind=r8) :: rz(ncv), cs, csb, a
+  REAL(kind=r8) :: rz(ncv)
   CHARACTER(len=26) :: boundary_location(nbcd)
 !   ..procedures
   INTRINSIC ABS, SQRT
@@ -526,7 +526,7 @@ CONTAINS
     INTEGER :: is, ib, ibc, ib0, ibc0, ibw, isb
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
     REAL(kind=r8) :: s1, t0, t1, t2, t3, t4, vbnd, totpar, totflux, &
-&   totfluxn, totfluxi, wrk
+&   totfluxn, totfluxi, a, cs, csb, wrk
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     LOGICAL :: ishigh
     EXTERNAL XERRAB
@@ -3117,8 +3117,8 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ibw, ibc, ibc0, ib0, is, ism
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: vte, s1, t0, t1, t2, t3, t4, neave, totpar, totflux&
-&   , teave, weight, wrk
+    REAL(kind=r8) :: cs, vte, s1, t0, t1, t2, t3, t4, neave, totpar, &
+&   totflux, teave, weight, wrk
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC MIN
@@ -4234,7 +4234,7 @@ CONTAINS
     INTEGER :: ib, ibw, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
     REAL(kind=r8) :: t0, t1, t2, t3, t4, dsh, vt, vbnd, niave, tiave, &
-&   totpar, totflux, weight, wrk
+&   totpar, totflux, weight, cs, csb, wrk
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     LOGICAL :: decay_length_ok
     EXTERNAL XERRAB
@@ -5805,7 +5805,7 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ib0, ibc, ibc0, ibw, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: vte, vbnd, s1, fche, fchi, t0, t1, t2, t3, t4, &
+    REAL(kind=r8) :: cs, vte, vbnd, s1, fche, fchi, t0, t1, t2, t3, t4, &
 &   neave, poave, totpar, totflux, wrk, seec, fchy_dia, fchy_inertia
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
@@ -6855,7 +6855,7 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: t0, t1, t2, t3, t4, totpar, totflux
+    REAL(kind=r8) :: cs, t0, t1, t2, t3, t4, totpar, totflux
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC SQRT
@@ -7326,7 +7326,7 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: t0, t1, t2
+    REAL(kind=r8) :: cs, t0, t1, t2
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC SQRT
@@ -7889,9 +7889,8 @@ SUBROUTINE B2STBC_PHYS_DV(ncv, nfc, nvx, ns, ismain, ismain0, switch, &
 !srv 11.07.05
   CHARACTER :: chns*3, chk*1
 !srv 01.02.09
-  REAL(kind=r8) :: rz(ncv), cs, csb, a
-  REAL(kind=r8) :: rzd(nbdirsmax, ncv), csd(nbdirsmax), csbd(nbdirsmax)&
-& , ad(nbdirsmax)
+  REAL(kind=r8) :: rz(ncv)
+  REAL(kind=r8) :: rzd(nbdirsmax, ncv)
   CHARACTER(len=26) :: boundary_location(nbcd)
 !   ..procedures
   INTRINSIC ABS, SQRT
@@ -8568,9 +8567,9 @@ CONTAINS
     INTEGER :: is, ib, ibc, ib0, ibc0, ibw, isb
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
     REAL(kind=r8) :: s1, t0, t1, t2, t3, t4, vbnd, totpar, totflux, &
-&   totfluxn, totfluxi, wrk
+&   totfluxn, totfluxi, a, cs, csb, wrk
     REAL(kind=r8), DIMENSION(nbdirsmax) :: t0d, t1d, t2d, t3d, t4d, &
-&   vbndd, totpard, totfluxd, totfluxnd, totfluxid
+&   vbndd, totpard, totfluxd, totfluxnd, totfluxid, ad, csd, csbd
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     LOGICAL :: ishigh
     EXTERNAL XERRAB
@@ -8699,7 +8698,6 @@ CONTAINS
     REAL(r8) :: temp4
     REAL(kind=r8) :: temp5
     INTEGER :: nbdirs
-    csd = 0.D0
     t3d = 0.D0
 !
     DO is=0,ns-1
@@ -12377,7 +12375,7 @@ CONTAINS
     INTEGER :: is, ib, ibc, ib0, ibc0, ibw, isb
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
     REAL(kind=r8) :: s1, t0, t1, t2, t3, t4, vbnd, totpar, totflux, &
-&   totfluxn, totfluxi, wrk
+&   totfluxn, totfluxi, a, cs, csb, wrk
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     LOGICAL :: ishigh
     EXTERNAL XERRAB
@@ -14986,10 +14984,10 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ibw, ibc, ibc0, ib0, is, ism
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: vte, s1, t0, t1, t2, t3, t4, neave, totpar, totflux&
-&   , teave, weight, wrk
-    REAL(kind=r8), DIMENSION(nbdirsmax) :: vted, t0d, t1d, t2d, t3d, t4d&
-&   , neaved, totpard, totfluxd, teaved, weightd
+    REAL(kind=r8) :: cs, vte, s1, t0, t1, t2, t3, t4, neave, totpar, &
+&   totflux, teave, weight, wrk
+    REAL(kind=r8), DIMENSION(nbdirsmax) :: csd, vted, t0d, t1d, t2d, t3d&
+&   , t4d, neaved, totpard, totfluxd, teaved, weightd
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC MIN
@@ -16856,8 +16854,8 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ibw, ibc, ibc0, ib0, is, ism
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: vte, s1, t0, t1, t2, t3, t4, neave, totpar, totflux&
-&   , teave, weight, wrk
+    REAL(kind=r8) :: cs, vte, s1, t0, t1, t2, t3, t4, neave, totpar, &
+&   totflux, teave, weight, wrk
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC MIN
@@ -17989,9 +17987,9 @@ CONTAINS
     INTEGER :: ib, ibw, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
     REAL(kind=r8) :: t0, t1, t2, t3, t4, dsh, vt, vbnd, niave, tiave, &
-&   totpar, totflux, weight, wrk
+&   totpar, totflux, weight, cs, csb, wrk
     REAL(kind=r8), DIMENSION(nbdirsmax) :: t0d, t1d, t2d, t3d, t4d, dshd&
-&   , vtd, vbndd, niaved, tiaved, totpard, totfluxd, weightd
+&   , vtd, vbndd, niaved, tiaved, totpard, totfluxd, weightd, csd, csbd
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     LOGICAL :: decay_length_ok
     EXTERNAL XERRAB
@@ -20619,7 +20617,7 @@ CONTAINS
     INTEGER :: ib, ibw, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
     REAL(kind=r8) :: t0, t1, t2, t3, t4, dsh, vt, vbnd, niave, tiave, &
-&   totpar, totflux, weight, wrk
+&   totpar, totflux, weight, cs, csb, wrk
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     LOGICAL :: decay_length_ok
     EXTERNAL XERRAB
@@ -22207,10 +22205,10 @@ CONTAINS
 !  Hint: nbdirsmax should be the maximum number of differentiation directions
     INTEGER :: ib, ib0, ibc, ibc0, ibw, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: vte, vbnd, s1, fche, fchi, t0, t1, t2, t3, t4, &
+    REAL(kind=r8) :: cs, vte, vbnd, s1, fche, fchi, t0, t1, t2, t3, t4, &
 &   neave, poave, totpar, totflux, wrk, seec, fchy_dia, fchy_inertia
-    REAL(kind=r8), DIMENSION(nbdirsmax) :: vted, vbndd, fched, fchid, &
-&   t0d, t1d, t2d, t3d, t4d, neaved, poaved, totpard, totfluxd, &
+    REAL(kind=r8), DIMENSION(nbdirsmax) :: csd, vted, vbndd, fched, &
+&   fchid, t0d, t1d, t2d, t3d, t4d, neaved, poaved, totpard, totfluxd, &
 &   fchy_diad, fchy_inertiad
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
@@ -23872,7 +23870,7 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ib0, ibc, ibc0, ibw, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: vte, vbnd, s1, fche, fchi, t0, t1, t2, t3, t4, &
+    REAL(kind=r8) :: cs, vte, vbnd, s1, fche, fchi, t0, t1, t2, t3, t4, &
 &   neave, poave, totpar, totflux, wrk, seec, fchy_dia, fchy_inertia
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
@@ -24932,9 +24930,9 @@ CONTAINS
 !  Hint: nbdirsmax should be the maximum number of differentiation directions
     INTEGER :: ib, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: t0, t1, t2, t3, t4, totpar, totflux
-    REAL(kind=r8), DIMENSION(nbdirsmax) :: t0d, t1d, t2d, t3d, t4d, &
-&   totpard, totfluxd
+    REAL(kind=r8) :: cs, t0, t1, t2, t3, t4, totpar, totflux
+    REAL(kind=r8), DIMENSION(nbdirsmax) :: csd, t0d, t1d, t2d, t3d, t4d&
+&   , totpard, totfluxd
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC SQRT
@@ -25620,7 +25618,7 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: t0, t1, t2, t3, t4, totpar, totflux
+    REAL(kind=r8) :: cs, t0, t1, t2, t3, t4, totpar, totflux
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC SQRT
@@ -26098,8 +26096,8 @@ CONTAINS
 !  Hint: nbdirsmax should be the maximum number of differentiation directions
     INTEGER :: ib, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: t0, t1, t2
-    REAL(kind=r8), DIMENSION(nbdirsmax) :: t0d, t1d, t2d
+    REAL(kind=r8) :: cs, t0, t1, t2
+    REAL(kind=r8), DIMENSION(nbdirsmax) :: csd, t0d, t1d, t2d
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC SQRT
@@ -26446,7 +26444,7 @@ CONTAINS
     IMPLICIT NONE
     INTEGER :: ib, ibc, ib0, ibc0, is
     INTEGER :: icv, icv1, icv2, ifc, ivx1, ivx2
-    REAL(kind=r8) :: t0, t1, t2
+    REAL(kind=r8) :: cs, t0, t1, t2
     REAL(kind=r8), EXTERNAL :: INTVERTEX_S_NODIFF
     EXTERNAL XERRAB
     INTRINSIC SQRT

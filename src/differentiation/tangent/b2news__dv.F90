@@ -172,7 +172,8 @@ SUBROUTINE B2NEWS__DV(ncv, nfc, nvx, ns, nscx, iscx, nscxmax, ismain, &
 !     for adjoint AD to avoid side-effect variables
   USE B2MOD_TALLIES, ONLY : rrahireg, rranareg, rsahireg, rqradreg, &
 & rsanareg, b2bremreg, rqahereg, rramoreg, b2radreg, rqbrmreg, rsamoreg,&
-& b2exba, b2fraa, b2joule, b2visa, b2divue, b2divua, b2exbe
+& b2exba, b2fraa, b2joule, b2visa, b2divue, b2divua, b2exbe, rcxnareg, &
+& rcxhireg, rcxmoreg
   USE B2MOD_TRANSPORT_NAMELIST_DIFFV, ONLY : parm_hce, parm_hced, &
 & parm_hci, parm_hcid, parm_dna, parm_dnad, parm_dpa, parm_dpad, &
 & parm_vla, parm_vlad, parm_vsa, parm_vsad, parm_alf, parm_alfd, &
@@ -1554,7 +1555,8 @@ SUBROUTINE B2NEWS__DV0(ncv, nfc, nvx, ns, nscx, iscx, nscxmax, ismain, &
 !     for adjoint AD to avoid side-effect variables
   USE B2MOD_TALLIES, ONLY : rrahireg, rranareg, rsahireg, rqradreg, &
 & rsanareg, b2bremreg, rqahereg, rramoreg, b2radreg, rqbrmreg, rsamoreg,&
-& b2exba, b2fraa, b2joule, b2visa, b2divue, b2divua, b2exbe
+& b2exba, b2fraa, b2joule, b2visa, b2divue, b2divua, b2exbe, rcxnareg, &
+& rcxhireg, rcxmoreg
   USE B2MOD_TRANSPORT_NAMELIST_DIFFV, ONLY : parm_hce, parm_hced, &
 & parm_hci, parm_hcid, parm_dna, parm_dnad, parm_dpa, parm_dpad, &
 & parm_vla, parm_vlad, parm_vsa, parm_vsad, parm_alf, parm_alfd, &
@@ -2829,7 +2831,8 @@ SUBROUTINE B2NEWS__NODIFF(ncv, nfc, nvx, ns, nscx, iscx, nscxmax, ismain&
 !     for adjoint AD to avoid side-effect variables
   USE B2MOD_TALLIES, ONLY : rrahireg, rranareg, rsahireg, rqradreg, &
 & rsanareg, b2bremreg, rqahereg, rramoreg, b2radreg, rqbrmreg, rsamoreg,&
-& b2exba, b2fraa, b2joule, b2visa, b2divue, b2divua, b2exbe
+& b2exba, b2fraa, b2joule, b2visa, b2divue, b2divua, b2exbe, rcxnareg, &
+& rcxhireg, rcxmoreg
   USE B2MOD_TRANSPORT_NAMELIST_DIFFV, ONLY : parm_hce, parm_hci, &
 & parm_dna, parm_dpa, parm_vla, parm_vsa, parm_alf, parm_sig
   USE B2MOD_RECYCLE_DIFFV, ONLY : int0r, int0l, int3r, int3l, int6r, &
