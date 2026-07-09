@@ -57,7 +57,8 @@
      &          ncall_b2tfrn, senepar, senipar, sconpar,
      &          scurpar, prev_cur_delta, po_prev, po_curr, coeff_16,
      &          in_no_of_angles, in_size_of_table, covered, cvcov, icov,
-     &          icvsv, rmin, rmax, zmin, zmax, first, pos
+     &          icvsv, rmin, rmax, zmin, zmax, first, pos, lngcov,
+     &          lngind
 #endif
       use b2mod_subsys
       implicit none

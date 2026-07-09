@@ -26,7 +26,7 @@
 !     for adjoint AD to avoid side-effect variables
       use b2mod_boundary_namelist
      & , only : conpar, enepar, enipar, nbcd, lfeedback, enkpar, potpar,
-     &          mompar
+     &          mompar, nbcd
       use b2mod_ad
      & , only : my_out_folder,
 #ifdef DBG
