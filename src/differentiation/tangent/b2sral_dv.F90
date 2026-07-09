@@ -114,7 +114,8 @@ SUBROUTINE B2SRAL_DV(ncv, nfc, nvx, ns, nscx, nscxmax, iscx, ismain, &
 & fb_current, fb_currentd, cum_volrec, fb_const, charge_frac, &
 & charge_fracd, saved_fb_actuator, saved_fb_actuatord, saved_fb_prev, &
 & saved_fb_prevd, dt_prev, feedback_namelist_used, she_eir_tot, &
-& she_eir_totd, fb_current_prev, fb_current_prevd
+& she_eir_totd, fb_current_prev, fb_current_prevd, she_rad_tot, &
+& she_rad_totd
   USE B2MOD_MATH_DIFFV, ONLY : cutlo, cutlod, cutll, &
 & b2mod_math_initialised, small_r4_constant
   USE B2MOD_ZHFRTF_DIFFV, ONLY : z2n_cv, z2n_cvd, nal, nald, ia, iad, &
@@ -127,7 +128,9 @@ SUBROUTINE B2SRAL_DV(ncv, nfc, nvx, ns, nscx, nscxmax, iscx, ismain, &
 & ncall_b2sqel, nsdmax, ncall_b2stcx, ncall_b2sqcx, ncall_b2stel, &
 & ntstep_b2wall, ncall_b2tfrn, senepar, senepard, senipar, senipard, &
 & sconpar, sconpard, scurpar, scurpard, prev_cur_delta, prev_cur_deltad,&
-& po_prev, po_prevd, po_curr, po_currd, coeff_16, coeff_16d
+& po_prev, po_prevd, po_curr, po_currd, coeff_16, coeff_16d, &
+& in_no_of_angles, in_size_of_table, covered, cvcov, icov, icvsv, rmin, &
+& rmax, zmin, zmax, first, pos, posd
   USE B2MOD_SUBSYS
 !  Hint: nbdirsmax should be the maximum number of differentiation directions
   USE B2MOD_DIFFSIZES
@@ -686,40 +689,38 @@ SUBROUTINE B2SRAL_DV(ncv, nfc, nvx, ns, nscx, nscxmax, iscx, ismain, &
 END SUBROUTINE B2SRAL_DV
 
 !  Differentiation of b2sral in forward (tangent) mode (with options multiDirectional context noISIZE r8):
-!   variations   of useful results: she_rad_tot[save in b2us_feedback]
-!                she_eir_tot saved_fb_actuator saved_fb_prev fb_current
-!                fb_rescale fb_current_prev int0l int1l int2l int3l
-!                int4l recyc b2recyc userfluxparm conpar enepar
-!                enipar potpar *z2n_cv *nal *ia *av_ualpha *avm_u
-!                *rho_a_rel *z_to_m1_ast senepar senipar sconpar
-!                scurpar prev_cur_delta po_prev po_curr coeff_16
-!                pos[save in b2mod_ad] charge_frac *(st_ext.she)
-!                *(st_ext.shi) *(st_ext.sch) *(st_ext.sna) *(st_ext.smo)
-!                *(st.pl.na) *(st.dv.fchvispar) *(st.dv.fchvispar_a)
-!                *(st.dv.fchinert) *(st.dv.fchinert_a) *(st.dv.fchanml)
-!                *(st.dv.fchanml_a) *(st.dv.fna) *(st.dv.fna_mdf)
-!                *(st.dv.fna_32) *(st.dv.fna_he) *(st.dv.fnapsch)
-!                *(st.dv.fna_fcor) *(st.dv.fna_eir) *(st.dv.fne)
-!                *(st.dv.kin_frac_hyb) *(st.dv.fluid_frac_hyb)
-!                *(st.dv.kinrgy) *(st.dv.ne) *(st.dv.ni) *(st.dv.nn)
-!                *(st.dv.pa) *(st.sr.sch) *(st.sr.she) *(st.sr.shi)
-!                *(st.sr.shn) *(st.sr.skt) *(st.sr.szt) *(st.sr.smo)
-!                *(st.sr.smq) *(st.sr.sna) *(st.srw.sch0) *(st.srw.she0)
-!                *(st.srw.shi0) *(st.srw.shn0) *(st.srw.skt0) *(st.srw.szt0)
-!                *(st.srw.smo0) *(st.srw.smq0) *(st.srw.sna0) *(st.srw.rqrad)
-!                *(st.srw.rqbrm) *(st.rt.rza) *(st.rt.rz2) *(st.rt.rpt)
-!                *(st.rt.rpi) *(st.rtw.rsa) *(st.rtw.rra) *(st.rtw.rqa)
-!                *(st.rtw.rrd) *(st.rtw.rbr) *(st.rtw.rcx) *(st.rtw.rqr)
-!                *(st.psnl.na) *(st.psnl.ne) *(st.psnl.ni) *(st.psnl.kinrgy)
-!                *(st.psnc.na) *(st.psnc.ne) *(st.psnc.ni) *(st.psnc.kinrgy)
-!   with respect to varying inputs: she_rad_tot[save in b2us_feedback]
-!                she_eir_tot saved_fb_actuator saved_fb_prev fb_current
-!                fb_rescale fb_current_prev int0l int1l int2l int3l
-!                int4l recyc b2recyc userfluxparm conpar mompar
-!                enepar enipar potpar enkpar *z2n_cv *nal *ia *av_ualpha
+!   variations   of useful results: she_rad_tot she_eir_tot saved_fb_actuator
+!                saved_fb_prev fb_current fb_rescale fb_current_prev
+!                int0l int1l int2l int3l int4l recyc b2recyc userfluxparm
+!                conpar enepar enipar potpar *z2n_cv *nal *ia *av_ualpha
 !                *avm_u *rho_a_rel *z_to_m1_ast senepar senipar
 !                sconpar scurpar prev_cur_delta po_prev po_curr
-!                coeff_16 pos[save in b2mod_ad] charge_frac *(st_ext.she)
+!                coeff_16 pos charge_frac *(st_ext.she) *(st_ext.shi)
+!                *(st_ext.sch) *(st_ext.sna) *(st_ext.smo) *(st.pl.na)
+!                *(st.dv.fchvispar) *(st.dv.fchvispar_a) *(st.dv.fchinert)
+!                *(st.dv.fchinert_a) *(st.dv.fchanml) *(st.dv.fchanml_a)
+!                *(st.dv.fna) *(st.dv.fna_mdf) *(st.dv.fna_32)
+!                *(st.dv.fna_he) *(st.dv.fnapsch) *(st.dv.fna_fcor)
+!                *(st.dv.fna_eir) *(st.dv.fne) *(st.dv.kin_frac_hyb)
+!                *(st.dv.fluid_frac_hyb) *(st.dv.kinrgy) *(st.dv.ne)
+!                *(st.dv.ni) *(st.dv.nn) *(st.dv.pa) *(st.sr.sch)
+!                *(st.sr.she) *(st.sr.shi) *(st.sr.shn) *(st.sr.skt)
+!                *(st.sr.szt) *(st.sr.smo) *(st.sr.smq) *(st.sr.sna)
+!                *(st.srw.sch0) *(st.srw.she0) *(st.srw.shi0) *(st.srw.shn0)
+!                *(st.srw.skt0) *(st.srw.szt0) *(st.srw.smo0) *(st.srw.smq0)
+!                *(st.srw.sna0) *(st.srw.rqrad) *(st.srw.rqbrm)
+!                *(st.rt.rza) *(st.rt.rz2) *(st.rt.rpt) *(st.rt.rpi)
+!                *(st.rtw.rsa) *(st.rtw.rra) *(st.rtw.rqa) *(st.rtw.rrd)
+!                *(st.rtw.rbr) *(st.rtw.rcx) *(st.rtw.rqr) *(st.psnl.na)
+!                *(st.psnl.ne) *(st.psnl.ni) *(st.psnl.kinrgy)
+!                *(st.psnc.na) *(st.psnc.ne) *(st.psnc.ni) *(st.psnc.kinrgy)
+!   with respect to varying inputs: she_rad_tot she_eir_tot saved_fb_actuator
+!                saved_fb_prev fb_current fb_rescale fb_current_prev
+!                int0l int1l int2l int3l int4l recyc b2recyc userfluxparm
+!                conpar mompar enepar enipar potpar enkpar *z2n_cv
+!                *nal *ia *av_ualpha *avm_u *rho_a_rel *z_to_m1_ast
+!                senepar senipar sconpar scurpar prev_cur_delta
+!                po_prev po_curr coeff_16 pos charge_frac *(st_ext.she)
 !                *(st_ext.shi) *(st_ext.sch) *(st_ext.sna) *(st_ext.smo)
 !                switch.b2tfhi_fflokt switch.b2tfhi_fflozt *(st.pl.na)
 !                *(st.pl.ua) *(st.pl.po) *(st.pl.te) *(st.pl.ti)
@@ -868,7 +869,8 @@ SUBROUTINE B2SRAL_DV0(ncv, nfc, nvx, ns, nscx, nscxmax, iscx, ismain, &
 & fb_current, fb_currentd, cum_volrec, fb_const, charge_frac, &
 & charge_fracd, saved_fb_actuator, saved_fb_actuatord, saved_fb_prev, &
 & saved_fb_prevd, dt_prev, feedback_namelist_used, she_eir_tot, &
-& she_eir_totd, fb_current_prev, fb_current_prevd
+& she_eir_totd, fb_current_prev, fb_current_prevd, she_rad_tot, &
+& she_rad_totd
   USE B2MOD_MATH_DIFFV, ONLY : cutlo, cutlod, cutll, &
 & b2mod_math_initialised, small_r4_constant
   USE B2MOD_ZHFRTF_DIFFV, ONLY : z2n_cv, z2n_cvd, nal, nald, ia, iad, &
@@ -881,7 +883,9 @@ SUBROUTINE B2SRAL_DV0(ncv, nfc, nvx, ns, nscx, nscxmax, iscx, ismain, &
 & ncall_b2sqel, nsdmax, ncall_b2stcx, ncall_b2sqcx, ncall_b2stel, &
 & ntstep_b2wall, ncall_b2tfrn, senepar, senepard, senipar, senipard, &
 & sconpar, sconpard, scurpar, scurpard, prev_cur_delta, prev_cur_deltad,&
-& po_prev, po_prevd, po_curr, po_currd, coeff_16, coeff_16d
+& po_prev, po_prevd, po_curr, po_currd, coeff_16, coeff_16d, &
+& in_no_of_angles, in_size_of_table, covered, cvcov, icov, icvsv, rmin, &
+& rmax, zmin, zmax, first, pos, posd
   USE B2MOD_SUBSYS
 !  Hint: nbdirsmax should be the maximum number of differentiation directions
   USE B2MOD_DIFFSIZES
@@ -1567,7 +1571,8 @@ SUBROUTINE B2SRAL_NODIFF(ncv, nfc, nvx, ns, nscx, nscxmax, iscx, ismain&
 & , enkpar, potpar, mompar, lfeedback, bccon14_is
   USE B2US_FEEDBACK_DIFFV, ONLY : fb_target, fb_rescale, fb_current, &
 & cum_volrec, fb_const, charge_frac, saved_fb_actuator, saved_fb_prev, &
-& dt_prev, feedback_namelist_used, she_eir_tot, fb_current_prev
+& dt_prev, feedback_namelist_used, she_eir_tot, fb_current_prev, &
+& she_rad_tot
   USE B2MOD_MATH_DIFFV, ONLY : cutlo, cutll, b2mod_math_initialised, &
 & small_r4_constant
   USE B2MOD_ZHFRTF_DIFFV, ONLY : z2n_cv, nal, ia, av_ualpha, avm_u, &
@@ -1578,7 +1583,9 @@ SUBROUTINE B2SRAL_NODIFF(ncv, nfc, nvx, ns, nscx, nscxmax, iscx, ismain&
 & ncall_b2stbr_phys, ncall_b2stbr, ncall_b2stbc_phys, ncall_b2stbc, &
 & ncall_b2sqel, nsdmax, ncall_b2stcx, ncall_b2sqcx, ncall_b2stel, &
 & ntstep_b2wall, ncall_b2tfrn, senepar, senipar, sconpar, scurpar, &
-& prev_cur_delta, po_prev, po_curr, coeff_16
+& prev_cur_delta, po_prev, po_curr, coeff_16, in_no_of_angles, &
+& in_size_of_table, covered, cvcov, icov, icvsv, rmin, rmax, zmin, zmax,&
+& first, pos
   USE B2MOD_SUBSYS
   USE B2MOD_DIFFSIZES
   IMPLICIT NONE

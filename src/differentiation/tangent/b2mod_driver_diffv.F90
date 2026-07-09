@@ -5631,6 +5631,7 @@ CONTAINS
     USE B2MOD_FRTF_NCCORR_DIFFV, ONLY : corr_tfia, corr_tfiad, &
 &   g_hs_style, g_hs_styled, corr_fria, corr_friad, alpha_hs_style, &
 &   alpha_hs_styled
+    USE B2MOD_CONVERGENCE, ONLY : conv_bcpot11, mrs
     USE B2MOD_AD_DIFFV
 !  Hint: nbdirsmax should be the maximum number of differentiation directions
   USE B2MOD_DIFFSIZES
@@ -6309,6 +6310,7 @@ CONTAINS
 &   facvis_tanh_b, fac_exb_profile, facdrift_profile, fac_vis_profile
     USE B2MOD_FRTF_NCCORR_DIFFV, ONLY : corr_tfia, g_hs_style, corr_fria&
 &   , alpha_hs_style
+    USE B2MOD_CONVERGENCE, ONLY : conv_bcpot11, mrs
     USE B2MOD_AD_DIFFV
   USE B2MOD_DIFFSIZES
     IMPLICIT NONE

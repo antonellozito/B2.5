@@ -4,27 +4,22 @@
 !  Differentiation of b2stbc in forward (tangent) mode (with options multiDirectional context noISIZE r8):
 !   variations   of useful results: saved_fb_actuator saved_fb_prev
 !                fb_current fb_rescale fb_current_prev recyc b2recyc
-!                userfluxparm conpar enepar enipar potpar senepar[save in b2mod_ad]
-!                senipar[save in b2mod_ad] sconpar[save in b2mod_ad]
-!                scurpar[save in b2mod_ad] prev_cur_delta[save in b2mod_ad]
-!                po_prev[save in b2mod_ad] po_curr[save in b2mod_ad]
-!                coeff_16[save in b2mod_ad] pos[save in b2mod_ad]
-!                charge_frac *(psnc.na) *(psnc.ne) *(psnc.ni) *(psnc.kinrgy)
-!                *(dv.fna) *(dv.fna_mdf) *(dv.fna_32) *(dv.fna_he)
-!                *(dv.fnapsch) *(dv.fna_fcor) *(dv.fna_eir) *(dv.kinrgy)
-!                *(dv.ne) *(dv.ni) *(dv.nn) *(psnl.na) *(psnl.ne)
-!                *(psnl.ni) *(psnl.kinrgy) *(srw.sch0) *(srw.she0)
-!                *(srw.shi0) *(srw.shn0) *(srw.skt0) *(srw.szt0)
-!                *(srw.smo0) *(srw.sna0) *(pl.na)
+!                userfluxparm conpar enepar enipar potpar senepar
+!                senipar sconpar scurpar prev_cur_delta po_prev
+!                po_curr coeff_16 pos charge_frac *(psnc.na) *(psnc.ne)
+!                *(psnc.ni) *(psnc.kinrgy) *(dv.fna) *(dv.fna_mdf)
+!                *(dv.fna_32) *(dv.fna_he) *(dv.fnapsch) *(dv.fna_fcor)
+!                *(dv.fna_eir) *(dv.kinrgy) *(dv.ne) *(dv.ni) *(dv.nn)
+!                *(psnl.na) *(psnl.ne) *(psnl.ni) *(psnl.kinrgy)
+!                *(srw.sch0) *(srw.she0) *(srw.shi0) *(srw.shn0)
+!                *(srw.skt0) *(srw.szt0) *(srw.smo0) *(srw.sna0)
+!                *(pl.na)
 !   with respect to varying inputs: she_rad_tot she_eir_tot saved_fb_actuator
 !                saved_fb_prev fb_current fb_rescale fb_current_prev
 !                recyc b2recyc userfluxparm conpar mompar enepar
-!                enipar potpar enkpar senepar[save in b2mod_ad]
-!                senipar[save in b2mod_ad] sconpar[save in b2mod_ad]
-!                scurpar[save in b2mod_ad] prev_cur_delta[save in b2mod_ad]
-!                po_prev[save in b2mod_ad] po_curr[save in b2mod_ad]
-!                coeff_16[save in b2mod_ad] pos[save in b2mod_ad]
-!                charge_frac *(psnc.na) *(psnc.ne) *(psnc.ni) *(psnc.kinrgy)
+!                enipar potpar enkpar senepar senipar sconpar scurpar
+!                prev_cur_delta po_prev po_curr coeff_16 pos charge_frac
+!                *(psnc.na) *(psnc.ne) *(psnc.ni) *(psnc.kinrgy)
 !                *(dv.fch) *(dv.fch_p) *(dv.fchdia) *(dv.fchin)
 !                *(dv.fchvispar) *(dv.fchvisper) *(dv.fchvisq)
 !                *(dv.fchinert) *(dv.fchviskt) *(dv.fna) *(dv.fna_mdf)
@@ -104,7 +99,10 @@ SUBROUTINE B2STBC_DV(ncv, nfc, nvx, ns, ismain, ismain0, switch, switchd&
   USE B2MOD_BOUNDARY_NAMELIST_DIFFV, ONLY : conpar, conpard, enepar, &
 & enepard, enipar, enipard, nbcd, lfeedback, enkpar, enkpard, potpar, &
 & potpard, mompar, mompard
-  USE B2MOD_AD_DIFFV, ONLY : my_out_folder, ncall_b2stbc_phys, nsdmax
+  USE B2MOD_AD_DIFFV, ONLY : my_out_folder, ncall_b2stbc_phys, nsdmax, &
+& senepar, senepard, senipar, senipard, sconpar, sconpard, scurpar, &
+& scurpard, prev_cur_delta, prev_cur_deltad, po_prev, po_prevd, po_curr,&
+& po_currd, coeff_16, coeff_16d, pos, posd
   USE B2MOD_MATH_DIFFV, ONLY : cutlo, cutlod, cutll, &
 & b2mod_math_initialised, small_r4_constant
   USE B2MOD_SUBSYS
@@ -568,7 +566,9 @@ SUBROUTINE B2STBC_NODIFF(ncv, nfc, nvx, ns, ismain, ismain0, switch, geo&
 !     for adjoint AD to avoid side-effect variables
   USE B2MOD_BOUNDARY_NAMELIST_DIFFV, ONLY : conpar, enepar, enipar, nbcd&
 & , lfeedback, enkpar, potpar, mompar
-  USE B2MOD_AD_DIFFV, ONLY : my_out_folder, ncall_b2stbc_phys, nsdmax
+  USE B2MOD_AD_DIFFV, ONLY : my_out_folder, ncall_b2stbc_phys, nsdmax, &
+& senepar, senipar, sconpar, scurpar, prev_cur_delta, po_prev, po_curr, &
+& coeff_16, pos
   USE B2MOD_MATH_DIFFV, ONLY : cutlo, cutll, b2mod_math_initialised, &
 & small_r4_constant
   USE B2MOD_SUBSYS
