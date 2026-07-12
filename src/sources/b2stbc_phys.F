@@ -650,8 +650,11 @@ cwdk  now need to recompute full diamagnetic component for ud
 #ifdef B25_EIRENE
       integer isa, ism, ix, k
 #endif
-      real (kind=R8) :: s1, t0, t1, t2, t3, t4, vbnd,
+      real (kind=R8) :: t0, t1, t2, t3, t4, vbnd,
      .  totpar, totflux, totfluxn, totfluxi, a, cs, csb, wrk
+#ifdef WG_TODO
+      real (kind=R8) :: s1
+#endif
       real (kind=R8), external :: intvertex_s
       logical ishigh
 
@@ -1304,7 +1307,6 @@ c   (ionising_core option)
             iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                     ! number of the guard cell
             iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                     ! number of the corresponding domain cell
             iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                           ! number of the guard cell face
-            s1 = abs(geo%fcPbs(iFc))
             call csbc_is(iCv1,ib,is,cs)                                  !srv 15.02.26
             call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc(iCv1,is),wrk)       !srv 15.02.26
             if (abs(wrk) < geo%Qalfmin) then
