@@ -43,8 +43,7 @@
       use b2mod_b2zhco
      & , only : c_hTA_an_fl_save, c_R_TA_an_save
       use b2mod_frtf_nccorr
-     & , only : b2mod_frtf_nccorr_coefs, corr_tfia, g_hs_style,
-     &          corr_fria, alpha_hs_style
+     & , only : b2mod_frtf_nccorr_coefs
       use b2mod_subsys
       implicit none
 *   ..input arguments (unchanged on exit)
