@@ -9867,8 +9867,8 @@
 				<default>1</default>
 				<type>integer</type>
 				<description>
-					Select which initial-Hessian (J0) scaling scheme to use: 0 = SCALAR  (Nocedal gamma = (s^T y)/(y^T y) from the most recent pair; classic L-BFGS scaling, simple & robust). 1 = DIAGONAL (per-component Broyden-class diagonal scaling, closer in spirit to PETSc's MATLMVMBFGS default, but a more elaborate recursive scheme -- see LBFGS_THETA).
-					Which onis faster is problem-dependent. For well-rescaled, low-dimensional problems, scalar is a reasonable default. If you ever optimize many more parameters (tens+), or ones that resist clean rescaling (e.g. very different sensitivities even after normalization), diagonal is more likely to be better.
+					Select which initial-Hessian (J0) scaling scheme to use: 0 = SCALAR  (Nocedal gamma = (s^T y)/(y^T y) from the most recent pair; classic L-BFGS scaling, simple and robust). 1 = DIAGONAL (per-component Broyden-class diagonal scaling, closer in spirit to PETSc's MATLMVMBFGS default, but a more elaborate recursive scheme -- see LBFGS_THETA).
+					Which one is faster is problem-dependent. For well-rescaled, low-dimensional problems, scalar is a reasonable default. If you ever optimize many more parameters (tens+), or ones that resist clean rescaling (e.g. very different sensitivities even after normalization), diagonal is more likely to be better.
 				</description>
 			</switch>
 			<switch>
