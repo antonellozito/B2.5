@@ -229,6 +229,7 @@ CONTAINS
       smo0d = 0.d0
       shi0d = 0.d0
       sna0d = 0.d0
+      sne0d = 0.d0
       sch0d = 0.d0
       she0d = 0.d0
       smo0d0 = 0.D0
@@ -798,6 +799,7 @@ CONTAINS
       smo0d = 0.d0
       shi0d = 0.d0
       sna0d = 0.d0
+      sne0d = 0.d0
       sch0d = 0.d0
       she0d = 0.d0
     END IF
