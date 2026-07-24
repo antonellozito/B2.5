@@ -25,7 +25,7 @@
      & , only : rrahireg, rranareg, rsahireg, rqradreg, rsanareg,
      &          b2bremreg, rqahereg, rramoreg, b2radreg, rqbrmreg,
      &          rsamoreg, b2exba, b2fraa, b2joule, b2visa, b2divue,
-     &          b2divua, b2exbe
+     &          b2divua, b2exbe, rcxnareg, rcxhireg, rcxmoreg
       use b2mod_transport_namelist
      & , only : parm_hce, parm_hci, parm_dna, parm_dpa, parm_vla,
      &          parm_vsa, parm_alf, parm_sig
