@@ -1268,11 +1268,7 @@ ${OBJDIR}/user_default.o: ${OBJDIR}/eirdiag.${MOD}
 ifneq (${MOD},o)
 ${OBJDIR}/adsp.${MOD}: ${OBJDIR}/cadgeo.${MOD} ${OBJDIR}/clogau.${MOD} ${OBJDIR}/comusr.${MOD} ${OBJDIR}/cpes.${MOD} ${OBJDIR}/ctrcei.${MOD} ${OBJDIR}/comprt.${MOD}
 ${OBJDIR}/avltree.${MOD}: ${OBJDIR}/ccona.${MOD}
-<<<<<<< HEAD
 ${OBJDIR}/braeir.${MOD}: ${OBJDIR}/precision.${MOD} ${OBJDIR}/parmmod.${MOD} ${OBJDIR}/b2mod_dimensions.${MOD}
-=======
-${OBJDIR}/braeir.${MOD}: ${OBJDIR}/parmmod.${MOD}
->>>>>>> f617739b0 (Added dependencies for b2xd converter)
 ${OBJDIR}/caprmc.${MOD}: ${OBJDIR}/cgrid.${MOD} ${OBJDIR}/comxs.${MOD} ${OBJDIR}/comsou.${MOD}
 ${OBJDIR}/ccflux.${MOD}: ${OBJDIR}/ctrig.${MOD} ${OBJDIR}/cgeom.${MOD}
 ${OBJDIR}/ccoupl.${MOD}: ${OBJDIR}/precision.${MOD} ${OBJDIR}/parmmod.${MOD}
@@ -1288,11 +1284,7 @@ ${OBJDIR}/parmmod.${MOD}: ${OBJDIR}/precision.${MOD}
 endif
 ${OBJDIR}/adsp.o: ${OBJDIR}/cadgeo.o ${OBJDIR}/clogau.o ${OBJDIR}/comusr.o ${OBJDIR}/cpes.o ${OBJDIR}/ctrcei.o ${OBJDIR}/comprt.o
 ${OBJDIR}/avltree.o: ${OBJDIR}/ccona.o
-<<<<<<< HEAD
 ${OBJDIR}/braeir.o: ${OBJDIR}/precision.o ${OBJDIR}/parmmod.o ${OBJDIR}/b2mod_dimensions.o
-=======
-${OBJDIR}/braeir.o: ${OBJDIR}/parmmod.o
->>>>>>> f617739b0 (Added dependencies for b2xd converter)
 ${OBJDIR}/caprmc.o: ${OBJDIR}/cgrid.o ${OBJDIR}/comxs.o ${OBJDIR}/comsou.o
 ${OBJDIR}/ccflux.o: ${OBJDIR}/ctrig.o ${OBJDIR}/cgeom.o
 ${OBJDIR}/ccoupl.o: ${OBJDIR}/precision.o ${OBJDIR}/parmmod.o
