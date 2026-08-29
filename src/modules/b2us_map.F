@@ -11,7 +11,8 @@
      .          alloc_mapping_cf, dealloc_mapping_cf,
      .          read_mapping, write_mapping,
      .          init_mapping, get_version,
-     .          calc_add_connectivity, update_guard_cells
+     .          calc_add_connectivity, update_guard_cells,
+     .          is_pfr_cell, is_divertor_cell
 
       type, public :: mapping
         integer :: nCv, nFc, nVx, nCg, nCi, nCmxVx, nCmxFc, nVmxCv,
@@ -1616,6 +1617,49 @@ cwdk  can be derived directly from data in that file
 
 
       end subroutine
+
+**********************************************************************
+!> True if cell iCv lies in a private-flux region, i.e. its flux
+!> tube carries flux-tube region 3.
+!> Works (and it is used) only for basic topologies officially
+!> by B2.5, according to geometryID (3=limiter, 4=single null,
+!> 5/6/7=double null)
+      subroutine is_pfr_cell(m, iCv, res)
+      implicit none
+      type(mapping), intent(in) :: m
+      integer, intent(in) :: iCv
+      logical, intent(out) :: res
+      res = m%ftReg(m%cvFt(iCv)).eq.3
+      return
+      end subroutine is_pfr_cell
+
+**********************************************************************
+!> True if cell iCv lies in a divertor volume region: based on the
+!> divertor regions of the basic family (cvReg mapping to 3 or 4
+!> within its group of four), plus any additional private-flux
+!> regions from secondary X-points (region number beyond the basic
+!> count NREG for the family). NREG comes from the declared SOLPS
+!> geometry ID (3=limiter, 4=single null, 5/6/7=double null).
+      subroutine is_divertor_cell(m, iCv, res)
+      implicit none
+      type(mapping), intent(in) :: m
+      integer, intent(in) :: iCv
+      logical, intent(out) :: res
+      integer :: iir, nregbase
+      iir = m%cvReg(iCv)
+      select case (m%geometryID)
+      case (3)
+        nregbase = 2
+      case (4)
+        nregbase = 4
+      case (5, 6, 7)
+        nregbase = 8
+      case default
+        nregbase = huge(0)
+      end select
+      res = mod(iir-1,4)+1.ge.3 .or. iir.gt.nregbase
+      return
+      end subroutine is_divertor_cell
 
 **********************************************************************
 
