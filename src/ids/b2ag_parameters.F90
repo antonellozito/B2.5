@@ -210,6 +210,10 @@ contains
             call cfruin(lun, 1, idum, 'topoflag')
             m%topoID = idum(0)
 
+            ! Read SOLPS geometry ID
+            call cfruin(lun, 1, idum, 'GEOMETRY_ID')
+            m%geometryID = idum(0)
+
             ! Read in x-point, strike point, tangency point, and divertor target numbers
             call cfruin(lun, 6, idum, 'nX,nO,nS,nT,nDiv,nDivFc')
             m%nXpt = idum(0)
@@ -229,6 +233,7 @@ contains
             m%nDiv = 0
             m%nfcDiv = 0
             m%topoID = 0 ! to be determined later
+            m%geometryID = 13
            end if
          end if
        end if

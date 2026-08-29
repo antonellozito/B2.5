@@ -464,6 +464,10 @@
          idum(0) = m%topoID
          call cfwuin (nout(1), 1, idum, 'topoflag')
 
+         ! SOLPS geometry ID
+         idum(0) = m%geometryID
+         call cfwuin (nout(1), 1, idum, 'GEOMETRY_ID')
+
          ! Number of X-points etc
          idum(0) = m%nXpt
          idum(1) = m%nOpt

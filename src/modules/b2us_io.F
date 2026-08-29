@@ -36,6 +36,7 @@
       if (version.ge.'03.002.000') then
         m%hasTopologicalData = .false.
         m%topoID = 0
+        m%geometryID = 13
         m%nXpt = 0
         m%nOpt = 0
         m%nStr = 0
@@ -77,6 +78,8 @@
           m%hasTopologicalData = .true.
           call cfruin (ninp, 1, idum, 'topoflag')
           m%topoID = idum(0)
+          call cfruin (ninp, 1, idum, 'GEOMETRY_ID')
+          m%geometryID = idum(0)
           call cfruin (ninp, 6, idum, 'nX,nO,nS,nT,nDiv,nDivFc')
           m%nXpt = idum(0)
           m%nOpt = idum(1)

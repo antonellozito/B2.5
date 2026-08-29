@@ -94,6 +94,7 @@
 !  structured-grid conversion does not provide explicit topology records
       m%hasTopologicalData = .false.
       m%topoID = 0
+      m%geometryID = 13
       m%nXpt = 0
       m%nOpt = 0
       m%nStr = 0
