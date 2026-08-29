@@ -21,6 +21,7 @@
         integer :: nnreg(0:1), periodic_bc, iFssep, iFssep2
         logical :: hasTopologicalData
         integer :: topoID
+        integer :: geometryID
 
         integer, allocatable :: cvFcP(:,:)             ! (nCv,2) pointing for every cell to the first index number in the cvFc list and its number of faces
         integer, allocatable :: cvFc(:)                !         listing for every cell the corresponding face numbers

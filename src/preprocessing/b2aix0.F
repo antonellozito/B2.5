@@ -102,6 +102,7 @@
 *   ..read topological data if available
       mpg%hasTopologicalData = .false.
       mpg%topoID = 0
+      mpg%geometryID = 13
       mpg%nXpt = 0
       mpg%nOpt = 0
       mpg%nStr = 0
@@ -115,6 +116,10 @@
         ! Read topological mesh flag
         call cfruin(ninp(1), 1, idum, 'topoflag')
         mpg%topoID = idum(0)
+
+        ! Read SOLPS geometry ID
+        call cfruin(ninp(1), 1, idum, 'GEOMETRY_ID')
+        mpg%geometryID = idum(0)
 
         ! Read number of topological points
         call cfruin(ninp(1), 6, idum, 'nX,nO,nS,nT,nDiv,nDivFc')

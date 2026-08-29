@@ -492,6 +492,10 @@
           call cfruin(nrid, 1, idum, 'topoflag')
           m%topoID = idum(0)
 
+          ! Read SOLPS geometry ID
+          call cfruin(nrid, 1, idum, 'GEOMETRY_ID')
+          m%geometryID = idum(0)
+
           ! Read number of topological points
           call cfruin(nrid, 6, idum, 'nX,nO,nS,nT,nDiv,nDivFc')
           m%nXpt = idum(0)
@@ -511,6 +515,17 @@
               enddo
           else
             call xerrab('read_traduitoutb2us: expected Xpt ' //
+     &        'topology')
+          endif
+
+          ! Read per-X-point divertor label
+          read(nrid,*,err=91) idcod, id
+          if (streql('*cf:',idcod).and.streql('xpDivLabel',id)) then
+            do iVx = 1, m%nXpt
+                read(nrid,*,err=91) idum(0)
+              enddo
+          else
+            call xerrab('read_traduitoutb2us: expected xpDivLabel ' //
      &        'topology')
           endif
 
