@@ -567,12 +567,19 @@ contains
 
     call xertst ( object.eq.1.or.object.eq.2, 'incorrect object setting in geometryId')
 
-    ! If topological mesh data is available, we assume a general
-    ! magnetic field topology.
+    ! If topological mesh data is available, use the declared SOLPS
+    ! geometry ID when it names a recognised basic family
+    ! (GEOMETRY_LIMITER..GEOMETRY_DDN_TOP), otherwise fall back to a
+    ! general magnetic field topology.
     if (mpg%hasTopologicalData) then
-        geometryId = GEOMETRY_GENERAL
+        if (mpg%geometryID.ge.GEOMETRY_LIMITER .and. &
+          & mpg%geometryID.le.GEOMETRY_DDN_TOP) then
+            geometryId = mpg%geometryID
+        else
+            geometryId = GEOMETRY_GENERAL
+        end if
         if (firstgmid) then
-            call logmsg( LOGDEBUG, "b2mod_connectivity.geometryId(): identified GEOMETRY_GENERAL")
+            call logmsg( LOGDEBUG, "b2mod_connectivity.geometryId(): identified from declared GEOMETRY_ID")
             firstgmid = .false.
         end if
         return
