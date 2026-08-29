@@ -482,8 +482,9 @@
 
 *   ..identify cells on closed surfaces
       if (mpg%hasTopologicalData .and. mpg%topoID.eq.0) then
-        write (*,*) 'b2us_geo: general topology, core region 1+4n'
-        mpg%cvOnClosedSurface = mod(mpg%cvReg,4).eq.1
+        write (*,*) 'b2us_geo: general topology, core = flux-tube ' //
+     .    'region 1'
+        mpg%cvOnClosedSurface = mpg%ftReg(mpg%cvFt).eq.1
       else
         if (mpg%nnreg(0).eq.1) then
           mpg%cvOnClosedSurface = mpg%periodic_bc.eq.1
