@@ -369,7 +369,7 @@ contains
           ntstep = 0
           write(6,'(a)') trim(filename)//' will be created'
           call b2crtimecdf(filename, mpg, ns, ismain, ismain0, nnatmi, nnmoli, &
-            write_2d, ncid, .false., iret)
+            ntgt, nc, write_2d, ncid, .false., iret)
           call check_cdf_status(iret)
           iret = nf_open(trim(filename),or(NF_WRITE,NF_SHARE),ncid)
           call check_cdf_status(iret)
@@ -391,7 +391,7 @@ contains
           ntstep = 0
           write(6,'(a)') trim(filename)//' will be replaced'
           call b2crtimecdf(filename, mpg, ns, ismain, ismain0, nnatmi, nnmoli, &
-            write_2d, ncid, .false., iret)
+            ntgt, nc, write_2d, ncid, .false., iret)
           call check_cdf_status(iret)
           iret = nf_open(trim(filename),or(NF_WRITE,NF_SHARE),ncid)
           call check_cdf_status(iret)
@@ -416,7 +416,7 @@ contains
             nastep = 0
             write(6,'(a)') trim(filename_av)//' will be created'
             call b2crtimecdf(filename_av, mpg, ns, ismain, ismain0, nnatmi, nnmoli, &
-              write_2d, ncid, .true., iret)
+              ntgt, nc, write_2d, ncid, .true., iret)
             call check_cdf_status(iret)
             iret = nf_open(trim(filename_av),or(NF_WRITE,NF_SHARE),ncid)
             call check_cdf_status(iret)
@@ -448,7 +448,7 @@ contains
               iret = nf_close(ncid)
               call check_cdf_status(iret)
               call b2crtimecdf(filename_av, mpg, ns, ismain, ismain0, nnatmi, nnmoli, &
-               write_2d, ncid, .true., iret)
+               ntgt, nc, write_2d, ncid, .true., iret)
             endif
             iret = nf_open(trim(filename_av),or(NF_WRITE,NF_SHARE),ncid)
             call check_cdf_status(iret)
@@ -456,7 +456,7 @@ contains
             nastep = 0
             write(6,'(a)') trim(filename_av)//' will be replaced'
             call b2crtimecdf(filename_av, mpg, ns, ismain, ismain0, nnatmi, nnmoli, &
-              write_2d, ncid, .true., iret)
+              ntgt, nc, write_2d, ncid, .true., iret)
             call check_cdf_status(iret)
             iret = nf_open(trim(filename_av),or(NF_WRITE,NF_SHARE),ncid)
             call check_cdf_status(iret)
