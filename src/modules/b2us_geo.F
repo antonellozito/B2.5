@@ -458,7 +458,8 @@
      &           iCv, iFc, iVx, inCv, iXpt, iFc1, iFc2, iVx1, iVx2, iFt,
      &           inv_dist(mpg%nVx)
       integer :: count_up, count_down, count_eq, ndivStrVx,
-     &           ndivStr, ndivTg, tXptVx
+     &           ndivStr, ndivTg, tXptVx, iVxP, ivtmp(2)
+      logical :: isUSN
       integer, allocatable :: old_face_list(:), verts(:),
      &           divStrVx(:), divStrVxind(:), tdivFc(:),
      &           tdivFcVx1(:), tdivFcVx2(:)
@@ -1141,6 +1142,48 @@
       if (temp_ignore_geo.eq.0) then !! This is a temporary solution to be able to run extended cases, while more general solutions are being developed
 !! Invert the divertor face list if not in correct psi order
 !! and identify strike point face indices
+!   ..upper single null: reorder the two single-null targets so the
+!     first is the inner and the second the outer, so every consumer
+!     sees a consistent inner/outer ordering (the fcReg numbering
+!     itself stays clockwise). USN is detected from the primary
+!     X-point lying above the O-point.
+      if (mpg%hasTopologicalData .and. mpg%geometryID.eq.4 .and.
+     &    mpg%nDiv.eq.2 .and. allocated(mpg%Opt) .and.
+     &    allocated(mpg%Xpt)) then
+        if (size(mpg%Opt).ge.1) then
+          iVxP = 0
+          do k = 1, size(mpg%Xpt)
+            if (mpg%isPrimaryXpt(k).eq.1) iVxP = mpg%Xpt(k)
+          end do
+          isUSN = .false.
+          if (iVxP.gt.0) isUSN =
+     &      gm%vxY(iVxP).gt.gm%vxY(mpg%Opt(1))
+          if (isUSN) then
+            ivtmp = mpg%divFcP(1,:)
+            mpg%divFcP(1,:) = mpg%divFcP(2,:)
+            mpg%divFcP(2,:) = ivtmp
+            do i = 1, mpg%nStr
+              if (mpg%strDiv(i).eq.1) then
+                mpg%strDiv(i) = 2
+              else if (mpg%strDiv(i).eq.2) then
+                mpg%strDiv(i) = 1
+              end if
+            end do
+            if (allocated(mpg%tgDiv)) then
+              do i = 1, mpg%nTgc
+                if (mpg%tgDiv(i).eq.1) then
+                  mpg%tgDiv(i) = 2
+                else if (mpg%tgDiv(i).eq.2) then
+                  mpg%tgDiv(i) = 1
+                end if
+              end do
+            end if
+            write (*,*) 'b2us_geo: upper single null, first divertor '
+     &        // 'set to inner, second to outer'
+          end if
+        end if
+      end if
+
       if (mpg%hasTopologicalData .and. mpg%topoID.eq.0) then
         write (*,*) 'b2us_geo: general topology, not reorienting ' //
      &    'divertor face list'
@@ -1165,8 +1208,15 @@
           end if
           ndivStrVx = ndivStr + ndivTg
 
-          call xertst(ndivStrVx.gt.0,
-     &      'b2us_geo: no strike point for divertor target')
+!   ..a target may legitimately have no strike/tangency of its own
+!     (e.g. one half of a limiter, whose only contact is the shared
+!     tangency assigned to the other half): leave its ivdiv/ifdiv
+!     unset rather than aborting
+          if (ndivStrVx.eq.0) then
+            write (*,*) 'b2us_geo: warning: no strike/tangency point '
+     &        // 'for divertor target ', i, ' - ivdiv/ifdiv left unset'
+            cycle
+          end if
 
           allocate(divStrVx(ndivStrVx), divStrVxind(ndivStr))
           divStrVx(1:ndivStr) = pack(mpg%strVx, mpg%strDiv.eq.i)
