@@ -7,7 +7,8 @@
       public :: alloc_geometry, dealloc_geometry,
      .          read_geometry, write_geometry,
      .          init_geometry, calc_conn, check_geometry,
-     .          divide_by_area, split_face_flux, pitch
+     .          divide_by_area, split_face_flux, pitch,
+     .          is_upper_single_null
 
       type, public :: geometry
 
@@ -1147,41 +1148,29 @@
 !     sees a consistent inner/outer ordering (the fcReg numbering
 !     itself stays clockwise). USN is detected from the primary
 !     X-point lying above the O-point.
-      if (mpg%hasTopologicalData .and. mpg%geometryID.eq.4 .and.
-     &    mpg%nDiv.eq.2 .and. allocated(mpg%Opt) .and.
-     &    allocated(mpg%Xpt)) then
-        if (size(mpg%Opt).ge.1) then
-          iVxP = 0
-          do k = 1, size(mpg%Xpt)
-            if (mpg%isPrimaryXpt(k).eq.1) iVxP = mpg%Xpt(k)
-          end do
-          isUSN = .false.
-          if (iVxP.gt.0) isUSN =
-     &      gm%vxY(iVxP).gt.gm%vxY(mpg%Opt(1))
-          if (isUSN) then
-            ivtmp = mpg%divFcP(1,:)
-            mpg%divFcP(1,:) = mpg%divFcP(2,:)
-            mpg%divFcP(2,:) = ivtmp
-            do i = 1, mpg%nStr
-              if (mpg%strDiv(i).eq.1) then
-                mpg%strDiv(i) = 2
-              else if (mpg%strDiv(i).eq.2) then
-                mpg%strDiv(i) = 1
-              end if
-            end do
-            if (allocated(mpg%tgDiv)) then
-              do i = 1, mpg%nTgc
-                if (mpg%tgDiv(i).eq.1) then
-                  mpg%tgDiv(i) = 2
-                else if (mpg%tgDiv(i).eq.2) then
-                  mpg%tgDiv(i) = 1
-                end if
-              end do
-            end if
-            write (*,*) 'b2us_geo: upper single null, first divertor '
-     &        // 'set to inner, second to outer'
+      call is_upper_single_null(mpg, gm, isUSN)
+      if (isUSN) then
+        ivtmp = mpg%divFcP(1,:)
+        mpg%divFcP(1,:) = mpg%divFcP(2,:)
+        mpg%divFcP(2,:) = ivtmp
+        do i = 1, mpg%nStr
+          if (mpg%strDiv(i).eq.1) then
+            mpg%strDiv(i) = 2
+          else if (mpg%strDiv(i).eq.2) then
+            mpg%strDiv(i) = 1
           end if
+        end do
+        if (allocated(mpg%tgDiv)) then
+          do i = 1, mpg%nTgc
+            if (mpg%tgDiv(i).eq.1) then
+              mpg%tgDiv(i) = 2
+            else if (mpg%tgDiv(i).eq.2) then
+              mpg%tgDiv(i) = 1
+            end if
+          end do
         end if
+        write (*,*) 'b2us_geo: upper single null, first divertor '
+     &    // 'set to inner, second to outer'
       end if
 
       if (mpg%hasTopologicalData .and. mpg%topoID.eq.0) then
@@ -1864,6 +1853,34 @@ csc   than previous face, then identify next vertex
       pitch = sqrt(g%cvBb(iCv,0)**2+g%cvBb(iCv,1)**2)/g%cvBb(iCv,3)
       return
       end function pitch
+
+***********************************************************************
+
+      subroutine is_upper_single_null(m, gm, res)
+      use b2us_map
+      implicit none
+c*** Return .true. for an upper single null: a single-null grid
+c*** (geometryID = 4, GEOMETRY_SN) whose primary X-point lies above the
+c*** O-point. init_geometry reorders the two single-null divertor
+c*** targets in that case so the first is the inner one, while the
+c*** cvReg/fcReg region numbering stays clockwise; region diagnostics
+c*** that read inner/outer off the raw numbering must consult this to
+c*** stay consistent with the reordered records.
+      type(mapping), intent(in) :: m
+      type(geometry), intent(in) :: gm
+      logical, intent(out) :: res
+      integer :: k, iVxP
+      res = .false.
+      if (.not.(m%hasTopologicalData .and. m%geometryID.eq.4 .and.
+     &          m%nDiv.eq.2 .and. allocated(m%Opt) .and.
+     &          allocated(m%Xpt))) return
+      if (size(m%Opt).lt.1) return
+      iVxP = 0
+      do k = 1, size(m%Xpt)
+        if (m%isPrimaryXpt(k).eq.1) iVxP = m%Xpt(k)
+      end do
+      if (iVxP.gt.0) res = gm%vxY(iVxP).gt.gm%vxY(m%Opt(1))
+      end subroutine is_upper_single_null
 
 ***********************************************************************
 
