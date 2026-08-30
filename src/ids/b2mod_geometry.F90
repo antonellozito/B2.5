@@ -562,7 +562,7 @@ contains
     integer, intent(in) :: object
     integer :: i, iCv
     real(kind=R8) :: Xpsi_active, Xpsi_snowflake
-    logical :: active
+    logical :: active, declaredOk
     external xerrab, xertst
 
     call xertst ( object.eq.1.or.object.eq.2, 'incorrect object setting in geometryId')
@@ -572,11 +572,14 @@ contains
     ! (GEOMETRY_LIMITER..GEOMETRY_DDN_TOP), otherwise fall back to a
     ! general magnetic field topology.
     if (mpg%hasTopologicalData) then
+        geometryId = GEOMETRY_GENERAL
         if (mpg%geometryID.ge.GEOMETRY_LIMITER .and. &
           & mpg%geometryID.le.GEOMETRY_DDN_TOP) then
-            geometryId = mpg%geometryID
-        else
-            geometryId = GEOMETRY_GENERAL
+            ! Trust the declared basic family only when it is consistent
+            ! with the grid's own topology data; otherwise keep the
+            ! general magnetic field topology as a safe fallback.
+            call validateDeclaredGeometry( mpg, declaredOk )
+            if (declaredOk) geometryId = mpg%geometryID
         end if
         if (firstgmid) then
             call logmsg( LOGDEBUG, "b2mod_connectivity.geometryId(): identified from declared GEOMETRY_ID")
@@ -795,6 +798,49 @@ contains
     call xerrab ( 'b2mod_connectivity.geometryId: unknown geometry' )
 
   end function geometryId
+
+
+  !> Cross-check a declared basic-family GEOMETRY_ID against the grid's
+  !> own topology data. Sets ok=.false. when the declaration is not
+  !> internally consistent (a doublet declared as a single/double null,
+  !> a primary X-point count that does not match the family, or fewer
+  !> volume regions than the family requires), so the caller can fall
+  !> back to GEOMETRY_GENERAL rather than trust a mislabelled grid.
+  subroutine validateDeclaredGeometry( mpg, ok )
+    use b2us_map &
+     & , only: mapping
+    implicit none
+    type(mapping), intent(in) :: mpg
+    logical, intent(out) :: ok
+    integer :: nPrimExp, nRegBase
+
+    ! Expected primary X-point count and base volume-region count per
+    ! basic family (additional X-points add only volume regions). The
+    ! caller guarantees mpg%geometryID is in GEOMETRY_LIMITER..DDN_TOP.
+    select case (mpg%geometryID)
+    case (GEOMETRY_LIMITER)
+        nPrimExp = 0
+        nRegBase = 2
+    case (GEOMETRY_SN)
+        nPrimExp = 1
+        nRegBase = 4
+    case default   ! CDN / DDN_BOTTOM / DDN_TOP
+        nPrimExp = 2
+        nRegBase = 8
+    end select
+
+    ok = .true.
+    ! A basic family has a single magnetic O-point; two or more mark a
+    ! doublet, which must stay general.
+    if (mpg%nOpt.ge.2) ok = .false.
+    ! The number of primary X-points must match the declared family.
+    if (allocated(mpg%isPrimaryXpt)) then
+        if (count(mpg%isPrimaryXpt.eq.1).ne.nPrimExp) ok = .false.
+    end if
+    ! The family's base volume regions must at least be present.
+    if (maxval(mpg%cvReg).lt.nRegBase) ok = .false.
+
+  end subroutine validateDeclaredGeometry
 
 
   !> Return number of regions of a given type for a given grid geometry.
