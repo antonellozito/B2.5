@@ -83,7 +83,7 @@
 *   ..initialisation
       data artificial_slab/0/
 *   ..procedures
-      external xertst, xerrab, cfwuin, cfwuch, ipgeti
+      external xertst, xerrab, cfwuin, cfwuch, ipgeti, ipgetr
       external b2xxid, b2agfs, b2agmt
 
 *-----------------------------------------------------------------------
@@ -481,6 +481,14 @@
       call cfwuch (nout(1), 120, lblgm, 'label')
       idum(0) = isymm
       call cfwuin (nout(1), 1, idum, 'isymm')
+
+*   ..Read b2us_prep_Qalfmin/Qalfmax and bake them into b2fgmtry
+      write (*,*) 'b2agdr: default g%Qalfmin: ', g%Qalfmin
+      write (*,*) 'b2agdr: default g%Qalfmax: ', g%Qalfmax
+      call ipgetr ('b2us_prep_Qalfmin', g%Qalfmin)
+      call ipgetr ('b2us_prep_Qalfmax', g%Qalfmax)
+      write (*,*) 'b2agdr: new g%Qalfmin:     ', g%Qalfmin
+      write (*,*) 'b2agdr: new g%Qalfmax:     ', g%Qalfmax
 
 *   ..write summary of geometry
       call write_b2fgmtry (nout(1), m, g)
