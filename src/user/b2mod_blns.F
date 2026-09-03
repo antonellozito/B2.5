@@ -621,33 +621,6 @@ c****************************************************************
           deallocate(surf_type)
         end if
 
-c*** ------------------------------------------------------------------
-c*** Pumped neutral flux at the EIRENE additional surfaces
-c*** (do not belong to any recycling stratum and have js<=nnlimi,
-c*** therefore neither the surf_type loop above, js>nnlimi, nor the
-c*** recycling strata loop below, would take them into account).
-c*** Mirrors the structured-grid "do js=1,nnlimi" wall loop.
-c*** ------------------------------------------------------------------
-        if (switch%use_eirene.ne.0) then
-          do js = 1,nnlimi
-            do j = 1,nnatmi
-              if (latmscl(j) .eq. ls
-#ifdef B25_EIRENE
-     &                .and. iliin(js) .gt. 0                            ! non-transparent surfaces only
-#endif
-     &           ) then
-                flxnw_pump(ls) = flxnw_pump(ls) + wlpump(j,js)
-                do ic = 1,nnmoli
-                  if (mlcmp(j,ic) .gt. 0) then
-                    flxnw_pump(ls) = flxnw_pump(ls) +
-     &                 mlcmp(j,ic) * wlpump(nnatmi+ic,js)
-                  endif
-                end do
-              end if
-            end do
-          end do
-        end if
-
         if (switch%use_eirene.ne.0) then
 c*** Puffing/seeding rate and recycling source
 
@@ -746,6 +719,35 @@ c*** Puffing/seeding rate and recycling source
 
 !       End of the loop over strata
           enddo
+
+c*** ------------------------------------------------------------------
+c*** Pumped neutral flux at the EIRENE additional surfaces (js<=nnlimi)
+c*** not already counted by the recycling-strata loop above (tracked by
+c*** hlp_pump_counted). Plasma-facing recycling surfaces are skipped
+c*** here, so a pump on either surface type is counted exactly once.
+c*** ------------------------------------------------------------------
+          do js = 1,nnlimi
+#ifdef B25_EIRENE
+            if (iliin(js) .le. 0) cycle                                 ! non-transparent surfaces only
+#endif
+            do j = 1,nnatmi
+              if (latmscl(j).eq.ls .and.
+     &            .not. hlp_pump_counted(j,js)) then
+                flxnw_pump(ls) = flxnw_pump(ls) + wlpump(j,js)
+                hlp_pump_counted(j,js) = .TRUE.
+              end if
+            end do
+            do ic = 1,nnmoli
+              do j = 1,nnatmi
+                if (latmscl(j).eq.ls .and. mlcmp(j,ic).gt.0 .and.
+     &              .not. hlp_pump_counted(nnatmi+ic,js)) then
+                  flxnw_pump(ls) = flxnw_pump(ls) +
+     &               mlcmp(j,ic) * wlpump(nnatmi+ic,js)
+                  hlp_pump_counted(nnatmi+ic,js) = .TRUE.
+                end if
+              end do
+            end do
+          end do
 
 c**********************************
 ! The neutral fluxes from Eirene are now computed
