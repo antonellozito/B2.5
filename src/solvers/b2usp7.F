@@ -121,11 +121,22 @@
           aa7(ix,iy,-2) = 0.0_R8
         else
           ibot = region(bottomix(ix,iy),bottomiy(ix,iy),0)
+          ixb = bottomix(ix,iy)
+          iyb = bottomiy(ix,iy)
           if (solvereg(ibot)) then
-           aa7(bottomix(ix,iy),bottomiy(ix,iy),2) =
-     &       aa7(bottomix(ix,iy),bottomiy(ix,iy),2)-conc(ix,iy,1)
-           aa7(bottomix(ix,iy),bottomiy(ix,iy),0) =
-     &       aa7(bottomix(ix,iy),bottomiy(ix,iy),0)+conc(ix,iy,1)
+           if (topix(ixb,iyb).eq.ix .and. topiy(ixb,iyb).eq.iy) then
+c           ..ordinary case: target's own top pointer reciprocates
+            aa7(ixb,iyb,2) = aa7(ixb,iyb,2)-conc(ix,iy,1)
+            aa7(ixb,iyb,0) = aa7(ixb,iyb,0)+conc(ix,iy,1)
+           else if (bottomix(ixb,iyb).eq.ix .and.
+     &              bottomiy(ixb,iyb).eq.iy) then
+c           ..limiter-topology mutual-bottom pairing: target calls US
+c           ..its bottom neighbour too, so route into ITS bottom slot
+            aa7(ixb,iyb,-2) = aa7(ixb,iyb,-2)-conc(ix,iy,1)
+            aa7(ixb,iyb,0)  = aa7(ixb,iyb,0)+conc(ix,iy,1)
+           endif
+c          ..else: connectivity isn't reciprocal at all; skip rather
+c          ..than write into an unrelated slot
           endif
           if (solvereg(ireg)) then
            aa7(ix,iy, 0) = aa7(ix,iy, 0)+conc(ix,iy,1)

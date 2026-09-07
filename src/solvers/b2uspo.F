@@ -37,7 +37,7 @@
 *.declarations
 
 *   ..local variables
-      integer ncall, n2, ix, iy, ireg, ileft, ibot, itop, k
+      integer ncall, n2, ix, iy, ireg, ileft, ibot, itop, k, ixb, iyb
       integer, save :: iout = 0
       character chark*1
 #ifdef _OPENMP
@@ -130,13 +130,25 @@
           aa5(ix,iy,-2) = 0.0_R8
         else
           ibot = region(bottomix(ix,iy),bottomiy(ix,iy),0)
-          if (solvereg(ibot))
-     >     aa5(bottomix(ix,iy), bottomiy(ix,iy),2) = -conc(ix,iy,1)
+          ixb = bottomix(ix,iy)
+          iyb = bottomiy(ix,iy)
+          if (solvereg(ibot)) then
+           if (topix(ixb,iyb).eq.ix .and. topiy(ixb,iyb).eq.iy) then
+c           ..ordinary case: target's own top pointer reciprocates
+            aa5(ixb,iyb,2) = -conc(ix,iy,1)
+            aa5(ixb,iyb,0) = aa5(ixb,iyb,0)+conc(ix,iy,1)
+           else if (bottomix(ixb,iyb).eq.ix .and.
+     &              bottomiy(ixb,iyb).eq.iy) then
+c           ..limiter-topology mutual-bottom pairing: target calls US
+c           ..its bottom neighbour too, so route into ITS bottom slot
+            aa5(ixb,iyb,-2) = -conc(ix,iy,1)
+            aa5(ixb,iyb,0)  = aa5(ixb,iyb,0)+conc(ix,iy,1)
+           endif
+c          ..else: connectivity isn't reciprocal at all; skip rather
+c          ..than write into an unrelated slot
+          endif
           if (solvereg(ireg))
      >     aa5(ix,iy,0) = aa5(ix,iy,0)+conc(ix,iy,1)
-          if (solvereg(ibot))
-     >     aa5(bottomix(ix,iy),bottomiy(ix,iy),0) =
-     &       aa5(bottomix(ix,iy),bottomiy(ix,iy),0)+conc(ix,iy,1)
           if (solvereg(ireg))
      >     aa5(ix,iy,-2) = -conc(ix,iy,1)
 cxpb

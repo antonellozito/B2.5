@@ -334,7 +334,7 @@
 *     viscosity perpendicular current by numerically
 !      call b2unavspr7n(nx, ny, isb, zb, fac_vis, po, ti, nb, pb, aa7)  !srv 02.04.18
 
-      call b2unavspr7a(nx, ny, nregionv, solvereg, isb, zb,              !srv 02.04.18 {
+      call b2unavspr7a(nx, ny, nregionv, solvereg, isb, zb,             !srv 02.04.18 {
      &              fac_vis, ti, nb, pb, aa7)
 *  .. calculate the coefficients of 7-point stencil from
 *     viscosity perpendicular current by analytically
