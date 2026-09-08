@@ -568,9 +568,13 @@ c   --> better solution wanted here..
               if(mpg%cvOnClosedSurface(iCv)) then
                 iFc = mpg%cvFc(mpg%cvFcP(iCv,1))
                 if (switch%mdf_fnb.ne.0) then
-                  sna_core(k) = sna_core(k) + st%dv%fna_mdf(iFc,1,is)
+                  sna_core(k) = sna_core(k) -
+     &             merge(1.0_R8,-1.0_R8,mpg%fcCv(iFc,2).eq.iCv)*
+     &             (st%dv%fna_mdf(iFc,0,is)+st%dv%fna_mdf(iFc,1,is))
                 else
-                  sna_core(k) = sna_core(k) + st%dv%fna(iFc,1,is)
+                  sna_core(k) = sna_core(k) -
+     &             merge(1.0_R8,-1.0_R8,mpg%fcCv(iFc,2).eq.iCv)*
+     &             (st%dv%fna(iFc,0,is)+st%dv%fna(iFc,1,is))
                 end if
               endif
             enddo
