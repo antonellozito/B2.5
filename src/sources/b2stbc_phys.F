@@ -7028,7 +7028,7 @@ cwdk     * need to correct this BC for hybrid scheme
                   TIS  = TIS + pl%ti(iCv1)*dv%ni(iCv1,0)*geo%cvVol(iCv2)
                   NIVS = NIVS + dv%ni(iCv1,0)*geo%cvVol(iCv2)
                   t0 = t0 + geo%cvVol(iCv2)
-                  t1 = t1 + pl%ti(iCv2)*geo%cvVol(iCv2)
+                  t1 = t1 + pl%ti(iCv2)*dv%ni(iCv1,0)*geo%cvVol(iCv2)
                   if(switch%mdf_fhi.ne.0) then
                     totflux = totflux -
      .                mpg%bcFcOr(mpg%bcCvP(ibw,1)+ibc-1)*
@@ -7049,7 +7049,7 @@ cwdk     * need to correct this BC for hybrid scheme
               endif
             END DO
             TIS=TIS/NIVS
-            t1=t1/t0
+            t1=t1/NIVS
             if (enipar(ib,2).gt.0.0_R8) t3 = enipar(ib,2)
             if (enipar(ib,2).le.0.0_R8) t3 = switch%b2stbc_bc_ref_ti
             TIS=TIS*
