@@ -349,6 +349,7 @@ c time-dependent treatment
 !$omp& private(chns, wrks, aa, wrkff, wrkfff)
 !$omp& firstprivate(last_solve_9) lastprivate(last_solve_9)
 !$omp& shared(solvemt, solvemo, ns, am, solving, ismain, smqdu, itcnt)
+!$omp& shared(dtmo, rxf)
 !$omp& shared(ro)
 #ifndef FIXED_POINT
 !$omp& shared(balance_netcdf, fmo_b2nxfv)
