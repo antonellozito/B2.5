@@ -340,7 +340,7 @@ c time-dependent treatment
 !$omp& firstprivate(lnlam)
 !$omp& private(is, k)
 !$omp& lastprivate(kt_neo)
-!$omp& private(wrkf, wrk1, smb, ro)
+!$omp& private(wrkf, wrk1, smb)
 !$omp& private(smbfrea, smbfria, smbtfea, smbtfia)
 !$omp& private(smbch, smbtf, smbvtmp)
 !$omp& private(smbgp, flubv, wrk2, smbvh, smbvv, wrk3)
@@ -349,6 +349,7 @@ c time-dependent treatment
 !$omp& private(chns, wrks, aa, wrkff, wrkfff)
 !$omp& firstprivate(last_solve_9) lastprivate(last_solve_9)
 !$omp& shared(solvemt, solvemo, ns, am, solving, ismain, smqdu, itcnt)
+!$omp& shared(ro)
 #ifndef FIXED_POINT
 !$omp& shared(balance_netcdf, fmo_b2nxfv)
 !$omp& shared(fmo_tot, tot_smo0to3)
