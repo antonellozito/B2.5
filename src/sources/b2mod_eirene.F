@@ -313,6 +313,7 @@ csw 26feb2014
       integer :: gs_sni_d1, gs_sni_d2, gs_sni_d3
       integer :: gs_smo_d(1:4,1:3)
       integer :: gs_i1, gs_i2, gs_i3
+      integer :: gs_nfl
 
 *   ..procedures
       real (kind=R8) :: rratio
@@ -3054,6 +3055,7 @@ c   and apply linearisation
         gs_fsi = flux_scale(istrai)
         gs_inv_dbihend = 1.0_R8/dble(ih_end)
         gs_prod_3 = gs_ti * gs_fsi * gs_inv_dbihend
+        gs_nfl = nfl
 #if(defined(_OPENMP) && !defined(FIXED_POINT))
 !$OMP PARALLEL DEFAULT(NONE)
 !$OMP& SHARED(nCv,ns,dtim,sna0,smo0,smr0,smd0,she0,shi0,shn0)
@@ -3062,7 +3064,7 @@ c   and apply linearisation
 !$OMP& SHARED(dpc_fix,iscltst,stab_corr,no_sseicorr,l_neutrad)
 !$OMP& SHARED(use_recyceir,recyc,recyceir,crcstra,sclstra,sclalph)
 !$OMP& SHARED(b2eatcr,b2espcr,fluids_list,is_neutral,lneustra)
-!$OMP& SHARED(am,nfl,nnatmi,nnmoli,nnioni,RF_NEUT,dtco,dtmo,dtei)
+!$OMP& SHARED(am,gs_nfl,nnatmi,nnmoli,nnioni,RF_NEUT,dtco,dtmo,dtei)
 !$OMP& SHARED(sni_av,smo_av,see_av,sei_av,smo_tot,sni_tot)
 !$OMP& SHARED(cor_ni,cor_mo,cor_ee,cor_ei,radarr)
 !$OMP& SHARED(balance_netcdf)
@@ -3444,12 +3446,12 @@ c*** before correction (r), after correction (c), after iteration (i)
                     src_ms(0,3)=src_ms(0,3)+t0
                   endif
 c Radial momentum source component
-                  t0=smo_av(ic,nfl+ifl,istrai)*
+                  t0=smo_av(ic,gs_nfl+ifl,istrai)*
      *             gs_prod_4 * sclstra(j,istrai) *
      *             geo%cvHz(ic)
                   smr0(ic,0,is)=smr0(ic,0,is)+t0
 c Diamagnetic momentum source component
-                  t0=smo_av(ic,2*nfl+ifl,istrai)*
+                  t0=smo_av(ic,2*gs_nfl+ifl,istrai)*
      *             gs_prod_4 * sclstra(j,istrai) *
      *             geo%cvHz(ic)
                   smd0(ic,0,is)=smd0(ic,0,is)+t0
@@ -3778,13 +3780,13 @@ c     1         recyc_hlp*flux_scale(istrai)*sclstra(0,istrai)
                 if (switch%tn_style.ne.0) then
                   call xerrab('netcdf not yet for tn_style.ne.0')
                 endif
-                t0_a=sum(sei_av_eapl(ic,1:nfl,istrai))*gs_prod_3* !djm Jan2017
+                t0_a=sum(sei_av_eapl(ic,1:gs_nfl,istrai))*gs_prod_3* !djm Jan2017
      1           recyc_hlp*sclstra(0,istrai)
-                t0_m=sum(sei_av_empl(ic,1:nfl,istrai))*gs_prod_3*
+                t0_m=sum(sei_av_empl(ic,1:gs_nfl,istrai))*gs_prod_3*
      1           recyc_hlp*sclstra(0,istrai)
-                t0_i=sum(sei_av_eipl(ic,1:nfl,istrai))*gs_prod_3*
+                t0_i=sum(sei_av_eipl(ic,1:gs_nfl,istrai))*gs_prod_3*
      1           recyc_hlp*sclstra(0,istrai)
-                t0_p=sum(sei_av_eppl(ic,1:nfl,istrai))*gs_prod_3*
+                t0_p=sum(sei_av_eppl(ic,1:gs_nfl,istrai))*gs_prod_3*
      1           recyc_hlp*sclstra(0,istrai)
               endif
 #endif
