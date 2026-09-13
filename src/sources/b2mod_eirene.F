@@ -2494,17 +2494,6 @@ cc Read saved sources
         end if
 
         relax = rratio(ih_end-1,ih_end)
-caz 13.09.26 { The Eirene SOURCES (sni/smo/see/sei) are saved to
-c   b2favere and restored on an eirene_underrelax_continue restart,
-c   so they keep full_history and their exponential average continues
-c   with no discontinuity. Every OTHER averaged Eirene tally is NOT
-c   saved, so it is under-relaxed in underrelax_output_arrays with
-c   ih_end_neut, a per-process counter that is never restored and
-c   never forced to full_history: equal-weight running mean for the
-c   first nrelax calls, then the 1/nrelax exponential moving average.
-c   Those diagnostics therefore rebuild cleanly after a restart
-c   instead of being divided by nrelax. In a fresh run ih_end_neut ==
-c   ih_end at every call, so the behaviour is unchanged.
         ih_end_neut = min(ih_end_neut+1, nrelax)
         sni_s = sni_s*relax + sni/dble(ih_end)
         smo_s = smo_s*relax + smo/dble(ih_end)
@@ -2515,7 +2504,6 @@ c   ih_end at every call, so the behaviour is unchanged.
         sei_av = sei_s*dble(ih_end)
         see_av = see_s*dble(ih_end)
         call underrelax_output_arrays(ih_end_neut,switch)
-caz 13.09.26 }
        end if
       else
        ih_end=1
