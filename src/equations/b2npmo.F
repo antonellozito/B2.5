@@ -349,6 +349,7 @@ c time-dependent treatment
 !$omp& private(chns, wrks, aa, wrkff, wrkfff)
 !$omp& firstprivate(last_solve_9) lastprivate(last_solve_9)
 !$omp& shared(solvemt, solvemo, ns, am, solving, ismain, smqdu, itcnt)
+!$omp& shared(dtmo, rxf)
 #ifndef FIXED_POINT
 !$omp& shared(balance_netcdf, fmo_b2nxfv)
 !$omp& shared(fmo_tot, tot_smo0to3)
@@ -532,7 +533,7 @@ cdjm Jan2017 update momentum source components for balance
 *    ..compute residual without time-stepping sources (needed at next time-step for ckn scheme)
        if (switch%b2mndt_ckn.eq.2) then
          if((solving.and.any(solvemo(is,0:mpg%nnreg(0))))
-     &            .or.switch%get_residuals.eq.1) then
+     &    .or.switch%get_residuals.eq.1) then
            call b2urmo (nCv, nFc, nVx, switch, geo, mpg, is,
      &       pl%ua(:,is), rob, smb, flub, co%cvsahz(:,:,is),
      &       dv%resmo0(:,is), dv%fmo(:,:,is), dv%fhm(:,:,is),
@@ -547,9 +548,9 @@ cdjm Jan2017 update momentum source components for balance
 *    .. add contribution from time-dependent source
          wrk3(:,is) = am(is)*mp*geo%cvVol*geo%cvHz*(pl%na(:,is)-
      &    psnl%na(:,is))*psnl%ua(:,is)/dtim
-        do iCv=1,mpg%nCi
-          wrk3(:,is) = wrk3(:,is)/(dtmo(is,mpg%cvReg(iCv))*rxf)
-        enddo
+         do iCv=1,mpg%nCi
+           wrk3(:,is) = wrk3(:,is)/(dtmo(is,mpg%cvReg(iCv))*rxf)
+         enddo
          wrk3(mpg%nCi+1:mpg%nCv,is) = 0.0_R8
          sr%smodt(:,0,is) = sr%smodt(:,0,is)-ts_factor*wrk3(:,is)
          smb = smb + sr%smodt(:,:,is)
@@ -915,8 +916,8 @@ c     ..compare 9-pt stencil matrix
 ! to obtain the true physical derivative, we need to divide by ts_factor, which was previously multiplied to smodt
       do is = 0, ns-1
         dv%dmodt(:,is) = ( -sr%smodt(:,0,is)                          ! = -ma*mp*V/dt*h_z*n_(i+1)*u_i +ma*mp*V/dt*h_z*u_i*(n_(i+1)-n_i)
-     &    -sr%smodt(:,1,is)*pl%ua(:,is)                             ! = 0
-     &    -sr%smodt(:,2,is)*pl%na(:,is)*mp*am(is)                   ! = 0
+     &    -sr%smodt(:,1,is)*pl%ua(:,is)                              ! = 0
+     &    -sr%smodt(:,2,is)*pl%na(:,is)*mp*am(is)                    ! = 0
      &    -sr%smodt(:,3,is)*pl%ua(:,is)*pl%na(:,is)*mp*am(is) )      ! = +ma*mp*V/dt*h_z*n_(i+1)*u_(i+1)
      &    /ts_factor
         do iCv=1,mpg%nCi
