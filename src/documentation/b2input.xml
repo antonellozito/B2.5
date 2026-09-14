@@ -5288,7 +5288,7 @@
 				<description>
 					If 0, refers to the obsolete SOLPS5.0 physics model, no longer supported.
 					If 1, the SOLPS5.2 physics model is used, and b2news_ is called to compute the new plasma state. (default)
-					If 2, the SOLPS5.2 physics model is used, and b2news_m is called instead to run the code in fully self-consistent time-dependent mode. In this mode the terms like u_a * d na / dt, 3/2 * te * d ne /dt and 3/2 * ti * d ni /dt are included into momentum and internal energy balance equations (in default mode they are missing). For this reason the B2news_m uses a different order of solving equations: first the density equations, then the parallel velocity, electrical potential and Te and Ti equations (and optionally also the Tn and k-epsilon equations, if requested). The time-dependent mode requires all time multipliers (DTCO, DTMO, DTEE, DTEI) are set to unity, the b2mndt_rxf underrelaxation factor is set to unity as well (for the possible exceptions see the corresponding description of the b2mndt_rxf switch), and equations for total energy and momentum are not solved (SOLVEET and SOLVEMT are set to .false.). If these requirements do not hold with b2mndt_style=2, warning messages appears. 
+					If 2, the SOLPS5.2 physics model is used, and b2news_m is called instead to run the code in fully self-consistent time-dependent mode. In this mode, terms like u_a * d na / dt, 3/2 * te * d ne / dt and 3/2 * ti * d ni / dt are included into the momentum and internal energy balance equations (in default mode they are missing). For this reason, b2news_m uses a different order of solving equations: first the density equations, then the parallel velocity, electrical potential, and Te and Ti equations (and optionally also the Tn and k-epsilon equations, if requested). The time-dependent mode requires that all time multipliers (DTCO, DTMO, DTEE, DTEI) be set to unity, the b2mndt_rxf underrelaxation factor be set to unity as well (for possible exceptions see the corresponding description of the b2mndt_rxf switch), and the equations for total energy and momentum are not solved (SOLVEET and SOLVEMT are set to .false.). If these requirements do not hold with b2mndt_style=2, warning messages appear.
 				</description>
 			</switch>
 			<switch>
@@ -8558,7 +8558,7 @@
 				<type>real array of size (0:NS-1,0:NREG)</type>
 				<description>
 					Multiplier to the time used in solving the parallel momentum equation of species (is) in region (ireg).
-                    With b2mndt_style.eq.2 it affects the evolution/relaxation of total momentum (am * ua* na) of species (is)
+					With b2mndt_style.eq.2, it affects the evolution/relaxation of total momentum (am * ua* na) of species (is).
 				</description>
 			</switch>
 			<switch>
@@ -8567,7 +8567,7 @@
 				<type>real array of size (0:NREG)</type>
 				<description>
 					Multiplier to the time used in solving the electron heat equation in region (ireg).
-                    With b2mndt_style.eq.2 it affects the evolution/relaxation of the electron internal energy
+					With b2mndt_style.eq.2, it affects the evolution/relaxation of the electron internal energy.
 				</description>
 			</switch>
 			<switch>
@@ -8576,7 +8576,7 @@
 				<type>real array of size (0:NREG)</type>
 				<description>
 				   Multiplier to the time used in solving the ion heat equation in region (ireg).
-                   With b2mndt_style.eq.2 it affects the evolution/relaxation of the ion internal energy
+				   With b2mndt_style.eq.2, it affects the evolution/relaxation of the ion internal energy.
 				</description>
 			</switch>
 			<switch>
