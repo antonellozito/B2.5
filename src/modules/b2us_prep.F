@@ -2473,7 +2473,7 @@
      *   ind, ind1, tmp, iFt, iFt1, l, mod_cell_c, iFc1, istart,
      *   iend
       logical :: cvAlongBoundary(mpg%nCv), is_mod_fc(mpg%nFc),
-     *   is_found, center_inside
+     *   is_found, center_inside, proj_found
       integer :: wrkVx(mpg%nVx), Qalf_mod_style = 0
       integer :: crossings, nVx_cell, iVx_k, iVx_k1, k_next
       real (kind=R8) :: meanCv(2), meanFc(2), bz_sign, wrk, a(2),
@@ -2982,6 +2982,7 @@ c$$$      end do
             ! the closest distance between the center of the effective cell and
             ! the boundary side of the effective cell. This side can consist of
             ! multiple boundary faces.
+            proj_found = .false.
             do l=istart,iend
               iVx1 = mpg%fcVx(fcBoundary(l),1)
               iVx2 = mpg%fcVx(fcBoundary(l),2)
@@ -2996,15 +2997,16 @@ c$$$      end do
               if (wrk >= 0.0_R8 .and. wrk <= 1.0_R8) then
                 meanFc(1) = a(1)+wrk*cur_len(1)
                 meanFc(2) = a(2)+wrk*cur_len(2)
+                wrk = norm(meanFc(1)-meanCv(1),
+     &                     meanFc(2)-meanCv(2))
+                proj_found = .true.
                 write (*,*) "Closest point:"
                 write (*,'(2es17.6)') meanFc(1), meanFc(2)
+                write (*,*) "new fcHc:"
+                write (*,'(1es17.6)') wrk
                 exit
               endif
             enddo
-
-            wrk = norm(meanFc(1)-meanCv(1), meanFc(2)-meanCv(2))
-            write (*,*) "new fcHc:"
-            write (*,'(1es17.6)') wrk
             
             ! Check if meanCv is inside any original cell (ray casting)
             ! Cast ray in +X direction, count edge crossings
@@ -3060,8 +3062,10 @@ c$$$      end do
             enddo
             
             
-            ! If center outside all cells OR distance invalid, fallback
-            if (.not. center_inside .or. wrk.le.1.0e-08_R8) then
+            ! If no face projection found, center outside all cells,
+            ! OR distance invalid, fallback
+            if (.not. proj_found .or. .not. center_inside .or.
+     &        wrk.le.1.0e-08_R8) then
               write (*,*) "Center outside or fcHc invalid! ",
      &          "Using average of original fcHc."
               wrk = sum(gm%fcHc(fcBoundary(istart:iend),1)+
