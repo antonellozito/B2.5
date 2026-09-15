@@ -737,6 +737,8 @@ cwdk add 9-point contributions
        do ix = -1, nx
         ireg = region(ix,iy,0)
         if(bottomiy(ix,iy).eq.-2 .or. .not.solveee(ireg)) then
+         aa9(ix,iy,-3) = 0.0_R8
+        else
          t0 =  0.5_R8*flo0(ix,iy,1,1)-con0(ix,iy,1,1,0)               !srv 02.01.07
          t1 = -0.5_R8*flo0(ix,iy,1,1)-con0(ix,iy,1,1,0)               !srv 02.01.07
          ibot = region(bottomix(ix,iy),bottomiy(ix,iy),0)
