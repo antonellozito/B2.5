@@ -98,7 +98,7 @@ c       of the group gives the same result.
         iygap = max(topcut(1),topcut(2))
         ngap = 0
         ixgap = -2
-        do ix = leftcut(2), rightcut(2)-2
+        do ix = leftcut(2), rightcut(2)-1
           if (cflags(ix,iygap,1).ne.GRID_INTERNAL .and.
      &        cflags(ix,iygap,1).ne.GRID_BOUNDARY .and.
      &        (ix.eq.leftcut(2) .or.
