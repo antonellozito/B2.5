@@ -157,6 +157,7 @@
 !svdk eliminate
 !$omp parallel default(none)
 !$omp& private(iCv, is, rf0, t0, t1, t2, t1i, t1n)
+!$omp& private(rescal_is, rescal_ism1)
 !$omp& shared(ns, mpg, switch, srw, pl, dv, rt, rtw, geo)
 !$omp& shared(zn, am)
 !$omp& shared(sna0_ion, shi0_ion, smq0_ion, shn0_ion)

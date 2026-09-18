@@ -82,12 +82,22 @@
 *     ..-ub_old**2 piece in the rob-weighted constant slot (2) and the
 *     ..+2*ub_old*ua piece in the rob*ua-weighted slot (3); mb*nb=rob
 *     ..is supplied by the caller's reconstruction, so it must not be
-*     ..included again here.
+*     ..included again here. The linear (slot-3) piece is only used
+*     ..when it is stabilising (<=0), matching the codebase invariant
+*     ..that smb(:,:,3) must never be positive -- this mirrors what the
+*     ..old one-sided ctcf=min(0,ctcfb) diagonal patch did, just routed
+*     ..through the smbcf(2:3) slots. When the derivative would
+*     ..destabilise (>0), fall back to the fully explicit treatment.
         do iCv = 1, mpg%nCi
           wrks(iCv) = switch%b2sicf_phm0*geo%cvVol(iCv)*                !srv factor hz/hz=1
      &     (geo%cvBb(iCv,0)/geo%cvBb(iCv,3))*wrk0(iCv)                  !srv 05.04.07
-          smbcf(iCv,2) = -wrks(iCv)*ub(iCv)**2
-          smbcf(iCv,3) =  wrks(iCv)*2.0_R8*ub(iCv)
+          if (wrks(iCv)*ub(iCv).le.0.0_R8) then
+            smbcf(iCv,2) = -wrks(iCv)*ub(iCv)**2
+            smbcf(iCv,3) =  wrks(iCv)*2.0_R8*ub(iCv)
+          else
+            smbcf(iCv,2) =  wrks(iCv)*ub(iCv)**2
+            smbcf(iCv,3) =  0.0_R8
+          endif
 c         ..ctcf left at zero (see init above): now handled through
 c         ..smbcf(2:3) above, not the one-sided ctcf patch
         enddo
