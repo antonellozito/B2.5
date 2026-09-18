@@ -773,7 +773,7 @@
        call b2saxpy (n2*4, 1.0_R8, smban,  1, smb, 1)                  !srv 25.09.17
        call b2nxdv (nx, ny, is, rob, smq(-1,-1,0,is), smqdu, smb)      !srv ???
 *    ..save final source for species (is)                              !srv 10.11.02
-       smof(:,:,:,is) = smb                                            !srv 10.11.02
+       smof(:,:,:,is) = smb
 
 cdjm Jan2017 update momentum source components for balance
        if (balance_netcdf.ne.0) then

@@ -46,6 +46,8 @@
 
 *   ..local variables
       integer n2, is
+      integer iloc(3), ix0, iy0, is0
+      real (kind=R8) :: mxua
 *   ..procedures
       external xertst
       external b2xvsg, b2xvff
@@ -78,6 +80,23 @@
       call b2xvff (nx, ny, fch, 'fch')
 
 *   ..test velocities are sub-luminal
+      mxua = maxval(abs(ua))
+      if (mxua.ge.c) then
+        iloc = maxloc(abs(ua))
+        ix0 = iloc(1) - 2
+        iy0 = iloc(2) - 2
+        is0 = iloc(3) - 1
+        write (*,*) 'DIAG SUPRA-LUMINAL: max|ua|=', mxua, ' c=', c
+        write (*,*) 'DIAG SUPRA-LUMINAL: ix=', ix0, ' iy=', iy0,
+     &    ' is=', is0
+        write (*,*) 'DIAG SUPRA-LUMINAL: na=', na(ix0,iy0,is0),
+     &    ' ne=', ne(ix0,iy0), ' te=', te(ix0,iy0),
+     &    ' ti=', ti(ix0,iy0), ' po=', po(ix0,iy0)
+        write (*,*) 'DIAG SUPRA-LUMINAL: ua(all species,this cell)=',
+     &    (ua(ix0,iy0,is), is=0,ns-1)
+        write (*,*) 'DIAG SUPRA-LUMINAL: na(all species,this cell)=',
+     &    (na(ix0,iy0,is), is=0,ns-1)
+      endif
       call xertst ( maxval(abs(ua)).lt.c, 'Supra-luminal velocities !')
 
 * ..return

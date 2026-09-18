@@ -48,7 +48,7 @@
       external xertst, ipgeti, ipgetr
       external b2xvff, b2xvsg
 *   ..initialization
-      data ncall/0/, style/0/, phm0/1.0e0_R8/, phm1/1.0e0_R8/           !srv 18.01.02
+      data ncall/0/, style/0/, phm0/1.0_R8/, phm1/1.0_R8/               !srv 18.01.02
 
 *-----------------------------------------------------------------------
 *.computation
@@ -89,47 +89,62 @@
       endif
 
 * ..compute centrifugal force
-      smbcf = 0.0e0_R8
-      ctcf = 0.0e0_R8                                                 !srv 06.04.07
+      smbcf = 0.0_R8
+      ctcf = 0.0_R8                                                   !srv 06.04.07
       if (style.eq.0) then
         do iy = 0, ny-1
           do ix = 0, nx
             if(leftix(ix,iy).eq.-2) then
-             wrk0(ix,iy) = 0.0e0_R8
+             wrk0(ix,iy) = 0.0_R8
             else
              wrk0(ix,iy) = (hz(ix,iy)-hz(leftix(ix,iy),leftiy(ix,iy)))/
-     &       (hx(ix,iy)+hx(leftix(ix,iy),leftiy(ix,iy)))*2.0e0_R8      !srv 05.04.07
+     &       (hx(ix,iy)+hx(leftix(ix,iy),leftiy(ix,iy)))*2.0_R8        !srv 05.04.07
             endif
           enddo
         enddo
 
 *   .. compute smbcf
+*     ..the centrifugal force is quadratic in the (unknown) parallel
+*     ..velocity; Newton-linearise ub**2 around the current ub instead
+*     ..of dumping the full quadratic into the constant slot (0) with
+*     ..no matrix feedback (slots 1/3 all zero) -- the latter left the
+*     ..term fully explicit and able to run away once ub got large,
+*     ..with no compensating diagonal contribution in b2usmo.
+*     ..ub**2 = ub_old*(2*ub - ub_old) + O((ub-ub_old)**2), so put the
+*     ..-ub_old**2 piece in the rob-weighted constant slot (2) and the
+*     ..+2*ub_old*ua piece in the rob*ua-weighted slot (3); mb*nb=rob
+*     ..is supplied by the caller's reconstruction, so it must not be
+*     ..included again here.
         do iy = 0, ny-1
           do ix = 0, nx-1                                               !srv 26.11.02 {
             if(leftix(ix,iy).ne.-2 .and. rightix(ix,iy).ne.nx+1) then   !srv 22.07.05 {
-              smbcf(ix,iy,0) = phm0*vol(ix,iy)*                         !srv factor hz/hz=1
-     &         (bb(ix,iy,0)/bb(ix,iy,3))*mb*ub(ix,iy)**2                !srv 05.04.07
-     &          *nb(ix,iy)*0.5e0_R8*(wrk0(ix,iy)+
+              wrks(ix,iy) = phm0*vol(ix,iy)*                            !srv factor hz/hz=1
+     &         (bb(ix,iy,0)/bb(ix,iy,3))*0.5_R8*(wrk0(ix,iy)+           !srv 05.04.07
      &                            wrk0(rightix(ix,iy),leftiy(ix,iy)))   !srv 22.07.05 {
-              smbcf(ix,iy,1) = 0.0e0_R8
-              smbcf(ix,iy,2) = 0.0e0_R8
-              smbcf(ix,iy,3) = 0.0e0_R8
-              ctcf(ix,iy) = phm0*phm1*vol(ix,iy)*                       !srv 06.04.07 {
-     &         (bb(ix,iy,0)/bb(ix,iy,3))*mb*2.0e0_R8*ub(ix,iy)
-     &         *nb(ix,iy)*0.5e0_R8*(wrk0(ix,iy)+
-     &                            wrk0(rightix(ix,iy),leftiy(ix,iy)))   !srv 06.04.07 }
+              smbcf(ix,iy,0) = 0.0_R8
+              smbcf(ix,iy,1) = 0.0_R8
+              smbcf(ix,iy,2) = -wrks(ix,iy)*ub(ix,iy)**2
+              smbcf(ix,iy,3) =  wrks(ix,iy)*2.0_R8*ub(ix,iy)
+              ctcf(ix,iy) = 0.0_R8                                      !srv 06.04.07 { now handled
+c                                                                        !  through smbcf(2:3) above,
+c                                                                        !  not the one-sided ctcf patch
 
             else                                                        !srv 26.11.02 }
-              smbcf(ix,iy,0) = 0.0e0_R8
-              smbcf(ix,iy,1) = 0.0e0_R8
-              smbcf(ix,iy,2) = 0.0e0_R8
-              smbcf(ix,iy,3) = 0.0e0_R8
-              ctcf(ix,iy) = 0.0e0_R8                                    !srv 06.04.07
+              smbcf(ix,iy,0) = 0.0_R8
+              smbcf(ix,iy,1) = 0.0_R8
+              smbcf(ix,iy,2) = 0.0_R8
+              smbcf(ix,iy,3) = 0.0_R8
+              ctcf(ix,iy) = 0.0_R8                                      !srv 06.04.07
             endif                                                       !srv 26.11.02
 #ifdef _OPENMP
 !$OMP ATOMIC WRITE
 #endif
-            smbcb(ix,iy) =  smbcf(ix,iy,0)
+c           ..diagnostic mirror of the (now-linearised) constant slot:
+c           ..report the full nonlinear term evaluated at ua=ub, exactly
+c           ..as the old unlinearised smbcf(ix,iy,0) did (zero in the
+c           ..else branch above, same as before)
+            smbcb(ix,iy) = mb*nb(ix,iy)*
+     &        (smbcf(ix,iy,2)+smbcf(ix,iy,3)*ub(ix,iy))
           enddo
         enddo
 
@@ -138,7 +153,7 @@
         do iy = 0, ny-1
           do ix = 0, nx
             if(leftix(ix,iy).eq.-2) then
-              wrk0(ix,iy) = 0.0e0_R8
+              wrk0(ix,iy) = 0.0_R8
             else
               wrk0(ix,iy) = hz(ix,iy)-hz(leftix(ix,iy),leftiy(ix,iy))
             endif
@@ -146,32 +161,34 @@
         enddo
 
 *   .. compute smbcf
+*     ..Newton-linearise ub**2 as above (style=0 branch) instead of
+*     ..leaving it fully explicit in the constant slot
         do iy = 0, ny-1
           do ix = 0, nx-1                                               !srv 26.11.02 {
             if(leftix(ix,iy).ne.-2 .and. rightix(ix,iy).ne.nx+1) then   !srv 22.07.05 {
-              smbcf(ix,iy,0) = phm0*vol(ix,iy)*                         !srv factor hz/hz=1
-     &         (bb(ix,iy,0)/bb(ix,iy,3))/hx(ix,iy)*mb*ub(ix,iy)**2
-     &         *nb(ix,iy)*0.5e0_R8*(wrk0(ix,iy)+
+              wrks(ix,iy) = phm0*vol(ix,iy)*                            !srv factor hz/hz=1
+     &         (bb(ix,iy,0)/bb(ix,iy,3))/hx(ix,iy)*0.5_R8*(wrk0(ix,iy)+
      &                            wrk0(rightix(ix,iy),leftiy(ix,iy)))   !srv 22.07.05 {
-              smbcf(ix,iy,1) = 0.0e0_R8
-              smbcf(ix,iy,2) = 0.0e0_R8
-              smbcf(ix,iy,3) = 0.0e0_R8
-              ctcf(ix,iy) = phm0*phm1*vol(ix,iy)*                       !srv 06.04.07 {
-     &         (bb(ix,iy,0)/bb(ix,iy,3))/hx(ix,iy)*mb*2.0e0_R8*ub(ix,iy)
-     &          *nb(ix,iy)*0.5e0_R8*(wrk0(ix,iy)+
-     &                            wrk0(rightix(ix,iy),leftiy(ix,iy)))   !srv 06.04.07 }
+              smbcf(ix,iy,0) = 0.0_R8
+              smbcf(ix,iy,1) = 0.0_R8
+              smbcf(ix,iy,2) = -wrks(ix,iy)*ub(ix,iy)**2
+              smbcf(ix,iy,3) =  wrks(ix,iy)*2.0_R8*ub(ix,iy)
+              ctcf(ix,iy) = 0.0_R8                                      !srv 06.04.07 { now handled
+c                                                                        !  through smbcf(2:3) above
 
             else                                                        !srv 26.11.02 }
-              smbcf(ix,iy,0) = 0.0e0_R8
-              smbcf(ix,iy,1) = 0.0e0_R8
-              smbcf(ix,iy,2) = 0.0e0_R8
-              smbcf(ix,iy,3) = 0.0e0_R8
-              ctcf(ix,iy) = 0.0e0_R8                                    !srv 06.04.07
+              smbcf(ix,iy,0) = 0.0_R8
+              smbcf(ix,iy,1) = 0.0_R8
+              smbcf(ix,iy,2) = 0.0_R8
+              smbcf(ix,iy,3) = 0.0_R8
+              ctcf(ix,iy) = 0.0_R8                                      !srv 06.04.07
             endif
 #ifdef _OPENMP
 !$OMP ATOMIC WRITE
 #endif
-            smbcb(ix,iy) =  smbcf(ix,iy,0)
+c           ..diagnostic mirror, see style=0 branch above
+            smbcb(ix,iy) = mb*nb(ix,iy)*
+     &        (smbcf(ix,iy,2)+smbcf(ix,iy,3)*ub(ix,iy))
           enddo
         enddo
       endif
