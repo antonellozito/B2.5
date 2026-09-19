@@ -57,6 +57,11 @@ contains
     , only : geometryID, GEOMETRY_CDN
     use b2mod_user_namelist &
     , only : omp, imp, nimp, nomp, icsepimp, omp_pos, imp_pos
+#ifndef NO_CDF
+    use b2mod_geometry &
+    , only : GEOMETRY_DDN_TOP, GEOMETRY_DDN_BOTTOM, &
+             GEOMETRY_LFS_SNOWFLAKE_PLUS, GEOMETRY_LFS_SNOWFLAKE_MINUS
+#endif
     use b2mod_user_namelist &
     , only : icsepomp
     use b2mod_switches
