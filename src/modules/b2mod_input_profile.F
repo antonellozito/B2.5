@@ -1063,7 +1063,7 @@ c*** Clear data to forget previous profiles
 
       use b2mod_indirect
       use b2mod_user_namelist
-     & , only : nomp, omp, icsepomp
+     & , only : nomp, omp, icsepomp, omp_pos
       use b2us_geo
       use b2us_map
       use b2mod_mwti
@@ -1088,7 +1088,8 @@ c*** Clear data to forget previous profiles
           allocate(pra(nomp))
           allocate(prdsa(nomp))
           allocate(dsp(nomp))
-          call output_ds_cv(mpg,geo,nomp,omp,icsepomp-1,'dsp',dsp)
+          call output_ds_cv(mpg,geo,nomp,omp,icsepomp-1,'dsp',dsp,
+     &                      omp_pos(1:nomp))
         end if
         call ipgeti ('b2trno_csig_an_style', csig_an_style)
       endif
