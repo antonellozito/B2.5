@@ -247,7 +247,8 @@
       call timer%start("parallel")
 #endif
 !$OMP PARALLEL DO default(none), private(ix, iy, is, rf0, t0, t1, t2)
-!$OMP& shared(ns, nx, ny, nspecies)
+!$OMP& private(rescal_is, rescal_ism1)
+!$OMP& shared(ns, nx, ny, nspecies, neutral_sources_rescale)
 !$OMP& shared(rightix, leftix, topiy, bottomiy, zn)
 !$OMP& shared(region, rlsa, rsa, vol, ne, na, ni, te, ti, am, ua)
 !$OMP& shared(phm0, rxm0, rxm1, rxm2, rxm3, rxm4, rg0, rg1)
