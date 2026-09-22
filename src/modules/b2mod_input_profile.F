@@ -250,7 +250,8 @@
           enddo
 !          write(*,*) 'vor region_profile'
           ndim=nomp
-          call calc_dist(geo,omp,nomp,icsepomp,pr)
+          pr(1:nomp)=omp_pos(1:nomp)-
+     &      (omp_pos(icsepomp)+omp_pos(icsepomp-1))/2.0_R8
 !          allocate (pf(1:ndim))
           call E01BEF(ndat,r,f,d,ifail)
 !          write(*,*) 'zwischen,ifail=',ifail
@@ -685,7 +686,8 @@ cdjm Jan2017 Keep linearised sources for balance
 ! csvdk reworked the implementation to be consistent with structured
 ! csvdk code. Now based on euclidean distance in (R,Z) coordinates.
             allocate(pr(nomp), pf(nomp), pelm(nomp), prof(nomp))
-            call calc_dist(geo,omp,nomp,icsepomp,pr)
+            pr(1:nomp)=omp_pos(1:nomp)-
+     &        (omp_pos(icsepomp)+omp_pos(icsepomp-1))/2.0_R8
 
             call E01BEF(ndat,r,f,d,ifail)
             if (elm_data) call E01BEF(ndat,r,felm,delm,ifail)
