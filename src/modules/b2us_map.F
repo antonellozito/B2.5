@@ -664,7 +664,7 @@
       integer :: totalcount, fscount, icount, fccount,
      *           artificial_slab = 0, found = 0
       integer, allocatable :: indCv(:), indFsVx(:), indXpt(:),
-     *                        indFc(:,:), cvNvLoc(:), freg(:),
+     *                        indFc(:), cvNvLoc(:), freg(:),
      *                        old_face_list(:), new_face_list(:),
      *                        regcount(:)
       integer :: fcsb(maxval(m%fcLbl),m%nCi),
@@ -1024,7 +1024,7 @@ cwdk  can be derived directly from data in that file
         allocate(m%ifdiv(maxval(m%strDiv)))
         allocate(m%ivdiv(maxval(m%strDiv)))
         allocate(m%divFcP(maxval(m%strDiv),2))
-        allocate(indFc(m%nFc,maxval(m%strDiv)))
+        allocate(indFc(m%nFc))
         icount = 0
         m%ifdiv = 0
         m%ivdiv = 0
@@ -1036,7 +1036,7 @@ cwdk  can be derived directly from data in that file
             if (m%fcReg(iFc).eq.freg(i)) then
               icount = icount + 1
               m%divFcP(m%strDiv(i),2) = m%divFcP(m%strDiv(i),2) + 1
-              indFc(icount,m%strDiv(i)) = iFc
+              indFc(icount) = iFc
             end if
           end do
         end do
@@ -1044,13 +1044,13 @@ cwdk  can be derived directly from data in that file
         do i = 2, maxval(m%strDiv)
           m%divFcP(i,1) = m%divFcP(i-1,1) + m%divFcp(i-1,2)
         end do
-        icount = count(indFc(:,:).ne.0)
+        icount = count(indFc(:).ne.0)
         allocate(m%divFc(icount))
         allocate(m%divFcOr(icount))
         m%divFcOr = 0.0_R8
         do i = 1, maxval(m%strDiv)
           m%divFc(m%divFcP(i,1):m%divFcP(i,1)+m%divFcP(i,2)-1) =
-     .     indFc(1:m%divFcp(i,2),i)
+     .      indFc(m%divFcP(i,1):m%divFcP(i,1)+m%divFcp(i,2)-1)
         end do
         do i = 1, maxval(m%strDiv) ! now re-order them
           allocate(old_face_list(m%divFcP(i,2)))
@@ -1076,9 +1076,9 @@ cwdk  can be derived directly from data in that file
                 iVa = m%fcVx(old_face_list(j),1)
               end if
               if (left_match_found) then
-                indFc(1:inew,1) = new_face_list(1:inew)
+                indFc(1:inew) = new_face_list(1:inew)
                 new_face_list(1) = old_face_list(j)
-                new_face_list(2:inew+1) = indFc(1:inew,1)
+                new_face_list(2:inew+1) = indFc(1:inew)
                 old_face_list(j) = 0
                 inew = inew + 1
               end if
