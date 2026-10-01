@@ -1,6 +1,6 @@
 module b2mod_geometry
     use logging &
-     & , only: logmsg, LOGDEBUG
+     & , only: logmsg, LOGDEBUG, LOGWARNING
     use b2mod_cellhelper &
      & , only: LEFT, RIGHT, TOP, BOTTOM, NODIRECTION
 
@@ -579,12 +579,21 @@ contains
             ! with the grid's own topology data; otherwise keep the
             ! general magnetic field topology as a safe fallback.
             call validateDeclaredGeometry( mpg, declaredOk )
-            if (declaredOk) geometryId = mpg%geometryID
+            if (declaredOk) then
+                geometryId = mpg%geometryID
+                if (firstgmid) call logmsg( LOGDEBUG, &
+                  & "b2mod_connectivity.geometryId(): using declared GEOMETRY_ID")
+            else
+                if (firstgmid) call logmsg( LOGWARNING, &
+                  & "b2mod_connectivity.geometryId(): declared " // &
+                  & "GEOMETRY_ID is inconsistent with topology " // &
+                  & "metadata; using GEOMETRY_GENERAL")
+            end if
+        else
+            if (firstgmid) call logmsg( LOGDEBUG, &
+              & "b2mod_connectivity.geometryId(): unrecognised declared geometry; using GEOMETRY_GENERAL")
         end if
-        if (firstgmid) then
-            call logmsg( LOGDEBUG, "b2mod_connectivity.geometryId(): identified from declared GEOMETRY_ID")
-            firstgmid = .false.
-        end if
+        firstgmid = .false.
         return
     end if
 
@@ -815,8 +824,11 @@ contains
     integer :: nPrimExp, nRegBase
 
     ! Expected primary X-point count and base volume-region count per
-    ! basic family (additional X-points add only volume regions). The
-    ! caller guarantees mpg%geometryID is in GEOMETRY_LIMITER..DDN_TOP.
+    ! basic family (additional X-points add only volume regions). GOAT's
+    ! primary flag means that the X-point is directly connected to the
+    ! core: both CDN X-points are primary, while a DDN has one primary
+    ! and one secondary X-point. The caller guarantees mpg%geometryID
+    ! is in GEOMETRY_LIMITER..DDN_TOP.
     select case (mpg%geometryID)
     case (GEOMETRY_LIMITER)
         nPrimExp = 0
@@ -824,8 +836,11 @@ contains
     case (GEOMETRY_SN)
         nPrimExp = 1
         nRegBase = 4
-    case default   ! CDN / DDN_BOTTOM / DDN_TOP
+    case (GEOMETRY_CDN)
         nPrimExp = 2
+        nRegBase = 8
+    case default   ! DDN_BOTTOM / DDN_TOP
+        nPrimExp = 1
         nRegBase = 8
     end select
 
