@@ -223,6 +223,7 @@
 
       g%LSN = .true.
       g%psi_increasing = .true.
+      g%signmf = 1.0_R8
 
       g%Qalfmax = 1.0e-3_R8
       g%Qalfmin = 1.0e-3_R8
@@ -1093,8 +1094,11 @@
         end if
        end do
       end if
+      endif
 
-      ! Compute signmf
+!! Compute signmf for every topology.  General topology does not have
+!! one meaningful LSN/USN orientation, but downstream vector
+!! transformations still require a deterministic poloidal-field sign.
       r0=0.0_R8
       z0=0.0_R8
       t0=0.0_R8
@@ -1103,6 +1107,7 @@
       if (any(mpg%cvOnClosedSurface(1:mpg%nCi))) then
         do while (t0.eq.0.0_R8.and.iFt.lt.mpg%nFt)
           iFt=iFt+1
+          if (mpg%ftCvP(iFt,2).le.0) cycle
           iCv=mpg%ftCv(mpg%ftCvP(iFt,1))
           if (mpg%cvOnClosedSurface(iCv)) then
             do i=1,mpg%ftCvP(iFt,2)
@@ -1122,6 +1127,7 @@
         iFt=0
         do while (gm%signmf.eq.0.0_R8.and.iFt.lt.mpg%nFt)
           iFt=iFt+1
+          if (mpg%ftCvP(iFt,2).le.0) cycle
           iCv=mpg%ftCv(mpg%ftCvP(iFt,1))
           if (mpg%cvOnClosedSurface(iCv)) then
             do i=1,mpg%ftCvP(iFt,2)
@@ -1138,7 +1144,6 @@
       else
         gm%signmf=sign(1.0_R8,gm%cvEb(1,0))
       end if
-      endif
 
 !! Explicit topology supplies the target records needed below.  Keep
 !! their initialization active when temp_ignore_geo bypasses only the
