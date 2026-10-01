@@ -78,7 +78,7 @@
       use eirmod_parmmod
      * , only : ndx, ndy, nstra, nfl, natm, nmol, nion, npls,
      *          nsrfs, n1st, n2nd, n3rd, nreac,
-     *          eirene_set_parmmod
+     *          ifoff, eirene_set_parmmod
       use eirmod_cinit
      * , only : eirene_init_cinit, fort_lc
       use eirmod_ccoupl
@@ -1610,7 +1610,7 @@ csw 09oct2012
 !$OMP PARALLEL
 #endif
 #endif
-        IUNOUT=6
+        IUNOUT=6+IFOFF
 #ifdef USE_OPENMP
 #ifndef USE_EXT_OPENMP
 !$OMP END PARALLEL
@@ -2319,9 +2319,8 @@ c new CDF chord option (1st frame at t=0)
 #endif
       character*256 filename, fort31name
 #ifdef B25_EIRENE
-      character*256 filename_eir
-      logical ex_eir
-      integer iflag_eir
+      logical ex
+      integer iflag
 #endif
 #if ( defined(B25_EIRENE) || defined(IMAS) )
       character*512 systemarg
@@ -2685,11 +2684,11 @@ c new CDF chord option
 #ifdef B25_EIRENE
             if (switch%use_eirene.ne.0 .and.
      &          .not.eirene_wall_read) then
-              filename_eir = fort_lc//'44'
-              call find_file(filename_eir,ex_eir)
-              if (ex_eir) then
-                open(unit=44,file=filename_eir)
-                call ngread(mpg,geo,ns,switch,ismain,iflag_eir)
+              filename = fort_lc//'44'
+              call find_file(filename,ex)
+              if (ex) then
+                open(unit=44,file=filename)
+                call ngread(mpg,geo,ns,switch,ismain,iflag)
                 eirene_wall_read = .true.
               endif
             endif
