@@ -1140,7 +1140,11 @@
       end if
       endif
 
-      if (temp_ignore_geo.eq.0) then !! This is a temporary solution to be able to run extended cases, while more general solutions are being developed
+!! Explicit topology supplies the target records needed below.  Keep
+!! their initialization active when temp_ignore_geo bypasses only the
+!! legacy geometry heuristics.
+      if (temp_ignore_geo.eq.0.or.
+     &    (mpg%hasTopologicalData.and.mpg%topoID.eq.0)) then
 !! Invert the divertor face list if not in correct psi order
 !! and identify strike point face indices
 !   ..upper single null: reorder the two single-null targets so the
