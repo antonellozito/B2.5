@@ -301,6 +301,7 @@ csw 26feb2014
       integer, save :: ih_end
       logical, save :: full_history = .false.
       real (kind=R8) :: relax
+      integer, save :: ih_end_neut = 0
       integer, save :: relax_continue = 0
       real(kind=R8) :: gs_ti
       real(kind=R8) :: gs_fsi
@@ -2492,102 +2493,16 @@ cc Read saved sources
         end if
 
         relax = rratio(ih_end-1,ih_end)
+        ih_end_neut = min(ih_end_neut+1, nrelax)
         sni_s = sni_s*relax + sni/dble(ih_end)
         smo_s = smo_s*relax + smo/dble(ih_end)
         see_s = see_s*relax + see/dble(ih_end)
         sei_s = sei_s*relax + sei/dble(ih_end)
-
-#ifndef FIXED_POINT
-        if (balance_netcdf.ne.0 .or.
-     *      switch%write_eirene_sources.ne.0) then !djm Jan2017
-          sne_s_pael = sne_s_pael*relax + sne_pael/dble(ih_end)
-          sne_s_pmel = sne_s_pmel*relax + sne_pmel/dble(ih_end)
-          sne_s_piel = sne_s_piel*relax + sne_piel/dble(ih_end)
-          sna_s_paat = sna_s_paat*relax + sna_paat/dble(ih_end)
-          sna_s_pmat = sna_s_pmat*relax + sna_pmat/dble(ih_end)
-          sna_s_piat = sna_s_piat*relax + sna_piat/dble(ih_end)
-          sna_s_paml = sna_s_paml*relax + sna_paml/dble(ih_end)
-          sna_s_pmml = sna_s_pmml*relax + sna_pmml/dble(ih_end)
-          sna_s_piml = sna_s_piml*relax + sna_piml/dble(ih_end)
-          sna_s_paio = sna_s_paio*relax + sna_paio/dble(ih_end)
-          sna_s_pmio = sna_s_pmio*relax + sna_pmio/dble(ih_end)
-          sna_s_piio = sna_s_piio*relax + sna_piio/dble(ih_end)
-          sni_s_papl = sni_s_papl*relax + sni_papl/dble(ih_end)
-          sni_s_pmpl = sni_s_pmpl*relax + sni_pmpl/dble(ih_end)
-          sni_s_pipl = sni_s_pipl*relax + sni_pipl/dble(ih_end)
-          sni_s_pppl = sni_s_pppl*relax + sni_pppl/dble(ih_end)
-          smo_s_mapl = smo_s_mapl*relax + smo_mapl/dble(ih_end)
-          smo_s_mmpl = smo_s_mmpl*relax + smo_mmpl/dble(ih_end)
-          smo_s_mipl = smo_s_mipl*relax + smo_mipl/dble(ih_end)
-          smo_s_mppl = smo_s_mppl*relax + smo_mppl/dble(ih_end)
-          see_s_eael = see_s_eael*relax + see_eael/dble(ih_end)
-          see_s_emel = see_s_emel*relax + see_emel/dble(ih_end)
-          see_s_eiel = see_s_eiel*relax + see_eiel/dble(ih_end)
-          see_s_epel = see_s_epel*relax + see_epel/dble(ih_end)
-          sei_s_eapl = sei_s_eapl*relax + sei_eapl/dble(ih_end)
-          sei_s_empl = sei_s_empl*relax + sei_empl/dble(ih_end)
-          sei_s_eipl = sei_s_eipl*relax + sei_eipl/dble(ih_end)
-          sei_s_eppl = sei_s_eppl*relax + sei_eppl/dble(ih_end)
-        endif
-#endif
-        do iatm = 1,nnatmi
-         dab2_s(:,iatm,1) = dab2_s(:,iatm,1)*relax
-     .                      + dab2(:,iatm,1)/dble(ih_end)
-         pfluxa_s(:,iatm,1) = pfluxa_s(:,iatm,1)*relax
-     .                        + pfluxa(:,iatm,1)/dble(ih_end)
-         rfluxa_s(:,iatm,1) = rfluxa_s(:,iatm,1)*relax
-     .                        + rfluxa(:,iatm,1)/dble(ih_end)
-        enddo
-        do imol = 1,nnmoli
-         pfluxm_s(:,imol,1) = pfluxm_s(:,imol,1)*relax
-     .                        + pfluxm(:,imol,1)/dble(ih_end)
-         rfluxm_s(:,imol,1) = rfluxm_s(:,imol,1)*relax
-     .                        + rfluxm(:,imol,1)/dble(ih_end)
-        enddo
-
         sni_av = sni_s*dble(ih_end)
         smo_av = smo_s*dble(ih_end)
         sei_av = sei_s*dble(ih_end)
         see_av = see_s*dble(ih_end)
-
-#ifndef FIXED_POINT
-        if (balance_netcdf.ne.0 .or.
-     *      switch%write_eirene_sources.ne.0) then !djm Jan2017
-          sne_av_pael = sne_s_pael*dble(ih_end)
-          sne_av_pmel = sne_s_pmel*dble(ih_end)
-          sne_av_piel = sne_s_piel*dble(ih_end)
-          sna_av_paat = sna_s_paat*dble(ih_end)
-          sna_av_pmat = sna_s_pmat*dble(ih_end)
-          sna_av_piat = sna_s_piat*dble(ih_end)
-          sna_av_paml = sna_s_paml*dble(ih_end)
-          sna_av_pmml = sna_s_pmml*dble(ih_end)
-          sna_av_piml = sna_s_piml*dble(ih_end)
-          sna_av_paio = sna_s_paio*dble(ih_end)
-          sna_av_pmio = sna_s_pmio*dble(ih_end)
-          sna_av_piio = sna_s_piio*dble(ih_end)
-          sni_av_papl = sni_s_papl*dble(ih_end)
-          sni_av_pmpl = sni_s_pmpl*dble(ih_end)
-          sni_av_pipl = sni_s_pipl*dble(ih_end)
-          sni_av_pppl = sni_s_pppl*dble(ih_end)
-          smo_av_mapl = smo_s_mapl*dble(ih_end)
-          smo_av_mmpl = smo_s_mmpl*dble(ih_end)
-          smo_av_mipl = smo_s_mipl*dble(ih_end)
-          smo_av_mppl = smo_s_mppl*dble(ih_end)
-          sei_av_eapl = sei_s_eapl*dble(ih_end)
-          sei_av_empl = sei_s_empl*dble(ih_end)
-          sei_av_eipl = sei_s_eipl*dble(ih_end)
-          sei_av_eppl = sei_s_eppl*dble(ih_end)
-          see_av_eael = see_s_eael*dble(ih_end)
-          see_av_emel = see_s_emel*dble(ih_end)
-          see_av_eiel = see_s_eiel*dble(ih_end)
-          see_av_epel = see_s_epel*dble(ih_end)
-        endif
-#endif
-        dab2 = dab2_s
-        pfluxa = pfluxa_s
-        pfluxm = pfluxm_s
-        rfluxa = rfluxa_s
-        rfluxm = rfluxm_s
+        call underrelax_output_arrays(ih_end_neut,switch)
        end if
       else
        ih_end=1
@@ -5229,6 +5144,213 @@ c!###}
 #endif
       return
       end subroutine calc_average_source_arrays
+
+      subroutine underrelax_output_arrays(ih_end_neut,switch)
+      use b2mod_switches
+      implicit none
+      integer, intent(in) :: ih_end_neut
+      type (switches), intent(in) :: switch
+      real (kind=R8) :: rn, wn
+      rn = dble(ih_end_neut-1)/dble(ih_end_neut)
+      wn = 1.0_R8/dble(ih_end_neut)
+#ifndef FIXED_POINT
+      if (balance_netcdf.ne.0 .or.
+     &    switch%write_eirene_sources.ne.0) then
+        sne_s_pael = sne_s_pael*rn + sne_pael*wn
+        sne_av_pael = sne_s_pael*dble(ih_end_neut)
+        sne_s_pmel = sne_s_pmel*rn + sne_pmel*wn
+        sne_av_pmel = sne_s_pmel*dble(ih_end_neut)
+        sne_s_piel = sne_s_piel*rn + sne_piel*wn
+        sne_av_piel = sne_s_piel*dble(ih_end_neut)
+        sna_s_paat = sna_s_paat*rn + sna_paat*wn
+        sna_av_paat = sna_s_paat*dble(ih_end_neut)
+        sna_s_pmat = sna_s_pmat*rn + sna_pmat*wn
+        sna_av_pmat = sna_s_pmat*dble(ih_end_neut)
+        sna_s_piat = sna_s_piat*rn + sna_piat*wn
+        sna_av_piat = sna_s_piat*dble(ih_end_neut)
+        sna_s_paml = sna_s_paml*rn + sna_paml*wn
+        sna_av_paml = sna_s_paml*dble(ih_end_neut)
+        sna_s_pmml = sna_s_pmml*rn + sna_pmml*wn
+        sna_av_pmml = sna_s_pmml*dble(ih_end_neut)
+        sna_s_piml = sna_s_piml*rn + sna_piml*wn
+        sna_av_piml = sna_s_piml*dble(ih_end_neut)
+        sna_s_paio = sna_s_paio*rn + sna_paio*wn
+        sna_av_paio = sna_s_paio*dble(ih_end_neut)
+        sna_s_pmio = sna_s_pmio*rn + sna_pmio*wn
+        sna_av_pmio = sna_s_pmio*dble(ih_end_neut)
+        sna_s_piio = sna_s_piio*rn + sna_piio*wn
+        sna_av_piio = sna_s_piio*dble(ih_end_neut)
+        sni_s_papl = sni_s_papl*rn + sni_papl*wn
+        sni_av_papl = sni_s_papl*dble(ih_end_neut)
+        sni_s_pmpl = sni_s_pmpl*rn + sni_pmpl*wn
+        sni_av_pmpl = sni_s_pmpl*dble(ih_end_neut)
+        sni_s_pipl = sni_s_pipl*rn + sni_pipl*wn
+        sni_av_pipl = sni_s_pipl*dble(ih_end_neut)
+        sni_s_pppl = sni_s_pppl*rn + sni_pppl*wn
+        sni_av_pppl = sni_s_pppl*dble(ih_end_neut)
+        smo_s_mapl = smo_s_mapl*rn + smo_mapl*wn
+        smo_av_mapl = smo_s_mapl*dble(ih_end_neut)
+        smo_s_mmpl = smo_s_mmpl*rn + smo_mmpl*wn
+        smo_av_mmpl = smo_s_mmpl*dble(ih_end_neut)
+        smo_s_mipl = smo_s_mipl*rn + smo_mipl*wn
+        smo_av_mipl = smo_s_mipl*dble(ih_end_neut)
+        smo_s_mppl = smo_s_mppl*rn + smo_mppl*wn
+        smo_av_mppl = smo_s_mppl*dble(ih_end_neut)
+        see_s_eael = see_s_eael*rn + see_eael*wn
+        see_av_eael = see_s_eael*dble(ih_end_neut)
+        see_s_emel = see_s_emel*rn + see_emel*wn
+        see_av_emel = see_s_emel*dble(ih_end_neut)
+        see_s_eiel = see_s_eiel*rn + see_eiel*wn
+        see_av_eiel = see_s_eiel*dble(ih_end_neut)
+        see_s_epel = see_s_epel*rn + see_epel*wn
+        see_av_epel = see_s_epel*dble(ih_end_neut)
+        sei_s_eapl = sei_s_eapl*rn + sei_eapl*wn
+        sei_av_eapl = sei_s_eapl*dble(ih_end_neut)
+        sei_s_empl = sei_s_empl*rn + sei_empl*wn
+        sei_av_empl = sei_s_empl*dble(ih_end_neut)
+        sei_s_eipl = sei_s_eipl*rn + sei_eipl*wn
+        sei_av_eipl = sei_s_eipl*dble(ih_end_neut)
+        sei_s_eppl = sei_s_eppl*rn + sei_eppl*wn
+        sei_av_eppl = sei_s_eppl*dble(ih_end_neut)
+      endif
+#endif
+      dab2_s = dab2_s*rn + dab2*wn
+      dab2 = dab2_s
+      tab2_s = tab2_s*rn + tab2*wn
+      tab2 = tab2_s
+      pfluxa_s = pfluxa_s*rn + pfluxa*wn
+      pfluxa = pfluxa_s
+      rfluxa_s = rfluxa_s*rn + rfluxa*wn
+      rfluxa = rfluxa_s
+      pefluxa_s = pefluxa_s*rn + pefluxa*wn
+      pefluxa = pefluxa_s
+      refluxa_s = refluxa_s*rn + refluxa*wn
+      refluxa = refluxa_s
+      dmb2_s = dmb2_s*rn + dmb2*wn
+      dmb2 = dmb2_s
+      tmb2_s = tmb2_s*rn + tmb2*wn
+      tmb2 = tmb2_s
+      pfluxm_s = pfluxm_s*rn + pfluxm*wn
+      pfluxm = pfluxm_s
+      rfluxm_s = rfluxm_s*rn + rfluxm*wn
+      rfluxm = rfluxm_s
+      pefluxm_s = pefluxm_s*rn + pefluxm*wn
+      pefluxm = pefluxm_s
+      refluxm_s = refluxm_s*rn + refluxm*wn
+      refluxm = refluxm_s
+      dib2_s = dib2_s*rn + dib2*wn
+      dib2 = dib2_s
+      tib2_s = tib2_s*rn + tib2*wn
+      tib2 = tib2_s
+      emiss_s = emiss_s*rn + emiss*wn
+      emiss = emiss_s
+      emissmol_s = emissmol_s*rn + emissmol*wn
+      emissmol = emissmol_s
+      srcml_s = srcml_s*rn + srcml*wn
+      srcml = srcml_s
+      edissml_s = edissml_s*rn + edissml*wn
+      edissml = edissml_s
+      wldnek_s = wldnek_s*rn + wldnek*wn
+      wldnek = wldnek_s
+      wldnep_s = wldnep_s*rn + wldnep*wn
+      wldnep = wldnep_s
+      wldna_s = wldna_s*rn + wldna*wn
+      wldna = wldna_s
+      ewlda_s = ewlda_s*rn + ewlda*wn
+      ewlda = ewlda_s
+      wldnm_s = wldnm_s*rn + wldnm*wn
+      wldnm = wldnm_s
+      ewldm_s = ewldm_s*rn + ewldm*wn
+      ewldm = ewldm_s
+      wldra_s = wldra_s*rn + wldra*wn
+      wldra = wldra_s
+      wldrm_s = wldrm_s*rn + wldrm*wn
+      wldrm = wldrm_s
+      wldpp_s = wldpp_s*rn + wldpp*wn
+      wldpp = wldpp_s
+      wldpa_s = wldpa_s*rn + wldpa*wn
+      wldpa = wldpa_s
+      wldpm_s = wldpm_s*rn + wldpm*wn
+      wldpm = wldpm_s
+      wldpeb_s = wldpeb_s*rn + wldpeb*wn
+      wldpeb = wldpeb_s
+      wldspt_s = wldspt_s*rn + wldspt*wn
+      wldspt = wldspt_s
+      wldspta_s = wldspta_s*rn + wldspta*wn
+      wldspta = wldspta_s
+      wldsptm_s = wldsptm_s*rn + wldsptm*wn
+      wldsptm = wldsptm_s
+      eneutrad_s = eneutrad_s*rn + eneutrad*wn
+      eneutrad = eneutrad_s
+      emolrad_s = emolrad_s*rn + emolrad*wn
+      emolrad = emolrad_s
+      eionrad_s = eionrad_s*rn + eionrad*wn
+      eionrad = eionrad_s
+      wlabsrp_s = wlabsrp_s*rn + wlabsrp*wn
+      wlabsrp = wlabsrp_s
+      wldna_res_s = wldna_res_s*rn + wldna_res*wn
+      wldna_res = wldna_res_s
+      wldnm_res_s = wldnm_res_s*rn + wldnm_res*wn
+      wldnm_res = wldnm_res_s
+      ewlda_res_s = ewlda_res_s*rn + ewlda_res*wn
+      ewlda_res = ewlda_res_s
+      ewldm_res_s = ewldm_res_s*rn + ewldm_res*wn
+      ewldm_res = ewldm_res_s
+      ewldt_res_s = ewldt_res_s*rn + ewldt_res*wn
+      ewldt_res = ewldt_res_s
+      ewldea_res_s = ewldea_res_s*rn + ewldea_res*wn
+      ewldea_res = ewldea_res_s
+      ewldem_res_s = ewldem_res_s*rn + ewldem_res*wn
+      ewldem_res = ewldem_res_s
+      ewldrp_res_s = ewldrp_res_s*rn + ewldrp_res*wn
+      ewldrp_res = ewldrp_res_s
+      ewldmr_res_s = ewldmr_res_s*rn + ewldmr_res*wn
+      ewldmr_res = ewldmr_res_s
+      wldspt_res_s = wldspt_res_s*rn + wldspt_res*wn
+      wldspt_res = wldspt_res_s
+      wldspta_res_s = wldspta_res_s*rn + wldspta_res*wn
+      wldspta_res = wldspta_res_s
+      wldsptm_res_s = wldsptm_res_s*rn + wldsptm_res*wn
+      wldsptm_res = wldsptm_res_s
+      wlpump_s = wlpump_s*rn + wlpump*wn
+      wlpump = wlpump_s
+      wlpump_res_s = wlpump_res_s*rn + wlpump_res*wn
+      wlpump_res = wlpump_res_s
+#ifdef B25_EIRENE
+      pdena_s = pdena_s*rn + pdena*wn
+      pdena = pdena_s
+      pdenm_s = pdenm_s*rn + pdenm*wn
+      pdenm = pdenm_s
+      pdeni_s = pdeni_s*rn + pdeni*wn
+      pdeni = pdeni_s
+      edena_s = edena_s*rn + edena*wn
+      edena = edena_s
+      edenm_s = edenm_s*rn + edenm*wn
+      edenm = edenm_s
+      edeni_s = edeni_s*rn + edeni*wn
+      edeni = edeni_s
+      vxdena_s = vxdena_s*rn + vxdena*wn
+      vxdena = vxdena_s
+      vxdenm_s = vxdenm_s*rn + vxdenm*wn
+      vxdenm = vxdenm_s
+      vxdeni_s = vxdeni_s*rn + vxdeni*wn
+      vxdeni = vxdeni_s
+      vydena_s = vydena_s*rn + vydena*wn
+      vydena = vydena_s
+      vydenm_s = vydenm_s*rn + vydenm*wn
+      vydenm = vydenm_s
+      vydeni_s = vydeni_s*rn + vydeni*wn
+      vydeni = vydeni_s
+      vzdena_s = vzdena_s*rn + vzdena*wn
+      vzdena = vzdena_s
+      vzdenm_s = vzdenm_s*rn + vzdenm*wn
+      vzdenm = vzdenm_s
+      vzdeni_s = vzdeni_s*rn + vzdeni*wn
+      vzdeni = vzdeni_s
+#endif
+
+      return
+      end subroutine underrelax_output_arrays
 
       subroutine clear_sum_arrays(switch)                        !csw 24feb2014
       use b2mod_switches
