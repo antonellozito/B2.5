@@ -1145,9 +1145,11 @@
         gm%signmf=sign(1.0_R8,gm%cvEb(1,0))
       end if
 
-!! Explicit topology supplies the target records needed below.  Keep
-!! their initialization active when temp_ignore_geo bypasses only the
-!! legacy geometry heuristics.
+!! Explicit general topology supplies the target records needed below.
+!! Keep their initialization active when temp_ignore_geo is set: the
+!! switch bypasses the legacy geometry heuristics, but the target
+!! coordinates (output_ds_fc), the user diagnostics (b2mod_usrtrc) and
+!! the IDS summary still index ifdiv/ivdiv, which otherwise stay zero.
       if (temp_ignore_geo.eq.0.or.
      &    (mpg%hasTopologicalData.and.mpg%topoID.eq.0)) then
 !! Invert the divertor face list if not in correct psi order
@@ -1261,6 +1263,11 @@
             k = k + 1
           end do
 
+          if (.not.match_found) then
+            write (*,*) 'b2us_geo: divertor target ', i,
+     &        ': reference vertex ', mpg%ivdiv(i),
+     &        ' is not shared by two consecutive target faces'
+          end if
           call xertst(match_found,
      &      'b2us_geo: no target face for strike point')
 
