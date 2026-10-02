@@ -563,6 +563,7 @@ contains
     integer :: i, iCv
     real(kind=R8) :: Xpsi_active, Xpsi_snowflake
     logical :: active, declaredOk
+    character(len=96) :: reason
     external xerrab, xertst
 
     call xertst ( object.eq.1.or.object.eq.2, 'incorrect object setting in geometryId')
@@ -578,7 +579,7 @@ contains
             ! Trust the declared basic family only when it is consistent
             ! with the grid's own topology data; otherwise keep the
             ! general magnetic field topology as a safe fallback.
-            call validateDeclaredGeometry( mpg, declaredOk )
+            call validateDeclaredGeometry( mpg, geo, declaredOk, reason )
             if (declaredOk) then
                 geometryId = mpg%geometryID
                 if (firstgmid) call logmsg( LOGDEBUG, &
@@ -587,11 +588,16 @@ contains
                 if (firstgmid) call logmsg( LOGWARNING, &
                   & "b2mod_connectivity.geometryId(): declared " // &
                   & "GEOMETRY_ID is inconsistent with topology " // &
-                  & "metadata; using GEOMETRY_GENERAL")
+                  & "metadata (" // trim(reason) // "); " // &
+                  & "using GEOMETRY_GENERAL")
             end if
-        else
+        else if (mpg%geometryID.eq.GEOMETRY_GENERAL) then
             if (firstgmid) call logmsg( LOGDEBUG, &
-              & "b2mod_connectivity.geometryId(): unrecognised declared geometry; using GEOMETRY_GENERAL")
+              & "b2mod_connectivity.geometryId(): declared GEOMETRY_GENERAL")
+        else
+            if (firstgmid) call logmsg( LOGWARNING, &
+              & "b2mod_connectivity.geometryId(): unrecognised " // &
+              & "declared GEOMETRY_ID; using GEOMETRY_GENERAL")
         end if
         firstgmid = .false.
         return
@@ -812,16 +818,25 @@ contains
   !> Cross-check a declared basic-family GEOMETRY_ID against the grid's
   !> own topology data. Sets ok=.false. when the declaration is not
   !> internally consistent (a doublet declared as a single/double null,
-  !> a primary X-point count that does not match the family, or fewer
-  !> volume regions than the family requires), so the caller can fall
-  !> back to GEOMETRY_GENERAL rather than trust a mislabelled grid.
-  subroutine validateDeclaredGeometry( mpg, ok )
+  !> a primary X-point count that does not match the family, fewer
+  !> volume regions than the family requires, or X-points on the wrong
+  !> side of the core), so the caller can fall back to GEOMETRY_GENERAL
+  !> rather than trust a mislabelled grid. reason names the failed check.
+  subroutine validateDeclaredGeometry( mpg, geo, ok, reason )
+    use b2mod_types &
+     & , only: R8
     use b2us_map &
      & , only: mapping
+    use b2us_geo &
+     & , only: geometry
     implicit none
     type(mapping), intent(in) :: mpg
+    type(geometry), intent(in) :: geo
     logical, intent(out) :: ok
-    integer :: nPrimExp, nRegBase
+    character(len=*), intent(out) :: reason
+    integer :: nPrimExp, nRegBase, iCv, iXpt, nCore
+    integer :: nPrimBelow, nPrimAbove, nSecBelow, nSecAbove
+    real(kind=R8) :: yRef
 
     ! Expected primary X-point count and base volume-region count per
     ! basic family (additional X-points add only volume regions). GOAT's
@@ -844,16 +859,96 @@ contains
         nRegBase = 8
     end select
 
-    ok = .true.
+    ok = .false.
+    reason = ' '
     ! A basic family has a single magnetic O-point; two or more mark a
     ! doublet, which must stay general.
-    if (mpg%nOpt.ge.2) ok = .false.
-    ! The number of primary X-points must match the declared family.
-    if (allocated(mpg%isPrimaryXpt)) then
-        if (count(mpg%isPrimaryXpt.eq.1).ne.nPrimExp) ok = .false.
+    if (mpg%nOpt.ge.2) then
+        reason = 'more than one O-point'
+        return
     end if
     ! The family's base volume regions must at least be present.
-    if (maxval(mpg%cvReg).lt.nRegBase) ok = .false.
+    if (maxval(mpg%cvReg).lt.nRegBase) then
+        reason = 'too few volume regions'
+        return
+    end if
+    ! Without primary flags, the X-point checks below cannot be made.
+    if (.not.allocated(mpg%isPrimaryXpt)) then
+        ok = .true.
+        return
+    end if
+    ! The number of primary X-points must match the declared family.
+    if (count(mpg%isPrimaryXpt.eq.1).ne.nPrimExp) then
+        reason = 'primary X-point count'
+        return
+    end if
+    if (nPrimExp.eq.0) then
+        ok = .true.
+        return
+    end if
+
+    ! Reference height of the core, with GOAT's convention: the O-point
+    ! when it is a grid vertex, otherwise the centroid of the core
+    ! cells. In the basic-family numbering the core regions are 1 (SN)
+    ! and 1 and 5 (CDN/DDN); regions above nRegBase belong to
+    ! additional X-points.
+    if (mpg%nOpt.eq.1 .and. allocated(mpg%Opt)) then
+        yRef = geo%vxY(mpg%Opt(1))
+    else
+        yRef = 0.0_R8
+        nCore = 0
+        do iCv = 1, mpg%nCi
+            if (mpg%cvReg(iCv).ge.1 .and. mpg%cvReg(iCv).le.nRegBase &
+              & .and. mod(mpg%cvReg(iCv)-1,4).eq.0) then
+                yRef = yRef + geo%cvY(iCv)
+                nCore = nCore + 1
+            end if
+        end do
+        if (nCore.eq.0) then
+            reason = 'no core cells'
+            return
+        end if
+        yRef = yRef/real(nCore, R8)
+    end if
+
+    ! Count primary and other X-points below and above the core. As in
+    ! GOAT, an X-point at the reference height counts as above.
+    nPrimBelow = 0
+    nPrimAbove = 0
+    nSecBelow = 0
+    nSecAbove = 0
+    do iXpt = 1, mpg%nXpt
+        if (geo%vxY(mpg%Xpt(iXpt)).ge.yRef) then
+            if (mpg%isPrimaryXpt(iXpt).eq.1) then
+                nPrimAbove = nPrimAbove + 1
+            else
+                nSecAbove = nSecAbove + 1
+            end if
+        else
+            if (mpg%isPrimaryXpt(iXpt).eq.1) then
+                nPrimBelow = nPrimBelow + 1
+            else
+                nSecBelow = nSecBelow + 1
+            end if
+        end if
+    end do
+
+    ! Single null: every X-point lies on the primary X-point's side.
+    ! Connected double null: one primary X-point on each side.
+    ! Disconnected double null: the primary X-point lies on the declared
+    ! side, and a secondary X-point lies on the opposite side.
+    select case (mpg%geometryID)
+    case (GEOMETRY_SN)
+        ok = (nPrimBelow.eq.1 .and. nPrimAbove+nSecAbove.eq.0) .or. &
+           & (nPrimAbove.eq.1 .and. nPrimBelow+nSecBelow.eq.0)
+    case (GEOMETRY_CDN)
+        ok = nPrimBelow.eq.1 .and. nPrimAbove.eq.1
+    case (GEOMETRY_DDN_BOTTOM)
+        ok = nPrimBelow.eq.1 .and. nSecAbove.ge.1
+    case (GEOMETRY_DDN_TOP)
+        ok = nPrimAbove.eq.1 .and. nSecBelow.ge.1
+    end select
+    if (.not.ok) reason = 'X-point positions relative to the core'
 
   end subroutine validateDeclaredGeometry
 
