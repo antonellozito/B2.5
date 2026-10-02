@@ -1356,10 +1356,18 @@
                     mpg%ifdiv(i) = j - mpg%divFcP(i,1) + 1
                     mpg%ivdiv(i) = iVx1
                   else ! Two strike points on the same target
-                       ! We label the active one only
+                       ! We label the active one only.  A
+                       ! strike on iFssep2 must not replace
+                       ! one on iFssep: for a disconnected
+                       ! double null with topology data,
+                       ! iFssep2 is the secondary separatrix,
+                       ! which also strikes the primary
+                       ! targets further out in the SOL.
                     if (mpg%vxFs(iVx1).eq.mpg%iFssep.or.
      &                 (mpg%vxFs(iVx1).eq.mpg%iFssep2.and.
-     &                  mpg%iFssep2.gt.0)) then
+     &                  mpg%iFssep2.gt.0.and.
+     &                  mpg%vxFs(mpg%ivdiv(i)).ne.
+     &                  mpg%iFssep)) then
                       mpg%ifdiv(i) = j - mpg%divFcP(i,1) + 1
                       mpg%ivdiv(i) = iVx1
                     end if
@@ -1375,10 +1383,18 @@
                     mpg%ifdiv(i) = j - mpg%divFcP(i,1) + 1
                     mpg%ivdiv(i) = iVx2
                   else ! Two strike points on the same target
-                       ! We label the active one only
+                       ! We label the active one only.  A
+                       ! strike on iFssep2 must not replace
+                       ! one on iFssep: for a disconnected
+                       ! double null with topology data,
+                       ! iFssep2 is the secondary separatrix,
+                       ! which also strikes the primary
+                       ! targets further out in the SOL.
                     if (mpg%vxFs(iVx2).eq.mpg%iFssep.or.
      &                 (mpg%vxFs(iVx2).eq.mpg%iFssep2.and.
-     &                  mpg%iFssep2.gt.0)) then
+     &                  mpg%iFssep2.gt.0.and.
+     &                  mpg%vxFs(mpg%ivdiv(i)).ne.
+     &                  mpg%iFssep)) then
                       mpg%ifdiv(i) = j - mpg%divFcP(i,1) + 1
                       mpg%ivdiv(i) = iVx2
                     end if
