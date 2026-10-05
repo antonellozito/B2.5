@@ -782,19 +782,16 @@ cwdk  can be derived directly from data in that file
           if (fccount.eq.4) then
             m%nXpt = m%nXpt + 1
             indXpt(m%nXpt) = iVx
-            if (m%iactive.eq.0) then
-              do i = m%vxCvP(iVx,1), m%vxCvP(iVx,1) + m%vxCvP(iVx,2) - 1
-                iCv = m%vxCv(i)
-                if (m%cvReg(iCv).eq.1) then
-                  if (m%iactive.eq.0) then
-                    m%iactive = m%nXpt
-                  else if (m%iinactive.eq.0 .and. m%iactive.ne.0 .and.
-     &                     m%iactive.ne.m%nXpt) then
-                    m%iinactive = m%nXpt
-                  end if
+            do i = m%vxCvP(iVx,1), m%vxCvP(iVx,1) + m%vxCvP(iVx,2) - 1
+              iCv = m%vxCv(i)
+              if (m%cvReg(iCv).eq.1) then
+                if (m%iactive.eq.0) then
+                  m%iactive = m%nXpt
+                else if (m%iinactive.eq.0) then
+                  m%iinactive = m%nXpt
                 end if
-              end do
-            end if
+              end if
+            end do
           end if
         end if
       end do
@@ -820,7 +817,7 @@ cwdk  can be derived directly from data in that file
               if (m%iactive.eq.0) then
                 do i = m%vxCvP(iVx,1), m%vxCvP(iVx,1)+m%vxCvP(iVx,2)-1
                   if (m%iactive.ne.0) cycle
-                 iCv = m%vxCv(i)
+                  iCv = m%vxCv(i)
                   if (m%cvReg(iCv).eq.1) m%iactive = m%nXpt
                 end do
               end if
@@ -899,32 +896,36 @@ cwdk  can be derived directly from data in that file
         allocate(freg(m%nStr))
         m%strDiv = 0
         freg = 0
-        do i = 1, m%nStr
-          iVx = m%strVx(i)
-          do j = m%vxFcP(iVx,1), m%vxFcP(iVx,1) + m%vxFcP(iVx,2) - 1
-            if (m%strDiv(i).ne.0) cycle
-            iFc = m%vxFc(j)
-            if (m%fcReg(iFc).eq.1) then
-              m%strDiv(i) = 1
-              freg(i) = 1
-            else if (m%fcReg(iFc).eq.4) then
-              m%strDiv(i) = 2
-              freg(i) = 4
-            else if (m%fcReg(iFc).eq.5) then
-              if (m%nXpt.eq.1) then
-                m%strDiv(i) = 1
-              else
-                m%strDiv(i) = 3
-              endif
-              freg(i) = 5
-            else if (m%fcReg(iFc).eq.8) then
-              if (m%nXpt.eq.1) then
-                m%strDiv(i) = 2
-              else
-                m%strDiv(i) = 4
-              endif
-              freg(i) = 8
-            end if
+        do i = 1, m%nXpt
+          do j = m%strVxP(i,1), m%strVxP(i,1) + m%strVxP(i,2) - 1
+            iVx = m%strVx(j)
+            do k = m%vxFcP(iVx,1), m%vxFcP(iVx,1) + m%vxFcP(iVx,2) - 1
+              if (m%strDiv(j).ne.0) cycle
+              iFc = m%vxFc(k)
+              if (m%fcReg(iFc).eq.1) then
+                m%strDiv(j) = 1
+                freg(j) = 1
+              else if (m%fcReg(iFc).eq.4) then
+                m%strDiv(j) = 2
+                freg(j) = 4
+              else if (m%fcReg(iFc).eq.5) then
+                if (m%nXpt.eq.1) then
+                  m%strDiv(j) = 1
+                  freg(j) = 5
+                else if (i.eq.m%iactive .or. i.eq.m%iinactive) then
+                  m%strDiv(j) = 3
+                  freg(j) = 5
+                endif
+              else if (m%fcReg(iFc).eq.8) then
+                if (m%nXpt.eq.1) then
+                  m%strDiv(j) = 2
+                  freg(j) = 8
+                else if (i.eq.m%iactive .or. i.eq.m%iinactive) then
+                  m%strDiv(j) = 4
+                  freg(j) = 8
+                endif
+              end if
+            end do
           end do
         end do
         allocate(m%tgVx(m%nTgc)) !csc needed for adjoint AD
@@ -1042,15 +1043,20 @@ cwdk  can be derived directly from data in that file
         end do
         m%divFcP(1,1) = 1
         do i = 2, maxval(m%strDiv)
-          m%divFcP(i,1) = m%divFcP(i-1,1) + m%divFcp(i-1,2)
+          m%divFcP(i,1) = m%divFcP(i-1,1) + m%divFcP(i-1,2)
         end do
         icount = count(indFc(:).ne.0)
         allocate(m%divFc(icount))
         allocate(m%divFcOr(icount))
         m%divFcOr = 0.0_R8
-        do i = 1, maxval(m%strDiv)
-          m%divFc(m%divFcP(i,1):m%divFcP(i,1)+m%divFcP(i,2)-1) =
-     .      indFc(m%divFcP(i,1):m%divFcP(i,1)+m%divFcp(i,2)-1)
+        icount = 1
+        do i = 1, indd
+          if (m%strDiv(i).eq.0) cycle
+          if (m%divFc(m%divFcP(m%strDiv(i),1)).ne.0) cycle ! already done
+          m%divFc(m%divFcP(m%strDiv(i),1):
+     .            m%divFcP(m%strDiv(i),1)+m%divFcP(m%strDiv(i),2)-1) =
+     .      indFc(icount:icount+m%divFcP(m%strDiv(i),2)-1)
+          icount = icount + m%divFcP(m%strDiv(i),2)
         end do
         do i = 1, maxval(m%strDiv) ! now re-order them
           allocate(old_face_list(m%divFcP(i,2)))

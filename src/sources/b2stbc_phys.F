@@ -96,7 +96,7 @@
       real (kind=R8) ::
      &  naua2sum(0:ns-1), naua2average(0:ns-1),
      &  pzaverage, pzsum, volsum,
-     &  wrk, wrks, vbc, csbc
+     &  wrks, vbc, csbc
 #ifdef WG_TODO
      1  ,volave
      &  ,s0, s0hz, ua2sum, ua2average(0:ns-1)                           !srv 07.04.00 15.02.02
@@ -616,9 +616,9 @@ cwdk  now need to recompute full diamagnetic component for ud
       return
       end subroutine csbc_is                                          !srv 15.02.26 }
 
-      subroutine vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc,wrks,vbnd,vbc)   !srv 15.02.26 {
+      subroutine vbc_is(ib,is,ibc,iCv,iFc,csbc,wrks,vbnd,vbc)         !srv 15.02.26 {
       implicit none
-      integer ib, is, ibc, iCv1, iCv2, iFc
+      integer ib, is, ibc, iCv, iFc
       real (kind=R8) :: csbc
       real (kind=R8) :: vbnd, vbndm, t0
       real (kind=R8) :: wrks, vbc
@@ -637,7 +637,7 @@ cwdk  now need to recompute full diamagnetic component for ud
         vbndm = min(t0,abs(vbnd))*sign(1.0_R8,vbnd)
         vbc = csbc*wrks - vbndm*sign(1.0_R8,wrks)
         vbc = max(vbc*sign(1.0_R8,wrks),
-     &                     wrks*pl%ua(iCv2,is))*sign(1.0_R8,wrks)
+     &                     wrks*pl%ua(iCv,is))*sign(1.0_R8,wrks)
       endif
       return
       end subroutine vbc_is                                           !srv 15.02.26 }
@@ -1303,9 +1303,8 @@ c   (ionising_core option)
             iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                     ! number of the guard cell
             iCv2 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)                     ! number of the corresponding domain cell
             iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                           ! number of the guard cell face
-            s1 = abs(geo%fcPbs(iFc))
             call csbc_is(iCv1,ib,is,csbc)                                !srv 15.02.26
-            call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc,wrks,vbnd,vbc)      !srv 15.02.26
+            call vbc_is(ib,is,ibc,iCv2,iFc,csbc,wrks,vbnd,vbc)           !srv 15.02.26
             if (abs(wrks) < geo%Qalfmin) then
               srw%sna0(iCv1,0,is) = 0.0_R8
               srw%sna0(iCv1,1,is) =
@@ -3301,7 +3300,7 @@ cwdk      radial direction at N/S - unchanged for aligned grids)
      .         -VBIG*am(is)*pl%na(iCv1,is)*geo%fcS(iFc)*geo%fcHz(iFc)
             else
               call csbc_is(iCv1,ib,is,csbc)                             !srv 15.02.26
-              call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc,wrks,vbnd,vbc)   !srv 15.02.26
+              call vbc_is(ib,is,ibc,iCv2,iFc,csbc,wrks,vbnd,vbc)        !srv 15.02.26
               srw%smo0(iCv1,0,is) = srw%smo0(iCv1,0,is) +               !srv 07.05.09 {
      &         (UBIG/EPSLON**2)*am(is)*mp*pl%na(iCv1,is)*
      &         mompar(is,ib,1)*vbc*geo%fcS(iFc)*geo%fcHz(iFc)
@@ -6090,7 +6089,7 @@ cxpb code segment analog to b2tfhi
               do is = 0, ns-1
                 if(is_neutral(is)) cycle
                 call csbc_is(iCv1,ib,is,csbc)                           !srv 15.02.26
-                call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc,wrks,vbnd,vbc) !srv 15.02.26
+                call vbc_is(ib,is,ibc,iCv2,iFc,csbc,wrks,vbnd,vbc)      !srv 15.02.26
                 t0 = t0 + mompar(is,ib,1)*pl%na(iCv1,is)*geo%fcS(iFc)*
      &               max(csbc*abs(wrk),vbc*sign(1.0_R8,wrk)+vbnd)
                 if (conpar(is,ib,2).gt.0.0_R8)
@@ -7206,7 +7205,7 @@ cwdk     * need to correct this BC for hybrid scheme
       implicit none
       integer ib, ib0, ibc, ibc0, ibw, is
       integer iCv, iCv1, iCv2, iFc, iVx1, iVx2
-      real (kind=R8) :: cs, vte, vbnd, s1,
+      real (kind=R8) :: vte, vbnd, s1,
      .  fche, fchi, t0, t1, t2, t3, t4,
      .  neave, poave, totpar, totflux, wrk, seec, fchy_dia, fchy_inertia
       real (kind=R8), external :: intvertex_s
@@ -7605,7 +7604,7 @@ c              fchi=0.0_R8
             do is = 0, ns-1
               if(is_neutral(is)) cycle
               call csbc_is(iCv1,ib,is,csbc)                             !srv 15.02.26
-              call vbc_is(ib,is,ibc,iCv1,iCv2,iFc,csbc,wrks,vbnd,vbc)   !srv 15.02.26
+              call vbc_is(ib,is,ibc,iCv2,iFc,csbc,wrks,vbnd,vbc)        !srv 15.02.26
               t0 = t0 + rt%rza(iCv1,is)*mompar(is,ib,1)*s1*
      &         max(csbc*abs(wrk),vbc*sign(1.0_R8,wrk)+vbnd)*
      &         pl%na(iCv1,is)
