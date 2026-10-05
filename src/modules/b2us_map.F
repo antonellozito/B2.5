@@ -1026,6 +1026,7 @@ cwdk  can be derived directly from data in that file
         allocate(m%ivdiv(maxval(m%strDiv)))
         allocate(m%divFcP(maxval(m%strDiv),2))
         allocate(indFc(m%nFc))
+        indFc = 0
         icount = 0
         m%ifdiv = 0
         m%ivdiv = 0
@@ -1048,6 +1049,7 @@ cwdk  can be derived directly from data in that file
         icount = count(indFc(:).ne.0)
         allocate(m%divFc(icount))
         allocate(m%divFcOr(icount))
+        m%divFc = 0
         m%divFcOr = 0.0_R8
         icount = 1
         do i = 1, indd
