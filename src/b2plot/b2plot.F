@@ -302,6 +302,7 @@ c
 #ifdef B25_EIRENE
       CALL EIRENE_ALLOC_BRAEIR(mpg%nCv,mpg%nFc,NFL)
       CALL EIRENE_ALLOC_EIRBRA(mpg%nCv,NFL,NATM,NMOL,NION,NSTRA)
+      CALL EIRENE_ALLOC_CCOUPL(1)
       CALL EIRENE_ALLOC_CTRCEI(1)
       CALL EIRENE_ALLOC_CTRCEI(2)
       CALL EIRENE_SETCON
@@ -1492,16 +1493,37 @@ c
               if (mpg%cvFt(iCn).eq.iFt) cycle
               if (mpg%cvFt(iCn).eq.iFm) cycle
               if (mpg%cvFt(iCn).eq.iFp) cycle
-              if (iFm.eq.0) iFm = mpg%cvFt(iCn)
-              if (iFm.ne.0) iFp = mpg%cvFt(iCn)
+              if (iFm.eq.0 .and. iFp.eq.0) then
+                iFm = mpg%cvFt(iCn)
+              else if (iFm.ne.0 .and. iFp.eq.0) then
+                iFp = mpg%cvFt(iCn)
+              end if
             end do
           end do
-          if (mpg%cvOnClosedSurface(mpg%ftCv(mpg%ftCvP(iFp,1)))) then
-            shear(iFt)=(safetyfactor(iFp)-safetyfactor(iFm))/
-     &       (rave(iFp)-rave(iFm))
-          else
-            shear(iFt)=(safetyfactor(iFt)-safetyfactor(iFm))/
-     &       (rave(iFt)-rave(iFm))
+          if (iFm.ne.0 .and. iFp.ne.0) then
+            if (mpg%cvOnClosedSurface(mpg%ftCv(mpg%ftCvP(iFp,1))) .and.
+     &          mpg%cvOnClosedSurface(mpg%ftCv(mpg%ftCvP(iFm,1)))) then
+              shear(iFt)=(safetyfactor(iFp)-safetyfactor(iFm))/
+     &         (rave(iFp)-rave(iFm))
+            else if (mpg%cvOnClosedSurface(mpg%ftCv(mpg%ftCvP(iFm,1))))
+     >       then
+              shear(iFt)=(safetyfactor(iFt)-safetyfactor(iFm))/
+     &         (rave(iFt)-rave(iFm))
+            else if (mpg%cvOnClosedSurface(mpg%ftCv(mpg%ftCvP(iFp,1))))
+     >       then
+              shear(iFt)=(safetyfactor(iFp)-safetyfactor(iFt))/
+     &         (rave(iFp)-rave(iFt))
+            end if
+          else if (iFm.eq.0 .and. iFp.ne.0) then
+            if (mpg%cvOnClosedSurface(mpg%ftCv(mpg%ftCvP(iFp,1)))) then
+              shear(iFt)=(safetyfactor(iFp)-safetyfactor(iFt))/
+     &         (rave(iFp)-rave(iFt))
+            end if
+          else if (iFm.ne.0 .and. iFp.eq.0) then
+            if (mpg%cvOnClosedSurface(mpg%ftCv(mpg%ftCvP(iFm,1)))) then
+              shear(iFt)=(safetyfactor(iFt)-safetyfactor(iFm))/
+     &         (rave(iFt)-rave(iFm))
+            end if
           endif
         endif
       enddo
@@ -1612,6 +1634,7 @@ c
             CALL EIRENE_DEALLOC_CTRCEI
             CALL EIRENE_DEALLOC_BRAEIR
             CALL EIRENE_DEALLOC_EIRBRA
+            CALL EIRENE_DEALLOC_CCOUPL
             CALL EIRENE_DEALLOC_INFCOP
             CALL EIRENE_EXTRAB25_CLEANUP
             CALL EIRENE_WNEUTRALS_DEALLOC
@@ -1708,6 +1731,7 @@ c
           CALL EIRENE_DEALLOC_CTRCEI
           CALL EIRENE_DEALLOC_BRAEIR
           CALL EIRENE_DEALLOC_EIRBRA
+          CALL EIRENE_DEALLOC_CCOUPL
           CALL EIRENE_DEALLOC_INFCOP
           CALL EIRENE_EXTRAB25_CLEANUP
           CALL EIRENE_WNEUTRALS_DEALLOC

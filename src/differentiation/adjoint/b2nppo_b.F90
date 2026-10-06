@@ -364,8 +364,8 @@ SUBROUTINE B2NPPO_NODIFF(ncv, nfc, nvx, nregionv, solving, solvereg, &
               wrk = pl%po(icv)
               pl%po(icv) = SIGN(switch%b2nppo_restr_po*pl%te(icv)/qe, pl&
 &               %po(icv))
-              WRITE(*, *) 'Applied po/Te ratio limit', icv, wrk, pl%po(&
-&             icv)
+              WRITE(*, '(a,i6,1p,2e15.8)') 'Applied po/Te ratio limit',&
+&               icv, wrk, pl%po(icv)
             END IF
           ELSE
             IF (qe*pl%po(icv) .GE. 0.) THEN
@@ -383,8 +383,8 @@ SUBROUTINE B2NPPO_NODIFF(ncv, nfc, nvx, nregionv, solving, solvereg, &
               wrk = pl%po(icv)
               pl%po(icv) = SIGN(switch%b2nppo_restr_po*pl%te(icv)/qe, pl&
 &               %po(icv))
-              WRITE(*, *) 'Applied po/Te ratio limit', icv, wrk, pl%po(&
-&             icv)
+              WRITE(*, '(a,i6,1p,2e15.8)') 'Applied po/Te ratio limit',&
+&               icv, wrk, pl%po(icv)
             END IF
           END IF
         END IF
