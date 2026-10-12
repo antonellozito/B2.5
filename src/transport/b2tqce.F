@@ -162,8 +162,8 @@
          else
           hce(iCv,0) = 2.5_R8*(pl%te(iCv)/me)*fke(z)*tnp
          endif
-         if ((iCv .le. mpg%nCi) .or. mpg%cvOnClosedSurface(iCv)
-     &        .or.switch%b2tqce_style_guard_cells.eq.0) then             ! IYS and lk 21.11.2012
+         if (iCv.le.mpg%nCi .or. mpg%cvOnClosedSurface(iCv) .or.
+     &       switch%b2tqce_style_guard_cells.eq.0) then                  ! IYS and lk 21.11.2012
           if(switch%b2sigp_style.eq.2) then                              !srv 13.01.17 {
            sig(iCv,0) = (qe**2/me)*tnp/fse_ce1(z)
            alf(iCv,0) = (qe/me)*z*fal_cen(z)*tnp
@@ -174,15 +174,15 @@
          endif
         else if (switch%b2tqce_model.eq.2) then ! old SOLPS4.0 Braginskii model for hce
          hce(iCv,0) = ce*(pl%te(iCv)/me)*tnp
-         if ((iCv .le. mpg%nCi) .or. mpg%cvOnClosedSurface(iCv)
-     &       .or.switch%b2tqce_style_guard_cells.eq.0) then              ! IYS and lk 21.11.2012
+         if (iCv.le.mpg%nCi .or. mpg%cvOnClosedSurface(iCv) .or.
+     &       switch%b2tqce_style_guard_cells.eq.0) then                  ! IYS and lk 21.11.2012
           sig(iCv,0) = (qe**2/me)*fse(z)*tnp
           alf(iCv,0) = sqrt(2.5_R8)*(qe/me)*fal(z)*tnp
          endif
         else if (switch%b2tqce_model.eq.3) then  ! Balescu exact 21-moment expressions
          hce(iCv,0) = 2.5_R8*(pl%te(iCv)/me)*(d15e(z)/f135e(z))*tnp
-         if ((iCv .le. mpg%nCi) .or. mpg%cvOnClosedSurface(iCv)
-     &         .or.switch%b2tqce_style_guard_cells.eq.0) then            ! IYS and lk 21.11.2012
+         if (iCv.le.mpg%nCi .or. mpg%cvOnClosedSurface(iCv) .or.
+     &       switch%b2tqce_style_guard_cells.eq.0) then                  ! IYS and lk 21.11.2012
           sig(iCv,0) = (qe**2/me)*(d35e(z)/f135e(z))*tnp
           alf(iCv,0) = sqrt(2.5_R8)*(qe/me)*(-h153e(z)/f135e(z))*tnp
          endif

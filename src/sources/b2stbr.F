@@ -114,7 +114,7 @@
       integer, save :: out_tfiles = 1                                !xpb 28.09.16
       integer, save :: ncall_iout = -1
 #ifdef B25_EIRENE
-      integer ia, im
+      integer ia, im, iCn
 #ifdef ASTRA
       integer, save :: use_astra = 0
 #endif
@@ -565,8 +565,9 @@ c   --> better solution wanted here..
             k = b2espcr(is)
             if (is_neutral(is).or.(.not.do_sna_corr_core(k))) cycle
             do iCv=mpg%nCi+1,nCv
-              if(mpg%cvOnClosedSurface(iCv)) then
-                iFc = mpg%cvFc(mpg%cvFcP(iCv,1))
+              iFc = mpg%cvFc(mpg%cvFcP(iCv,1))
+              iCn = min(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+              if(mpg%cvOnClosedSurface(iCn)) then
                 if (switch%mdf_fnb.ne.0) then
                   sna_core(k) = sna_core(k) + st%dv%fna_mdf(iFc,1,is)
                 else

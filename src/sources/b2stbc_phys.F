@@ -72,7 +72,7 @@
 *.declarations
 
 *   ..local variables
-      integer iCv1, iFc, is, ib, ibc, k
+      integer iCv1, iCv2, iFc, is, ib, ibc, k
 #ifdef WG_TODO
      & ,coreregno, coreregn2, ireg,
      1  bc_type16_ref, bc_type16_ix, bc_type16_iy, bc_type16_i,
@@ -279,7 +279,8 @@ c       call ipgeti ('b2stbc_average_pr', istyle_average_pr)         !srv 08.08.
        ! identify core boundaries; assume all core boundaries
        ! form single flux surface
        iCv1 = mpg%bcCv(mpg%bcCvP(ib,1),1)
-       if (mpg%cvOnClosedSurface(iCv1)) then
+       iCv2 = mpg%bcCv(mpg%bcCvP(ib,1),2)
+       if (mpg%cvOnClosedSurface(iCv2)) then
         do ibc = 1, mpg%bcCvP(ib,2)                                  ! loop over number of cells in the boundary
          iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)                    ! number of the guard cell
          iFc  = mpg%cvFc(mpg%cvFcP(iCv1,1))                          ! number of the guard cell face
@@ -713,8 +714,8 @@ cwdk  now need to recompute full diamagnetic component for ud
             write(*,'(a,1p,g14.7,a,a,a,a,i3)')
      .       'BCCON =  2 : density gradient ',CONPAR(IS,IB,1),' on ',
      1       BCCHAR(IB),boundary_location(ib),' for species ',IS
-            icv = mpg%bcCv(mpg%bcCvP(ib,1),1)
-            if (mpg%cvOnClosedSurface(icv).and.ishigh)
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1),2)
+            if (mpg%cvOnClosedSurface(iCv).and.ishigh)
      >       call xertst (switch%ionising_core.eq.0,
      .        'ionising_core switch usage inconsistent with BCCON = 2')
           endif
@@ -774,7 +775,7 @@ cwdk  now need to recompute full diamagnetic component for ud
      1       'BCCON = 4, CONPAR(,,1) !> 0')
             call xertst(CONPAR(IS,IB,2).gt.0.0_R8,
      1       'BCCON = 4, CONPAR(,,2) !> 0')
-            iCv = mpg%bcCv(mpg%bcCvP(ib,1),1)
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1),2)
             if (mpg%cvOnClosedSurface(iCv).and.ishigh)
      .       call xertst (switch%ionising_core.eq.0,
      .        'ionising_core switch usage inconsistent with BCCON = 4')
@@ -837,8 +838,8 @@ cwdk      radial direction at N/S - unchanged for aligned grids)
      .      'BCCON =  6 : total particle flux ',CONPAR(IS,IB,1),
      1      ' with const density on ',BCCHAR(IB),
      2      boundary_location(ib),' for species ',IS
-           icv = mpg%bcCv(mpg%bcCvP(ib,1),1)
-           if (mpg%cvOnClosedSurface(icv).and.ishigh)
+           iCv = mpg%bcCv(mpg%bcCvP(ib,1),2)
+           if (mpg%cvOnClosedSurface(iCv).and.ishigh)
      >      call xertst (switch%ionising_core.eq.0,
      .        'ionising_core switch usage inconsistent with BCCON = 6')
           endif
@@ -987,8 +988,8 @@ cwdk      Total flux will be fine, possibly distributed somewhat differently...
      1       ' on ',BCCHAR(IB),boundary_location(ib),' for species ',IS
             call xertst(CONPAR(IS,IB,1).ne.0.0_R8,
      1       'B2STBC -- BCCON=9, CONPAR(,,1) = 0')
-            icv = mpg%bcCv(mpg%bcCvP(ib,1),1)
-            if (mpg%cvOnClosedSurface(icv).and.ishigh)
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1),2)
+            if (mpg%cvOnClosedSurface(iCv).and.ishigh)
      >       call xertst (switch%ionising_core.eq.0,
      .        'ionising_core switch usage inconsistent with BCCON = 9')
           endif
@@ -1035,8 +1036,8 @@ cwdk      Total flux will be fine, possibly distributed somewhat differently...
      .       'BCCON = 10 : leakage ',CONPAR(IS,IB,1),' on ',BCCHAR(IB),
      1       boundary_location(ib),
      2       ' for species ',IS
-            icv = mpg%bcCv(mpg%bcCvP(ib,1),1)
-            if (mpg%cvOnClosedSurface(icv).and.ishigh)
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1),2)
+            if (mpg%cvOnClosedSurface(iCv).and.ishigh)
      >       call xertst (switch%ionising_core.eq.0,
      .        'ionising_core switch usage inconsistent with BCCON = 10')
              call xertst (conpar(is,ib,2).ge.0.0_R8,                    !lkw 30.06.2022
@@ -1369,8 +1370,8 @@ c   (ionising_core option)
      .       'BCCON = 15 : prescribe the decay length for the density',
      &       ' for drifs switched on ',CONPAR(IS,IB,1),' on ',
      1       BCCHAR(IB),boundary_location(ib),' for species ',IS
-            icv = mpg%bcCv(mpg%bcCvP(ib,1),1)
-            if (mpg%cvOnClosedSurface(icv).and.ishigh)
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1),2)
+            if (mpg%cvOnClosedSurface(iCv).and.ishigh)
      .       call xertst (switch%ionising_core.eq.0,
      .        'ionising_core switch usage inconsistent with BCCON = 15')
           endif
@@ -1752,8 +1753,8 @@ cxpb  Add contribution from Eirene core boundary fluxes
      1       BCCHAR(IB),boundary_location(ib),' for species ',IS
             call xertst(CONPAR(IS,IB,1).gt.0.0_R8,
      1       'BCCON = 1, CONPAR(,,1) !> 0')
-            icv = mpg%bcCv(mpg%bcCvP(ib,1),1)
-            if (mpg%cvOnClosedSurface(icv).and.ishigh)
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1),2)
+            if (mpg%cvOnClosedSurface(iCv).and.ishigh)
      >       call xertst (switch%ionising_core.eq.0,
      .        'ionising_core switch usage inconsistent with BCCON = 20')
           endif
@@ -2229,8 +2230,8 @@ cxpb  Add contribution from Eirene core boundary fluxes
      1       'BCCON = 24, CONPAR(,,1) !> 0')
             call xertst(CONPAR(is,ib,2).gt.0.0_R8,
      &           'faulty parameter conpar2')
-            icv = mpg%bcCv(mpg%bcCvP(ib,1),1)
-            if (mpg%cvOnClosedSurface(icv).and.ishigh)
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1),2)
+            if (mpg%cvOnClosedSurface(iCv).and.ishigh)
      >       call xertst (switch%ionising_core.eq.0,
      .        'ionising_core switch usage inconsistent with BCCON = 24')
           endif
@@ -2749,7 +2750,7 @@ cxpb  Add contribution from Eirene core boundary fluxes
            ! form single flux surface
            ! implicit assumption at the moment: first ring in the
            ! core is a 'structured grid' ring with quad cells
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
            if (mpg%cvOnClosedSurface(iCv1)) then
             do ibc0 = 1, mpg%bcCvP(ib0,2)                               ! loop over number of cells in the boundary
              iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,1)                 ! number of the guard cell
@@ -2797,7 +2798,7 @@ cxpb  Add contribution from Eirene core boundary fluxes
            ! form single flux surface
            ! implicit assumption at the moment: first ring in the
            ! core is a 'structured grid' ring with quad cells
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
            if (mpg%cvOnClosedSurface(iCv1)) then
             if (bccon(is,ib0).ne.29)
      .        call xerrab ('BCCON=29: incompatible core BCs')
@@ -5009,7 +5010,7 @@ cwdk     * need to correct this BC for hybrid scheme
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
          if (mpg%cvOnClosedSurface(iCv1)) then
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
            iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,1)                   ! number of the guard cell
@@ -5038,7 +5039,7 @@ cwdk     * need to correct this BC for hybrid scheme
       case (24)
         if(ncall_b2stbc_phys.eq.0) then
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)
+           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
            call xertst(mpg%cvOnClosedSurface(iCv1),
      .      'BCENE=24 intended for core boundaries only!')
           enddo
@@ -5059,7 +5060,7 @@ cwdk     * need to correct this BC for hybrid scheme
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
          if (mpg%cvOnClosedSurface(iCv1)) then
           if (bcene(ib0).ne.24)
      .      call xerrab ('BCENE=24: incompatible core BCs')
@@ -7087,7 +7088,7 @@ cwdk     * need to correct this BC for hybrid scheme
       case (28)
         if(ncall_b2stbc_phys.eq.0) then
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)
+           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
            call xertst(mpg%cvOnClosedSurface(iCv1),
      .      'BCENI=28 intended for core boundaries only!')
           enddo
@@ -7108,7 +7109,7 @@ cwdk     * need to correct this BC for hybrid scheme
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
          if (mpg%cvOnClosedSurface(iCv1)) then
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
            iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,1)                   ! number of the guard cell
@@ -7137,7 +7138,7 @@ cwdk     * need to correct this BC for hybrid scheme
       case (29)
         if(ncall_b2stbc_phys.eq.0) then
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)
+           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
            call xertst(mpg%cvOnClosedSurface(iCv1),
      .      'BCENI=29 intended for core boundaries only!')
           enddo
@@ -7158,7 +7159,7 @@ cwdk     * need to correct this BC for hybrid scheme
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
          if (mpg%cvOnClosedSurface(iCv1)) then
           if (bceni(ib0).ne.29)
      .      call xerrab ('BCENI=29: incompatible core BCs')
@@ -7659,7 +7660,7 @@ c code here is a part of code from 50000 for istyle_cur_contr_on_S_and_N.eq.1
      .       ('faulty parameter istyle_cur_contr_on_S_and_N !')
           else
            do ibc = 1, mpg%bcCvP(ib,2)
-            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)
+            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
             call xertst(mpg%cvOnClosedSurface(iCv1),
      .       'BCPOT=12 intended for core boundaries only!')
            enddo
@@ -7742,7 +7743,7 @@ c code here is a part of code from 50000 for istyle_cur_contr_on_S_and_N.eq.1
            ! form single flux surface
            ! implicit assumption at the moment: first ring in the
            ! core is a 'structured grid' ring with quad cells
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
            if (mpg%cvOnClosedSurface(iCv1)) then
             if (bcpot(ib0).ne.12)
      .        call xerrab ('BCPOT=12: incompatible core BCs')
@@ -7797,7 +7798,7 @@ c code here is a part of code from 50000 for istyle_cur_contr_on_S_and_N.eq.1
      .       ('faulty parameter istyle_cur_contr_on_S_and_N !')
           else
            do ibc = 1, mpg%bcCvP(ib,2)
-            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)
+            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
             call xertst(.not.mpg%cvOnClosedSurface(iCv1),
      .       'BCPOT=13 not intended for core boundaries!')
            enddo
@@ -8094,7 +8095,7 @@ c end of implementation
      .     'BCPOT = 22 : specified potential ',POTPAR(IB,1),' on ',
      1     BCCHAR(IB),boundary_location(ib)
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)
+           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
            call xertst(mpg%cvOnClosedSurface(iCv1),
      .      'BCPOT=22 intended for core boundaries only!')
           enddo
@@ -8107,7 +8108,7 @@ c end of implementation
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
          if (mpg%cvOnClosedSurface(iCv1)) then
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
            iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,1)                   ! number of the guard cell
@@ -8141,7 +8142,7 @@ c end of implementation
      .     'BCPOT = 23 : specified potential ',POTPAR(IB,1),' on ',
      1     BCCHAR(IB),boundary_location(ib)
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,1)
+           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
            call xertst(mpg%cvOnClosedSurface(iCv1),
      .      'BCPOT=23 intended for core boundaries only!')
           enddo
@@ -8158,7 +8159,7 @@ c end of implementation
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),1)
+         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
          if (mpg%cvOnClosedSurface(iCv1)) then
           if (bcpot(ib0).ne.23)
      .      call xerrab ('BCPOT=23: incompatible core BCs')
