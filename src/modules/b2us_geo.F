@@ -478,18 +478,21 @@
 
 *   ..identify cells on closed surfaces
       if (mpg%nnreg(0).eq.1) then
-        mpg%cvOnClosedSurface = mpg%periodic_bc.eq.1
+        mpg%cvOnClosedSurface(1:mpg%nCi) = mpg%periodic_bc.eq.1
       else if (mpg%nnreg(0).eq.2 .or. mpg%nnreg(0).eq.4 .or.
      .         mpg%nnreg(0).eq.5 .or. mpg%nnreg(0).eq.8) then
-        mpg%cvOnClosedSurface = mod(mpg%cvReg,4).eq.1
+        do iCv = 1, mpg%nCi
+          mpg%cvOnClosedSurface(iCv) = mod(mpg%cvReg(iCv),4).eq.1
+        end do
       else if (mpg%nnreg(0).eq.7) then
-        mpg%cvOnClosedSurface = mpg%cvReg.eq.1
+        mpg%cvOnClosedSurface(1:mpg%nCi) = mpg%cvReg(1:mpg%nCi).eq.1
       else
-        mpg%cvOnClosedSurface = mpg%cvReg.eq.1
+        mpg%cvOnClosedSurface(1:mpg%nCi) = mpg%cvReg(1:mpg%nCi).eq.1
         write (*,*) 'Warning: unknown number of regions'
         write (*,*) 'Assuming core is region 1'
         !call xerrab ('Unknown number of regions!')
       end if
+      mpg%cvOnClosedSurface(mpg%nCi+1:nCv) = .false.
 
 *   ..set weights for interpolation to faces
       if (switch%fcVol_style.eq.0) then
