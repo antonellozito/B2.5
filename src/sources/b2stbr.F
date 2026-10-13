@@ -660,7 +660,7 @@ c   --> better solution wanted here..
             k = b2espcr(is)
             if(is_neutral(is)) cycle
 !            if(eirspta(k).eq.0.0_R8) then  ! not for sputtered particles yet
-            do iCv=1,nCv
+            do iCv=1,mpg%nCi
               if (do_sna_corr_core(k) .or.
      &                (.not.mpg%cvOnClosedSurface(iCv))) then
                 sna0_eir(iCv,0,is) = sna0_eir(iCv,0,is)*t(k)

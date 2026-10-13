@@ -585,7 +585,7 @@ SUBROUTINE B2NPMO_DV_DV(ncv, nfc, nvx, ns, ismain, switch, switchd0, &
       rxg_npmo = HUGE(1.0_R8)
       DO is=0,ns-1
         warning = .false.
-        DO icv=1,ncv
+        DO icv=1,mpg%nci
           warning = warning .OR. rxf*dtmo(is, mpg%cvreg(icv))*&
 &           time_factor(icv) .NE. 1.0_R8
         END DO
@@ -2828,7 +2828,7 @@ SUBROUTINE B2NPMO_DV_NODIFF(ncv, nfc, nvx, ns, ismain, switch, switchd, &
       rxg_npmo = HUGE(1.0_R8)
       DO is=0,ns-1
         warning = .false.
-        DO icv=1,ncv
+        DO icv=1,mpg%nci
           warning = warning .OR. rxf*dtmo(is, mpg%cvreg(icv))*&
 &           time_factor(icv) .NE. 1.0_R8
         END DO
@@ -4213,7 +4213,7 @@ SUBROUTINE B2NPMO_NODIFF_NODIFF(ncv, nfc, nvx, ns, ismain, switch, geo, &
       rxg_npmo = HUGE(1.0_R8)
       DO is=0,ns-1
         warning = .false.
-        DO icv=1,ncv
+        DO icv=1,mpg%nci
           warning = warning .OR. rxf*dtmo(is, mpg%cvreg(icv))*&
 &           time_factor(icv) .NE. 1.0_R8
         END DO

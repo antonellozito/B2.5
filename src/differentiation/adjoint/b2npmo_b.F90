@@ -321,7 +321,7 @@ SUBROUTINE B2NPMO_B(ncv, nfc, nvx, ns, ismain, switch, switchb, geo, &
       rxg_npmo = HUGE(1.0_R8)
       DO is=0,ns-1
         warning = .false.
-        DO icv=1,ncv
+        DO icv=1,mpg%nci
           warning = warning .OR. rxf*dtmo(is, mpg%cvreg(icv))*&
 &           time_factor(icv) .NE. 1.0_R8
         END DO
@@ -1165,7 +1165,7 @@ SUBROUTINE B2NPMO_B(ncv, nfc, nvx, ns, ismain, switch, switchb, geo, &
   vcount = 0
   IF (switch%ion_vlct_restrict_core .NE. 0) THEN
     DO is=0,ns-1
-      DO icv=1,ncv
+      DO icv=1,mpg%nci
         IF (mpg%cvonclosedsurface(icv)) THEN
           IF (((.NOT.is_neutral(is)) .OR. switch%tn_style .LE. 1) .OR. (&
 &             switch%tn_style .EQ. 2 .AND. NINT(zn(is)) .NE. 1)) THEN
@@ -2279,7 +2279,7 @@ SUBROUTINE B2NPMO_NODIFF(ncv, nfc, nvx, ns, ismain, switch, geo, mpg, &
       rxg_npmo = HUGE(1.0_R8)
       DO is=0,ns-1
         warning = .false.
-        DO icv=1,ncv
+        DO icv=1,mpg%nci
           warning = warning .OR. rxf*dtmo(is, mpg%cvreg(icv))*&
 &           time_factor(icv) .NE. 1.0_R8
         END DO
@@ -2936,7 +2936,7 @@ SUBROUTINE B2NPMO_NODIFF(ncv, nfc, nvx, ns, ismain, switch, geo, mpg, &
   vcount = 0
   IF (switch%ion_vlct_restrict_core .NE. 0) THEN
     DO is=0,ns-1
-      DO icv=1,ncv
+      DO icv=1,mpg%nci
         IF (mpg%cvonclosedsurface(icv)) THEN
           IF (((.NOT.is_neutral(is)) .OR. switch%tn_style .LE. 1) .OR. (&
 &             switch%tn_style .EQ. 2 .AND. NINT(zn(is)) .NE. 1)) THEN
