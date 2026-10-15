@@ -2750,8 +2750,8 @@ cxpb  Add contribution from Eirene core boundary fluxes
            ! form single flux surface
            ! implicit assumption at the moment: first ring in the
            ! core is a 'structured grid' ring with quad cells
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-           if (mpg%cvOnClosedSurface(iCv1)) then
+           iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+           if (mpg%cvOnClosedSurface(iCv)) then
             do ibc0 = 1, mpg%bcCvP(ib0,2)                               ! loop over number of cells in the boundary
              iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,1)                 ! number of the guard cell
              iCv2 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,2)                 ! number of the domain cell
@@ -2798,8 +2798,8 @@ cxpb  Add contribution from Eirene core boundary fluxes
            ! form single flux surface
            ! implicit assumption at the moment: first ring in the
            ! core is a 'structured grid' ring with quad cells
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-           if (mpg%cvOnClosedSurface(iCv1)) then
+           iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+           if (mpg%cvOnClosedSurface(iCv)) then
             if (bccon(is,ib0).ne.29)
      .        call xerrab ('BCCON=29: incompatible core BCs')
             do ibc0 = 1, mpg%bcCvP(ib0,2)                               ! loop over number of cells in the boundary
@@ -5010,8 +5010,8 @@ cwdk     * need to correct this BC for hybrid scheme
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-         if (mpg%cvOnClosedSurface(iCv1)) then
+         iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+         if (mpg%cvOnClosedSurface(iCv)) then
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
            iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,1)                   ! number of the guard cell
            iCv2 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,2)                   ! number of the domain cell
@@ -5039,8 +5039,8 @@ cwdk     * need to correct this BC for hybrid scheme
       case (24)
         if(ncall_b2stbc_phys.eq.0) then
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-           call xertst(mpg%cvOnClosedSurface(iCv1),
+           iCv = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
+           call xertst(mpg%cvOnClosedSurface(iCv),
      .      'BCENE=24 intended for core boundaries only!')
           enddo
           write(*,'(a,1p,g14.7,a,a,a)')
@@ -5060,8 +5060,8 @@ cwdk     * need to correct this BC for hybrid scheme
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-         if (mpg%cvOnClosedSurface(iCv1)) then
+         iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+         if (mpg%cvOnClosedSurface(iCv)) then
           if (bcene(ib0).ne.24)
      .      call xerrab ('BCENE=24: incompatible core BCs')
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
@@ -7088,8 +7088,8 @@ cwdk     * need to correct this BC for hybrid scheme
       case (28)
         if(ncall_b2stbc_phys.eq.0) then
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-           call xertst(mpg%cvOnClosedSurface(iCv1),
+           iCv = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
+           call xertst(mpg%cvOnClosedSurface(iCv),
      .      'BCENI=28 intended for core boundaries only!')
           enddo
           IF(switch%use_astra.ne.0) THEN
@@ -7109,8 +7109,8 @@ cwdk     * need to correct this BC for hybrid scheme
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-         if (mpg%cvOnClosedSurface(iCv1)) then
+         iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+         if (mpg%cvOnClosedSurface(iCv)) then
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
            iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,1)                   ! number of the guard cell
            iCv2 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,2)                   ! number of the domain cell
@@ -7138,8 +7138,8 @@ cwdk     * need to correct this BC for hybrid scheme
       case (29)
         if(ncall_b2stbc_phys.eq.0) then
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-           call xertst(mpg%cvOnClosedSurface(iCv1),
+           iCv = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
+           call xertst(mpg%cvOnClosedSurface(iCv),
      .      'BCENI=29 intended for core boundaries only!')
           enddo
           write(*,'(a,1p,g14.7,a,a,a)')
@@ -7159,8 +7159,8 @@ cwdk     * need to correct this BC for hybrid scheme
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-         if (mpg%cvOnClosedSurface(iCv1)) then
+         iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+         if (mpg%cvOnClosedSurface(iCv)) then
           if (bceni(ib0).ne.29)
      .      call xerrab ('BCENI=29: incompatible core BCs')
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
@@ -7660,8 +7660,8 @@ c code here is a part of code from 50000 for istyle_cur_contr_on_S_and_N.eq.1
      .       ('faulty parameter istyle_cur_contr_on_S_and_N !')
           else
            do ibc = 1, mpg%bcCvP(ib,2)
-            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-            call xertst(mpg%cvOnClosedSurface(iCv1),
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
+            call xertst(mpg%cvOnClosedSurface(iCv),
      .       'BCPOT=12 intended for core boundaries only!')
            enddo
           endif
@@ -7743,8 +7743,8 @@ c code here is a part of code from 50000 for istyle_cur_contr_on_S_and_N.eq.1
            ! form single flux surface
            ! implicit assumption at the moment: first ring in the
            ! core is a 'structured grid' ring with quad cells
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-           if (mpg%cvOnClosedSurface(iCv1)) then
+           iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+           if (mpg%cvOnClosedSurface(iCv)) then
             if (bcpot(ib0).ne.12)
      .        call xerrab ('BCPOT=12: incompatible core BCs')
             do ibc0 = 1, mpg%bcCvP(ib0,2)                               ! loop over number of cells in the boundary
@@ -7798,8 +7798,8 @@ c code here is a part of code from 50000 for istyle_cur_contr_on_S_and_N.eq.1
      .       ('faulty parameter istyle_cur_contr_on_S_and_N !')
           else
            do ibc = 1, mpg%bcCvP(ib,2)
-            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-            call xertst(.not.mpg%cvOnClosedSurface(iCv1),
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
+            call xertst(.not.mpg%cvOnClosedSurface(iCv),
      .       'BCPOT=13 not intended for core boundaries!')
            enddo
           endif
@@ -8095,8 +8095,8 @@ c end of implementation
      .     'BCPOT = 22 : specified potential ',POTPAR(IB,1),' on ',
      1     BCCHAR(IB),boundary_location(ib)
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-           call xertst(mpg%cvOnClosedSurface(iCv1),
+           iCv = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
+           call xertst(mpg%cvOnClosedSurface(iCv),
      .      'BCPOT=22 intended for core boundaries only!')
           enddo
         endif
@@ -8108,8 +8108,8 @@ c end of implementation
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-         if (mpg%cvOnClosedSurface(iCv1)) then
+         iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+         if (mpg%cvOnClosedSurface(iCv)) then
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
            iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,1)                   ! number of the guard cell
            iCv2 = mpg%bcCv(mpg%bcCvP(ib0,1)+ibc0-1,2)                   ! number of the domain cell
@@ -8142,8 +8142,8 @@ c end of implementation
      .     'BCPOT = 23 : specified potential ',POTPAR(IB,1),' on ',
      1     BCCHAR(IB),boundary_location(ib)
           do ibc = 1, mpg%bcCvP(ib,2)
-           iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-           call xertst(mpg%cvOnClosedSurface(iCv1),
+           iCv = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
+           call xertst(mpg%cvOnClosedSurface(iCv),
      .      'BCPOT=23 intended for core boundaries only!')
           enddo
         endif
@@ -8159,8 +8159,8 @@ c end of implementation
          ! form single flux surface
          ! implicit assumption at the moment: first ring in the
          ! core is a 'structured grid' ring with quad cells
-         iCv1 = mpg%bcCv(mpg%bcCvP(ib0,1),2)
-         if (mpg%cvOnClosedSurface(iCv1)) then
+         iCv = mpg%bcCv(mpg%bcCvP(ib0,1),2)
+         if (mpg%cvOnClosedSurface(iCv)) then
           if (bcpot(ib0).ne.23)
      .      call xerrab ('BCPOT=23: incompatible core BCs')
           do ibc0 = 1, mpg%bcCvP(ib0,2)                                 ! loop over number of cells in the boundary
@@ -9057,8 +9057,8 @@ cwdk    Todo: corrections for BCCON.ne.14
       case (16)
         if(ncall_b2stbc_phys.eq.0) then
           do ibc = 1, mpg%bcCvP(ib,2)
-            iCv1 = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
-            call xertst(mpg%cvOnClosedSurface(iCv1),
+            iCv = mpg%bcCv(mpg%bcCvP(ib,1)+ibc-1,2)
+            call xertst(mpg%cvOnClosedSurface(iCv),
      .       'BCENZ=16 intended for core boundaries only!')
           enddo
           write(*,'(a,1p,g14.7,a,a,a)')

@@ -389,8 +389,8 @@ c     &   '21-moment viscosity already includes parallel viscosity!')
           csig(iFc,0) = csig(iFc,0)*co%f_luc_sg(iFc)
           calf(iFc,0) = calf(iFc,0)*co%f_luc_al(iFc)
           chci(iFc,0) = chci(iFc,0)*co%f_luc_ki(iFc)
-         endif
-        enddo
+        endif
+       enddo
        do iCv = 1, nCv
         if (mpg%cvOnClosedSurface(iCv)) then
           iFt = mpg%cvFt(iCv)
