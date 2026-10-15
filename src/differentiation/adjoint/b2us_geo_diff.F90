@@ -1149,9 +1149,9 @@ CONTAINS
 &       nnreg(0) .EQ. 5) .OR. mpg%nnreg(0) .EQ. 8) THEN
       mpg%cvonclosedsurface(1:mpg%nCi) = MOD(mpg%cvreg(1:mpg%nCi), 4) .EQ. 1
     ELSE IF (mpg%nnreg(0) .EQ. 7) THEN
-      mpg%cvonclosedsurface(1:mpg%nCi) = mpg%cvreg .EQ. 1
+      mpg%cvonclosedsurface(1:mpg%nCi) = mpg%cvreg(1:mpg%nCi) .EQ. 1
     ELSE
-      mpg%cvonclosedsurface(1:mpg%nCi) = mpg%cvreg .EQ. 1
+      mpg%cvonclosedsurface(1:mpg%nCi) = mpg%cvreg(1:mpg%nCi) .EQ. 1
       WRITE(*, *) 'Warning: unknown number of regions'
 !call xerrab ('Unknown number of regions!')
       WRITE(*, *) 'Assuming core is region 1'
