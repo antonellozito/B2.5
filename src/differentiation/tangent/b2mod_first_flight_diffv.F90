@@ -182,7 +182,7 @@ CONTAINS
     TYPE(MAPPING) :: mpg
     TYPE(B2STATE) :: st
     INTEGER :: indptr, icv0, ns, isneut
-    INTEGER :: icv, ifc, ia, ptr, ik, ision, k, icvend
+    INTEGER :: icv, icn, ifc, ia, ptr, ik, ision, k, icvend
     REAL(kind=r8) :: dtim, dist_start, dist_end, dist_deposit, vcx, vion&
 &   , vnn, vexc, rcx, rion, rnn, src, sri, eion, sxb, flight_time, &
 &   flown_time, thru_time, work(mpg%ncv, 0:1), wrk2(mpg%ncv), wrk3(mpg%&
