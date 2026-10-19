@@ -183,7 +183,7 @@ c time-dependent treatment
          rxg_npmo = huge(1.0_R8)
          do is = 0,ns-1
           warning = .false.
-          do iCv = 1, nCv
+          do iCv = 1, mpg%nCi
             warning = warning .or.
      .       rxf*dtmo(is,mpg%cvReg(iCv))*time_factor(iCv).ne.1.0_R8
           enddo

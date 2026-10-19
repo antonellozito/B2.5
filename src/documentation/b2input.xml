@@ -4914,7 +4914,7 @@
 				<default>2</default>
 				<type>integer</type>
 				<description>
-					Choose the type of matrix solver. Style.eq.0 = iluter, Style.eq.1 = slv5pt, Style.eq.2 = MA28copy. Style.eq.3 = PARDISO (Intel MKL)
+					Choose the type of matrix solver. Style.eq.0 = iluter, Style.eq.1 = slv5pt, Style.eq.2 = MA28copy, Style.eq.3 = PARDISO (Intel MKL), Style.eq.4 = UMFPACK from SuiteSparse.
 					NOTE: style 0 and 1 are deprecated. PARDISO is faster than MA28 but requires MKL on your system.
 				</description>
 			</switch>
@@ -5695,6 +5695,16 @@
 				<description>
 					Normalisation factor for the parallel momentum equation.
 					Not used when running in time_dependent mode (b2mndt_style.eq.2).
+				</description>
+			</switch>
+			<switch>
+				<name>b2usmo_aad0_boost0</name>
+				<default>0.0</default>
+				<type>real</type>
+				<description>
+					Local boost to the parallel momentum equation matrix diagonal (aad0/aa5(ix,iy,0)), active when densities near the b2mndr_na_min floor, used to damp out the numerical instability leading to some supra-luminal velocities.
+					Recommended range: of order 1.e-6. Should be comparable in order of magnitude to the minimal value of product csb*rob, over the valid computational cells, of the main ion species.
+					Not yet ported to the automatically-differentiated (tangent/hessian/adjoint) variants of b2mod_switches/b2usmo.
 				</description>
 			</switch>
 			<switch>

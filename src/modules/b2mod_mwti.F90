@@ -3380,7 +3380,7 @@ contains
     real (kind=R8), intent(in), optional :: pos(nlist)
     real (kind=R8) :: ds_offset, ex, ey, elen
     character*(*) filename
-    integer i
+    integer i, i1
     intrinsic sqrt
 
     if (present(pos)) then
@@ -3409,7 +3409,7 @@ contains
         ex = 1.0_R8
         ey = 0.0_R8
       endif
-      ds(1) = 0.0_R8
+      ds(1)=0.0_R8
       do i=2,nlist
         ds(i) = ds(i-1) + &
              (geo%cvX(cvlist(i))-geo%cvX(cvlist(i-1)))*ex + &
@@ -3422,7 +3422,17 @@ contains
         ds(i)=ds(i)-ds_offset
       enddo
     endif
-    if(.not.mpg%cvOnClosedSurface(cvlist(1))) then ! flip sign
+    i = 1
+    i1 = 0
+    do while (i1.eq.0 .and. i.le.nlist)
+      if (cvlist(i).le.mpg%nCi) then
+        i1 = i
+      else
+        i = i + 1
+      end if
+    end do
+    call xertst(i1.gt.0, 'No inner cell found!')
+    if(.not.mpg%cvOnClosedSurface(cvlist(i1))) then ! flip sign
       ds(1:nlist)=-ds(1:nlist)
     endif
     open(99,file=filename)

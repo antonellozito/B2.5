@@ -114,7 +114,7 @@
       integer, save :: out_tfiles = 1                                !xpb 28.09.16
       integer, save :: ncall_iout = -1
 #ifdef B25_EIRENE
-      integer ia, im
+      integer ia, im, iCn
 #ifdef ASTRA
       integer, save :: use_astra = 0
 #endif
@@ -565,8 +565,9 @@ c   --> better solution wanted here..
             k = b2espcr(is)
             if (is_neutral(is).or.(.not.do_sna_corr_core(k))) cycle
             do iCv=mpg%nCi+1,nCv
-              if(mpg%cvOnClosedSurface(iCv)) then
-                iFc = mpg%cvFc(mpg%cvFcP(iCv,1))
+              iFc = mpg%cvFc(mpg%cvFcP(iCv,1))
+              iCn = min(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+              if(mpg%cvOnClosedSurface(iCn)) then
                 if (switch%mdf_fnb.ne.0) then
                   sna_core(k) = sna_core(k) + st%dv%fna_mdf(iFc,1,is)
                 else
@@ -659,7 +660,7 @@ c   --> better solution wanted here..
             k = b2espcr(is)
             if(is_neutral(is)) cycle
 !            if(eirspta(k).eq.0.0_R8) then  ! not for sputtered particles yet
-            do iCv=1,nCv
+            do iCv=1,mpg%nCi
               if (do_sna_corr_core(k) .or.
      &                (.not.mpg%cvOnClosedSurface(iCv))) then
                 sna0_eir(iCv,0,is) = sna0_eir(iCv,0,is)*t(k)
@@ -833,7 +834,7 @@ cwdk remove this if-test, to allow runs without Eirene if code is compiled with 
      4 st%srw%shi0(:,3)*st%dv%ni(:,0)*st%pl%ti(:)
       st%srw%b2stbr_shn(:)=
      1 st%srw%shn0(:,0)+
-     2 st%srw%shn0(:,1)*st%pl%ti(:)+
+     2 st%srw%shn0(:,1)*st%pl%tn(:)+
      3 st%srw%shn0(:,2)*st%dv%nn(:)+
      4 st%srw%shn0(:,3)*st%dv%nn(:)*st%pl%tn(:)
       st%srw%b2stbr_sch(:)=

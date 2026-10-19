@@ -155,7 +155,7 @@
           warning_n = .false.
           warning_kt = .false.
           warning_zt = .false.
-          do iCv = 1, nCv
+          do iCv = 1, mpg%nCi
             warning_e = warning_e .or.
      .        rxf*dtee(mpg%cvReg(iCv))*time_factor(iCv).ne.1.0_R8
             warning_i = warning_i .or.

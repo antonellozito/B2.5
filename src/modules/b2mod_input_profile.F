@@ -291,6 +291,7 @@
 
           do iy=1,ndim
             iFt=mpg%cvFt(omp(iy))
+            if (iFt.eq.0) cycle
             allocate(xr(mpg%ftCvP(iFt,2)),xf(mpg%ftCvP(iFt,2)))
             nfitanf=mpg%ftCvP(iFt,2)+1
             nfitend=0
