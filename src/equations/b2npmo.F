@@ -555,6 +555,8 @@ cdjm Jan2017 update momentum source components for balance
          wrk3(mpg%nCi+1:mpg%nCv,is) = 0.0_R8
          sr%smodt(:,0,is) = sr%smodt(:,0,is)-ts_factor*wrk3(:,is)
          smb = smb + sr%smodt(:,:,is)
+       else
+         wrk3 = 0.0_R8
        endif
 
 *    ..compute residual
