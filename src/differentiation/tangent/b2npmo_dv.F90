@@ -1596,7 +1596,7 @@ SUBROUTINE B2NPMO_NODIFF(ncv, nfc, nvx, ns, ismain, switch, geo, mpg, &
 !.declarations
 !
 !   ..local variables
-  INTEGER :: icv, is, ireg, k
+  INTEGER :: icv, icn, ifc, is, ireg, k
   INTEGER :: vcount(0:ns-1)
 !srv 04.07.08
   CHARACTER :: chns*3
