@@ -63,7 +63,7 @@
       enddo
       nncv = nncv-1
 *     Now sort the obtained list along the segment: the sort key of a cell is
-*     the position of its chord midpoint on the segment (cv_segment_positions)..
+*     the position of its chord midpoint on the segment (cv_segment_positions).
       if (nncv.gt.1) then
         allocate(pos(nncv))
         call cv_segment_positions (geo, m, segm, list, nncv, pos)
