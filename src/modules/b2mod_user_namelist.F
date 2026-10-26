@@ -38,12 +38,14 @@
      ,                 imp(nromp), icsepimp, ifsepimp, nimp
       integer, allocatable :: ft_imp(:), ft_omp(:)
       real (kind=R8) :: rzomp(2,2), rzimp(2,2)
-c*** rzchords: custom chords for b2chords.nc and eirenechords.nc.
-c***           rzchords(i,j,k): i=1 R, i=2 Z; j=1 start point, j=2 end point;
-c***           k=chord number.
+c*** rzphichords: custom 3D chords for b2chords.nc and eirenechords.nc.
+c***   rzphichords(i,j,k): i=1 R [m], i=2 Z [m], i=3 toroidal angle
+c***   phi [deg]; j=1 start point, j=2 end point; k=chord number.
+c***   Each chord is the straight 3D line between its two end points;
+c***   equal phi at both ends gives a chord in a poloidal plane.
       integer, parameter :: nchordmax = 100
       integer, save :: nchords = 0
-      real (kind=R8), save :: rzchords(2,2,nchordmax)
+      real (kind=R8), save :: rzphichords(3,2,nchordmax)
       real (kind=R8) :: psi_omp(nromp), psi_imp(nromp)
       real (kind=R8), save :: omp_pos(nromp), imp_pos(nromp)
       real (kind=R8), allocatable :: fs_ds_imp(:), fs_ds_omp(:)
@@ -76,7 +78,7 @@ c***           k=chord number.
      ,  Spmp_nom,scale_He,print_isat,write_nml_user,
      ,  filedata,user_filename,rzomp,rzimp,
      ,  Te_det_threshold,q95_albll,R0_albll,B0_albll,trgshp,
-     ,  rzchords
+     ,  rzphichords
 c----------------------------------------------------------------------
 c*** fusion_power : fusion power (including neutrons) [MW]
 c*** Spmp_He_to_D : ratio of He to DT pumping speeds (typically, 0.8)
@@ -177,7 +179,7 @@ c***  Standard set-up:
       print_isat=.false.
       rzomp = 0.0_R8
       rzimp = 0.0_R8
-      rzchords = 0.0_R8
+      rzphichords = 0.0_R8
       ft_imp = 0
       ft_omp = 0
       fs_ds_imp = -999.0_R8
@@ -249,23 +251,21 @@ c***  Standard set-up:
         filedata(ntrc_usr) = .false.
       endif
 
-c*** count the custom chords defined in rzchords (must be contiguous 1..nchords)
+c*** count the custom chords defined in rzphichords (must be contiguous
+c*** 1..nchords); a chord is defined if any of its six entries is set
       nchords = 0
       do ichord = 1, nchordmax
-        if (rzchords(1,1,ichord).ne.0.0_R8 .or.
-     &      rzchords(1,2,ichord).ne.0.0_R8 .or.
-     &      rzchords(2,1,ichord).ne.0.0_R8 .or.
-     &      rzchords(2,2,ichord).ne.0.0_R8) nchords = ichord
+        if (any(rzphichords(:,:,ichord).ne.0.0_R8)) nchords = ichord
       enddo
       do ichord = 1, nchords
-        call xertst(rzchords(1,1,ichord).ne.0.0_R8 .or.
-     &      rzchords(1,2,ichord).ne.0.0_R8 .or.
-     &      rzchords(2,1,ichord).ne.0.0_R8 .or.
-     &      rzchords(2,2,ichord).ne.0.0_R8,
-     &      'rzchords must define chords contiguously as 1..nchords')
+        call xertst(any(rzphichords(:,:,ichord).ne.0.0_R8),
+     &    'rzphichords must define chords contiguously as 1..nchords')
+        call xertst(rzphichords(1,1,ichord).ge.0.0_R8 .and.
+     &    rzphichords(1,2,ichord).ge.0.0_R8,
+     &    'rzphichords: the major radius R must not be negative')
       enddo
       if (nchords.gt.0) write(*,*)
-     &  'Number of custom chords defined in rzchords: ', nchords
+     &  'Number of custom chords defined in rzphichords: ', nchords
 
       nomp = 0
       omp = 0

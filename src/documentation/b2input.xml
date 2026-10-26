@@ -3811,7 +3811,7 @@
 				<default>0.0</default>
 				<type>real</type>
 				<description>
-					If non-zero, the movie files b2chords.nc and eirenechords.nc are generated (the second one only in case of coupled runs), containing quantities interpolated along the custom chords defined by rzchords in b2.user.parameters. Gives the real-time interval between writes of chord frames in b2chords.nc and eirenechords.nc. If non-zero, must be at least as large as the simulation timestep.
+					If non-zero, the movie files b2chords.nc and eirenechords.nc are generated (the second one only in case of coupled runs), containing quantities interpolated along the custom 3D chords defined by rzphichords in b2.user.parameters. Gives the real-time interval between writes of chord frames in b2chords.nc and eirenechords.nc. If non-zero, must be at least as large as the simulation timestep.
 				</description>
 			</switch>
 			<switch>
@@ -9237,12 +9237,13 @@
 				</description>
 			</switch>
 			<switch>
-				<name>RZCHORDS</name>
+				<name>RZPHICHORDS</name>
 				<default>0.0</default>
-				<type>real array of size (2,2,nchordmax) [nchordmax=100]</type>
+				<type>real array of size (3,2,nchordmax) [nchordmax=100]</type>
 				<description>
 					Coordinates defining the custom straight chords along which quantities are interpolated and written to b2chords.nc and eirenechords.nc (enabled by the cdfchord_* switches and b2mndr_cdfchordtim in b2mn.dat).
-					rzchords(1,j,k) holds the R-coordinate and rzchords(2,j,k) the Z-coordinate; j=1 is the start point and j=2 the end point of chord number k.
+					rzphichords(1,j,k) holds the major radius R [m], rzphichords(2,j,k) the vertical coordinate Z [m] and rzphichords(3,j,k) the toroidal angle phi [degrees]; j=1 is the start point and j=2 the end point of chord number k.
+					Each chord is the straight line in 3D space between its two end points, i.e. between the Cartesian points (R cos(phi), R sin(phi), Z). It is sampled uniformly in 3D arc length and every sample point is mapped back to its (R,Z).
 					The number of chords is inferred automatically from the number of contiguously defined entries (chords must be defined as 1..nchords, without gaps).
 				</description>
 			</switch>

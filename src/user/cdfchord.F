@@ -12,7 +12,7 @@
       use b2mod_constants
       use b2mod_b2cmpa
       use b2mod_user_namelist
-     & , only : rzchords, nchords, nchordmax
+     & , only : rzphichords, nchords, nchordmax
       use b2mod_switches
       use b2mod_subsys
 #ifdef B25_EIRENE
@@ -39,21 +39,23 @@ c   ..b2chords.nc geometry: sample points kept inside the B2.5 grid, one
 c   ..netCDF-4 group per surviving chord
       integer, save :: npt = 0, nchord_b = 0
       logical, save :: have_b25 = .false.
-      real (kind=R8), allocatable, save :: crx(:), cry(:), ds(:)
+      real (kind=R8), allocatable, save :: crx(:), cry(:), cphi(:)
+      real (kind=R8), allocatable, save :: ds(:)
       integer,        allocatable, save :: ichord(:), chordid(:)
-      real (kind=R8), allocatable, save :: cr1(:), cz1(:)
-      real (kind=R8), allocatable, save :: cr2(:), cz2(:)
+      real (kind=R8), allocatable, save :: cr1(:), cz1(:), cp1(:)
+      real (kind=R8), allocatable, save :: cr2(:), cz2(:), cp2(:)
       integer,        allocatable, save :: off(:), cnt(:), grpids(:)
 c   ..full (unfiltered) sample set for all chords, built once
       integer :: npt0
-      real (kind=R8), allocatable :: crx0(:), cry0(:), ds0(:)
+      real (kind=R8), allocatable :: crx0(:), cry0(:), cphi0(:)
+      real (kind=R8), allocatable :: ds0(:)
       integer,        allocatable :: ichord0(:)
       logical,        allocatable :: inside(:)
       real (kind=R8), allocatable :: valg(:), valg3(:,:), valg3b(:,:)
       real (kind=R8), allocatable :: wrk(:), wrk3(:,:), cpol(:), crad(:)
       real (kind=R8) :: time(1), dl, res_old
-      real (kind=R8) :: mrs(nchordmax), mzs(nchordmax), mre(nchordmax),
-     & mze(nchordmax)
+      real (kind=R8) :: mrs(nchordmax), mzs(nchordmax), mps(nchordmax),
+     & mre(nchordmax), mze(nchordmax), mpe(nchordmax)
       integer :: cid_o(nchordmax), npt_o(nchordmax), nchord_old
       integer :: natm_b, nmol_b
       logical :: ex, okmeta, samechords
@@ -63,10 +65,11 @@ c   ..eirenechords.nc geometry: points kept inside the triangular grid
       integer, save :: ncid_tri
       integer, save :: npt_t = 0, nchord_t = 0
       logical, save :: have_tri = .false.
-      real (kind=R8), allocatable, save :: crx_t(:), cry_t(:), ds_t(:)
+      real (kind=R8), allocatable, save :: crx_t(:), cry_t(:)
+      real (kind=R8), allocatable, save :: cphi_t(:), ds_t(:)
       integer,        allocatable, save :: ichord_t(:), chordid_t(:)
-      real (kind=R8), allocatable, save :: cr1_t(:), cz1_t(:)
-      real (kind=R8), allocatable, save :: cr2_t(:), cz2_t(:)
+      real (kind=R8), allocatable, save :: cr1_t(:), cz1_t(:), cp1_t(:)
+      real (kind=R8), allocatable, save :: cr2_t(:), cz2_t(:), cp2_t(:)
       integer, allocatable, save :: off_t(:), cnt_t(:), grpids_t(:)
       character*256, save :: filename_tri
       integer :: iatmi, imoli, istra, nstrad
@@ -89,26 +92,28 @@ c   ..eirenechords.nc geometry: points kept inside the triangular grid
 
       if (nchords .lt. 1) then
         if (ncall.eq.0) write(6,'(a)')
-     &    'cdfchord: no chords defined in rzchords; b2chords.nc skipped'
+     &    'cdfchord: no chords defined in rzphichords;'
+     &    //' b2chords.nc skipped'
         ncall = ncall + 1
         call subend ()
         return
       endif
 
       if (ncall.eq.0) then
-c   ..full concatenated sample set for all chords (grid-independent)
-        call chords_total_points(rzchords, nchords, dl, npt0)
-        allocate(crx0(npt0), cry0(npt0), ds0(npt0), ichord0(npt0))
-        allocate(inside(npt0))
-        call chords_geometry(rzchords, nchords, dl, npt0,
-     &    crx0, cry0, ds0, ichord0)
+c   ..full concatenated sample set for all 3D chords (grid-independent):
+c   ..(R,Z,phi) and 3D arc length of each sample point
+        call chords_total_points(rzphichords, nchords, dl, npt0)
+        allocate(crx0(npt0), cry0(npt0), cphi0(npt0), ds0(npt0))
+        allocate(ichord0(npt0), inside(npt0))
+        call chords_geometry(rzphichords, nchords, dl, npt0,
+     &    crx0, cry0, cphi0, ds0, ichord0)
 c   ..b2chords.nc: keep only points inside the B2.5 grid, dropping any
 c   ..chord that lies entirely outside it
         filename = 'b2chords.nc'
         call mask_inside_cv(geo, mpg, crx0, cry0, ichord0, npt0, inside)
-        call compact_chords(crx0, cry0, ds0, ichord0, npt0, nchords,
-     &    inside, crx, cry, ds, ichord, npt, chordid, nchord_b,
-     &    cr1, cz1, cr2, cz2)
+        call compact_chords(crx0, cry0, cphi0, ds0, ichord0, npt0,
+     &    nchords, inside, crx, cry, cphi, ds, ichord, npt, chordid,
+     &    nchord_b, cr1, cz1, cp1, cr2, cz2, cp2)
         have_b25 = (nchord_b .gt. 0)
         if (have_b25) then
 c   ..per-chord offsets/counts in the concatenated arrays
@@ -124,7 +129,8 @@ c   ..decide between append (same chords) and replace/create
           samechords = .false.
           if (ex .and. switch%b2mndr_stim.lt.0.0_R8) then
             call get_cdf_chord_meta(filename, nchordmax, okmeta,
-     &        nchord_old, cid_o, npt_o, mrs, mzs, mre, mze, res_old)
+     &        nchord_old, cid_o, npt_o, mrs, mzs, mps, mre, mze, mpe,
+     &        res_old)
             if (okmeta .and. nchord_old.eq.nchord_b .and.
      &          abs(res_old-dl).le.1.0e-12_R8) then
               samechords = .true.
@@ -132,8 +138,10 @@ c   ..decide between append (same chords) and replace/create
                 if (cid_o(m).ne.chordid(m) .or. npt_o(m).ne.cnt(m) .or.
      &            abs(mrs(m)-cr1(m)).gt.1.0e-9_R8 .or.
      &            abs(mzs(m)-cz1(m)).gt.1.0e-9_R8 .or.
+     &            abs(mps(m)-cp1(m)).gt.1.0e-9_R8 .or.
      &            abs(mre(m)-cr2(m)).gt.1.0e-9_R8 .or.
-     &            abs(mze(m)-cz2(m)).gt.1.0e-9_R8) samechords = .false.
+     &            abs(mze(m)-cz2(m)).gt.1.0e-9_R8 .or.
+     &            abs(mpe(m)-cp2(m)).gt.1.0e-9_R8) samechords = .false.
               enddo
             endif
           endif
@@ -153,7 +161,8 @@ c   ..decide between append (same chords) and replace/create
             enddo
             call create_cdf_chord_end(ncid, nchord_b, dl)
             call put_cdf_chord_coords(filename, nchord_b, chordid, off,
-     &        cnt, npt, crx, cry, ds, cr1, cz1, cr2, cz2)
+     &        cnt, npt, crx, cry, cphi, ds, cr1, cz1, cp1, cr2, cz2,
+     &        cp2)
           endif
         else
           write(6,'(a)') 'cdfchord: no chord intersects the B2.5 grid;'
@@ -165,9 +174,10 @@ c   ..keeping only the points inside the triangular grid
         if (switch%write_chord_triangles.ge.1) then
           filename_tri = 'eirenechords.nc'
           call mask_inside_tri(crx0, cry0, ichord0, npt0, inside)
-          call compact_chords(crx0, cry0, ds0, ichord0, npt0, nchords,
-     &      inside, crx_t, cry_t, ds_t, ichord_t, npt_t, chordid_t,
-     &      nchord_t, cr1_t, cz1_t, cr2_t, cz2_t)
+          call compact_chords(crx0, cry0, cphi0, ds0, ichord0, npt0,
+     &      nchords, inside, crx_t, cry_t, cphi_t, ds_t, ichord_t,
+     &      npt_t, chordid_t, nchord_t, cr1_t, cz1_t, cp1_t, cr2_t,
+     &      cz2_t, cp2_t)
           have_tri = (nchord_t .gt. 0)
           if (have_tri) then
             allocate(off_t(nchord_t), cnt_t(nchord_t))
@@ -182,7 +192,8 @@ c   ..keeping only the points inside the triangular grid
             samechords_tri = .false.
             if (ex_tri .and. switch%b2mndr_stim.lt.0.0_R8) then
               call get_cdf_chord_meta(filename_tri, nchordmax, okmeta,
-     &          nchord_old, cid_o, npt_o, mrs, mzs, mre, mze, res_old)
+     &          nchord_old, cid_o, npt_o, mrs, mzs, mps, mre, mze, mpe,
+     &          res_old)
               if (okmeta .and. nchord_old.eq.nchord_t .and.
      &            abs(res_old-dl).le.1.0e-12_R8) then
                 samechords_tri = .true.
@@ -191,8 +202,10 @@ c   ..keeping only the points inside the triangular grid
      &                npt_o(m).ne.cnt_t(m) .or.
      &                abs(mrs(m)-cr1_t(m)).gt.1.0e-9_R8 .or.
      &                abs(mzs(m)-cz1_t(m)).gt.1.0e-9_R8 .or.
+     &                abs(mps(m)-cp1_t(m)).gt.1.0e-9_R8 .or.
      &                abs(mre(m)-cr2_t(m)).gt.1.0e-9_R8 .or.
-     &                abs(mze(m)-cz2_t(m)).gt.1.0e-9_R8)
+     &                abs(mze(m)-cz2_t(m)).gt.1.0e-9_R8 .or.
+     &                abs(mpe(m)-cp2_t(m)).gt.1.0e-9_R8)
      &                samechords_tri = .false.
                 enddo
               endif
@@ -214,8 +227,8 @@ c   ..keeping only the points inside the triangular grid
               enddo
               call create_cdf_chord_end(ncid_tri, nchord_t, dl)
               call put_cdf_chord_coords(filename_tri, nchord_t,
-     &          chordid_t, off_t, cnt_t, npt_t, crx_t, cry_t, ds_t,
-     &          cr1_t, cz1_t, cr2_t, cz2_t)
+     &          chordid_t, off_t, cnt_t, npt_t, crx_t, cry_t, cphi_t,
+     &          ds_t, cr1_t, cz1_t, cp1_t, cr2_t, cz2_t, cp2_t)
             endif
           else
             write(6,'(a)')
@@ -224,7 +237,7 @@ c   ..keeping only the points inside the triangular grid
           endif
         endif
 #endif
-        deallocate(crx0, cry0, ds0, ichord0, inside)
+        deallocate(crx0, cry0, cphi0, ds0, ichord0, inside)
       endif
 
       time(1) = tim
