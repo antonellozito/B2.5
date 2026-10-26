@@ -99,7 +99,7 @@
 *.declarations
 
 *   ..local variables
-      integer iCv, is, ireg, k
+      integer iCv, iFc, iCn, is, ireg, k
       integer :: vcount(0:ns-1)
       character chns*3                                                 !srv 04.07.08
       real (kind=R8) :: mm(0:ns-1), am1(0:ns-1)                        !som 13.11.20
@@ -183,7 +183,7 @@ c time-dependent treatment
          rxg_npmo = huge(1.0_R8)
          do is = 0,ns-1
           warning = .false.
-          do iCv = 1, nCv
+          do iCv = 1, mpg%nCi
             warning = warning .or.
      .       rxf*dtmo(is,mpg%cvReg(iCv))*time_factor(iCv).ne.1.0_R8
           enddo
@@ -555,6 +555,8 @@ cdjm Jan2017 update momentum source components for balance
          wrk3(mpg%nCi+1:mpg%nCv,is) = 0.0_R8
          sr%smodt(:,0,is) = sr%smodt(:,0,is)-ts_factor*wrk3(:,is)
          smb = smb + sr%smodt(:,:,is)
+       else
+         wrk3 = 0.0_R8
        endif
 
 *    ..compute residual
@@ -826,8 +828,14 @@ c     ..compare 9-pt stencil matrix
       vcount = 0
       if( switch%ion_vlct_restrict_core .ne. 0 ) then
         do is = 0, ns-1
-          do iCv = 1, nCv
-            if (mpg%cvOnClosedSurface(iCv)) then
+          do iCv = 1, mpg%nCv
+            if (iCv.gt.mpg%nCi) then
+              iFc = mpg%cvFc(mpg%cvFcP(iCv,1))
+              iCn = min(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+            else
+              iCn = iCv
+            end if
+            if (mpg%cvOnClosedSurface(iCn)) then
               if (.not.is_neutral(is).or.switch%tn_style.le.1.or.
      .           (switch%tn_style.eq.2.and.nint(zn(is)).ne.1)) then
                 cst=sqrt(pz(iCv)/rz(iCv))

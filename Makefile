@@ -536,6 +536,10 @@ MAIN: ensure_adas
 endif
 ifneq ($(wildcard $(EBROOTSUITESPARSE)),)
 DEFINES += -DUMFPACK
+else ifneq ($(wildcard $(SUITESPARSE_HOME)),)
+DEFINES += -DUMFPACK
+else ifneq ($(wildcard $(SUITESPARSE_LIB_DIR)),)
+DEFINES += -DUMFPACK
 endif
 
 DIMSDIR = ${SRCDIR}/modules
@@ -1456,10 +1460,10 @@ else
 endif
 	@if cmp -s ${OBJDIR}/git_version_new.h ${SRCDIR}/include/git_version_B25.h; then rm ${OBJDIR}/git_version_new.h; else mv ${OBJDIR}/git_version_new.h ${SRCDIR}/include/git_version_B25.h; fi
 
-${OBJDIR}/dependencies: ${SRCDIR}/modules/.new_modules
-ifeq ($(shell [ -d ${OBJDIR} ] && echo yes || echo no ),no)
-	-mkdir -p ${OBJDIR}
-endif
+${OBJDIR}:
+	mkdir -p ${OBJDIR}
+
+${OBJDIR}/dependencies: ${SRCDIR}/modules/.new_modules | ${OBJDIR}
 ifneq (${OBJDIR},${OBNDIR})
 ifeq ($(shell [ -d ${OBNDIR} ] && echo yes || echo no ),no)
 	-mkdir -p ${OBNDIR}
@@ -1470,16 +1474,21 @@ endif
 	${MAKE} VERSION
 	${MAKE} depend
 
-AM_FILES: ${AMDIR}/dbe.fnn ${AMDIR}/dc.fnn ${AMDIR}/dw.fnn
+# retrieve_fnn_datasets fetches all three FNN files in one go, so a single
+# stamp file stands for the set and the script runs at most once per make.
+# The script leaves unchanged files with their old timestamps, which is why the
+# files themselves cannot serve as targets.  A missing file forces a new fetch.
+FNN_FILES = ${AMDIR}/dbe.fnn ${AMDIR}/dc.fnn ${AMDIR}/dw.fnn
+FNN_STAMP = ${AMDIR}/.fnn_datasets_retrieved
+ifneq ($(filter-out $(wildcard ${FNN_FILES}),${FNN_FILES}),)
+$(shell rm -f ${FNN_STAMP})
+endif
 
-${AMDIR}/dbe.fnn: ${AMDIR}/retrieve_fnn_datasets
-	cd ${AMDIR} ; ./retrieve_fnn_datasets
+AM_FILES: ${FNN_STAMP}
 
-${AMDIR}/dc.fnn: ${AMDIR}/retrieve_fnn_datasets
+${FNN_STAMP}: ${AMDIR}/retrieve_fnn_datasets
 	cd ${AMDIR} ; ./retrieve_fnn_datasets
-
-${AMDIR}/dw.fnn: ${AMDIR}/retrieve_fnn_datasets
-	cd ${AMDIR} ; ./retrieve_fnn_datasets
+	touch $@
 
 $(shell [ -s ${OBJDIR}/dependencies ] || rm -f ${OBJDIR}/dependencies)
 include ${OBJDIR}/dependencies
@@ -1577,8 +1586,7 @@ ${INCLOCAL}/b2local.h:
 	  echo "c store local or locally modified include files in this directory" ; \
 	  echo "c" ; } > $@.$$$$ && mv -f $@.$$$$ $@
 
-${OBJDIR}/mpiversion.mk: ${MAKES}
-	@mkdir -p ${OBJDIR}
+${OBJDIR}/mpiversion.mk: ${MAKES} | ${OBJDIR}
 ifdef NO_MPI
 	echo 'MPI_VERSION=0' > ${OBJDIR}/mpiversion.mk
 else
