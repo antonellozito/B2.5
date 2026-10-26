@@ -481,9 +481,7 @@
         mpg%cvOnClosedSurface(1:mpg%nCi) = mpg%periodic_bc.eq.1
       else if (mpg%nnreg(0).eq.2 .or. mpg%nnreg(0).eq.4 .or.
      .         mpg%nnreg(0).eq.5 .or. mpg%nnreg(0).eq.8) then
-        do iCv = 1, mpg%nCi
-          mpg%cvOnClosedSurface(iCv) = mod(mpg%cvReg(iCv),4).eq.1
-        end do
+        mpg%cvOnClosedSurface(1:mpg%nCi) = mod(mpg%cvReg(1:mpg%nCi),4).eq.1
       else if (mpg%nnreg(0).eq.7) then
         mpg%cvOnClosedSurface(1:mpg%nCi) = mpg%cvReg(1:mpg%nCi).eq.1
       else
