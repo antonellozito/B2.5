@@ -5,7 +5,7 @@
 c   ..netCDF-4 layout: shared dimensions/variables live in the root group
 c   ..(ns/natm/nmol/time, ntstep, times, nchord, resolution); each chord
 c   ..is a separate group 'chord_<k>' carrying its own npt dimension, its
-c   ..coordinate variables (crx/cry/ds) and all the physics fields.
+c   ..coordinate variables (crx/cry/cphi/ds) and all the physics fields.
       integer, save :: nsdim, natmdim, nmoldim, timedim
       integer, save :: ntstepid, timesid, ntstep
       integer, save :: nptdim
@@ -14,7 +14,7 @@ c   ..coordinate variables (crx/cry/ds) and all the physics fields.
 
 c-----------------------------------------------------------------------
       subroutine chord_group_name(cnum, name)
-c     Group name for chord number cnum (its original index in rzchords),
+c     Group name for chord number cnum (its index in rzphichords),
 c     zero-padded so the groups sort numerically (chord_0001, ...).
       implicit none
       integer cnum
@@ -80,18 +80,24 @@ c     this group's npt dimension so the field helpers pick it up.
      1  'R coordinate of chord sample point', 'm')
       call def_coord_var(grpid, 'cry', nptdim, NF_DOUBLE,
      1  'Z coordinate of chord sample point', 'm')
+      call def_coord_var(grpid, 'cphi', nptdim, NF_DOUBLE,
+     1  'Toroidal angle of chord sample point', 'deg')
       call def_coord_var(grpid, 'ds', nptdim, NF_DOUBLE,
-     1  'Arc length along the chord from its start', 'm')
+     1  '3D arc length along the chord from its start', 'm')
       call def_coord_var(grpid, 'chord_id', -1, NF_INT,
      1  'Original chord index (1..nchords in b2.user.parameters)', '1')
       call def_coord_var(grpid, 'rstart', -1, NF_DOUBLE,
      1  'R of chord start point', 'm')
       call def_coord_var(grpid, 'zstart', -1, NF_DOUBLE,
      1  'Z of chord start point', 'm')
+      call def_coord_var(grpid, 'phistart', -1, NF_DOUBLE,
+     1  'Toroidal angle of chord start point', 'deg')
       call def_coord_var(grpid, 'rend', -1, NF_DOUBLE,
      1  'R of chord end point', 'm')
       call def_coord_var(grpid, 'zend', -1, NF_DOUBLE,
      1  'Z of chord end point', 'm')
+      call def_coord_var(grpid, 'phiend', -1, NF_DOUBLE,
+     1  'Toroidal angle of chord end point', 'deg')
       return
       end subroutine create_cdf_chord_group
 
@@ -189,19 +195,21 @@ c     nchord and resolution, then close the file.
 
 c-----------------------------------------------------------------------
       subroutine put_cdf_chord_coords(filename, nchord, chordid, off,
-     & cnt, nptt, crx, cry, ds, rstart, zstart, rend, zend)
+     & cnt, nptt, crx, cry, cphi, ds, rstart, zstart, phistart, rend,
+     & zend, phiend)
 c     Reopen the file and write, into each chord's group, the static
-c     coordinate variables (crx/cry/ds) and the metadata scalars
-c     (chord_id, rstart/zstart/rend/zend). crx/cry/ds are the
-c     concatenated arrays; chord m occupies points off(m)+1..off(m)+cnt(m)
+c     coordinate variables (crx/cry/cphi/ds) and the metadata scalars
+c     (chord_id, rstart/zstart/phistart/rend/zend/phiend). crx/cry/
+c     cphi/ds are the concatenated arrays; chord m occupies points
+c     off(m)+1..off(m)+cnt(m)
       implicit none
 #     include <netcdf.inc>
       character*(*) filename
       integer nchord, nptt
       integer chordid(nchord), off(nchord), cnt(nchord)
-      real (kind=R8) :: crx(nptt), cry(nptt), ds(nptt)
-      real (kind=R8) :: rstart(nchord), zstart(nchord), rend(nchord),
-     & zend(nchord)
+      real (kind=R8) :: crx(nptt), cry(nptt), cphi(nptt), ds(nptt)
+      real (kind=R8) :: rstart(nchord), zstart(nchord),
+     & phistart(nchord), rend(nchord), zend(nchord), phiend(nchord)
       integer iret, ncid, grpid, m, varid, index(1)
       character*32 name
       real (kind=R8) :: rtmp(1)
@@ -214,6 +222,7 @@ c     concatenated arrays; chord m occupies points off(m)+1..off(m)+cnt(m)
         call check_cdf_status(iret)
         call put_static_slice(grpid, 'crx', crx, off(m), cnt(m))
         call put_static_slice(grpid, 'cry', cry, off(m), cnt(m))
+        call put_static_slice(grpid, 'cphi', cphi, off(m), cnt(m))
         call put_static_slice(grpid, 'ds',  ds,  off(m), cnt(m))
         iret = nf_inq_varid(grpid,'chord_id',varid)
         call check_cdf_status(iret)
@@ -223,10 +232,14 @@ c     concatenated arrays; chord m occupies points off(m)+1..off(m)+cnt(m)
         call put_scalar_double(grpid,'rstart',rtmp)
         rtmp(1)=zstart(m)
         call put_scalar_double(grpid,'zstart',rtmp)
+        rtmp(1)=phistart(m)
+        call put_scalar_double(grpid,'phistart',rtmp)
         rtmp(1)=rend(m)
         call put_scalar_double(grpid,'rend',rtmp)
         rtmp(1)=zend(m)
         call put_scalar_double(grpid,'zend',rtmp)
+        rtmp(1)=phiend(m)
+        call put_scalar_double(grpid,'phiend',rtmp)
       enddo
       iret = nf_close(ncid)
       call check_cdf_status(iret)
@@ -399,19 +412,20 @@ c-----------------------------------------------------------------------
 
 c-----------------------------------------------------------------------
       subroutine get_cdf_chord_meta(filename, nmax, ok, nchord, chordid,
-     & npt, rstart, zstart, rend, zend, resolution)
+     & npt, rstart, zstart, phistart, rend, zend, phiend, resolution)
 c     Read back the per-chord metadata (one group per chord) of an
 c     existing file, to decide whether an append is compatible with the
 c     current chords. Groups are returned in their stored order. ok is
-c     .false. if the file is missing or lacks anything needed (then it is
-c     rewritten instead of appended).
+c     .false. if the file is missing or lacks anything needed, e.g. a
+c     file written before the 3D chords (then it is rewritten instead of
+c     appended).
       implicit none
 #     include <netcdf.inc>
       character*(*) filename
       integer nmax, nchord
       integer chordid(nmax), npt(nmax)
-      real (kind=R8) :: rstart(nmax), zstart(nmax), rend(nmax),
-     & zend(nmax), resolution
+      real (kind=R8) :: rstart(nmax), zstart(nmax), phistart(nmax),
+     & rend(nmax), zend(nmax), phiend(nmax), resolution
       logical ok
       integer status, ncid, varid, dimid, ng, i
       integer grpids(nmax)
@@ -449,6 +463,11 @@ c     rewritten instead of appended).
         status = nf_get_var_double(grpids(i),varid,rtmp)
         if (status.ne.NF_NOERR) goto 900
         zstart(i)=rtmp(1)
+        status = nf_inq_varid(grpids(i),'phistart',varid)
+        if (status.ne.NF_NOERR) goto 900
+        status = nf_get_var_double(grpids(i),varid,rtmp)
+        if (status.ne.NF_NOERR) goto 900
+        phistart(i)=rtmp(1)
         status = nf_inq_varid(grpids(i),'rend',varid)
         if (status.ne.NF_NOERR) goto 900
         status = nf_get_var_double(grpids(i),varid,rtmp)
@@ -459,6 +478,11 @@ c     rewritten instead of appended).
         status = nf_get_var_double(grpids(i),varid,rtmp)
         if (status.ne.NF_NOERR) goto 900
         zend(i)=rtmp(1)
+        status = nf_inq_varid(grpids(i),'phiend',varid)
+        if (status.ne.NF_NOERR) goto 900
+        status = nf_get_var_double(grpids(i),varid,rtmp)
+        if (status.ne.NF_NOERR) goto 900
+        phiend(i)=rtmp(1)
       enddo
       ok = .true.
  900  status = nf_close(ncid)

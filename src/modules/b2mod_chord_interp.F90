@@ -3,13 +3,23 @@
 !     Interpolation of B2.5 fields onto arbitrary (R,Z) points and along
 !     straight chords.
 !
+!     Chord geometry (chords_total_points, chords_geometry): a chord is
+!     the straight 3D line between two points given as (R, Z, phi), with
+!     R and Z in metres and the toroidal angle phi in degrees. It is
+!     sampled uniformly in 3D arc length at the Cartesian points
+!     x = R cos(phi), y = R sin(phi), z = Z, and each sample is mapped
+!     back to (R = sqrt(x**2+y**2), Z = z, phi). Because the plasma is
+!     axisymmetric, everything below only needs the (R,Z) of each
+!     sample; phi is kept for output. Equal phi at both ends gives a
+!     chord in a poloidal plane (R and Z then vary linearly).
+!
 !     Method:
 !
 !     * Point location. A point is inside a control volume if it
 !       lies in one of the triangles formed by the cell center and
-!       each of the cell's faces (fan triangulation from the center,
+!       each of the faces of the cell (fan triangulation from the center,
 !       which is interior for a convex cell). This is independent of the
-!       vertex ordering. Walking a chord, the previous point's cell is
+!       vertex ordering. Walking a chord, the cell of the previous point is
 !       used as a hint and only its 9-point stencil is searched before
 !       falling back to a global scan.
 !
@@ -32,6 +42,7 @@
 !       radial flux densities.
 !=======================================================================
       use b2mod_types, only : R8
+      use b2mod_constants, only : pi
       use b2us_geo,    only : geometry, divide_by_area
       use b2us_map,    only : mapping
       implicit none
@@ -46,6 +57,8 @@
 !     Points closer than this (in metres) to a cell center are treated
 !     as coincident with it (return the cell value exactly).
       real (kind=R8), parameter :: dist_eps = 1.0e-12_R8
+!     Degrees to radians.
+      real (kind=R8), parameter :: deg2rad = pi/180.0_R8
 
       contains
 
@@ -189,7 +202,9 @@
      &                             npts, s, rr, zz, val, ok,             &
      &                             power, include_guard)
 !     Sample the cell-centered field fld along the chord from (r1,z1) to
-!     (r2,z2) at a spacing of about dl (metres). The chord is divided
+!     (r2,z2), a straight line in one poloidal plane (for 3D chords use
+!     chords_geometry + sample_cv_at_points), at a spacing of about dl
+!     (metres). The chord is divided
 !     into n = ceiling(length/dl) equal segments, giving npts=n+1 sample
 !     points (both endpoints included). On exit the allocatable arrays
 !     hold, for each sample point: s = arc length from (r1,z1), (rr,zz) =
@@ -253,7 +268,7 @@
 !     (:,1), as for dv%fna(:,:,is), dv%fhe, dv%fhi, etc. The fluxes are
 !     converted to flux densities with divide_by_area (projected face
 !     area geo%fcS*geo%fcQalf, the b2mod_mwti target convention), then
-!     reconstructed to cell centers with the code's stencil-consistent
+!     reconstructed to cell centers with the stencil-consistent
 !     operator (intcell with intcellP / intcellR) and interpolated. On
 !     exit val_pol is the poloidal flux-density profile and
 !     val_rad the radial flux-density profile; the sampling
@@ -322,14 +337,34 @@
       end subroutine facefield_to_cellcenters
 
 !-----------------------------------------------------------------------
-      subroutine chord_npoints (r1, z1, r2, z2, dl, np)
-!     Number of sample points on one chord (endpoints inclusive), for a
-!     spacing of about dl. A degenerate/zero chord returns 1.
+      subroutine chord_endpoints_xyz (rzphi, p1, p2, length)
+!     Cartesian end points p1, p2 = (x, y, z) [m] and 3D length [m] of
+!     the chord rzphi(1:3,j) = (R [m], Z [m], phi [deg]), j=1 start,
+!     j=2 end, with x = R cos(phi), y = R sin(phi), z = Z.
       implicit none
-      real (kind=R8), intent (in)  :: r1, z1, r2, z2, dl
+      real (kind=R8), intent (in)  :: rzphi(3,2)
+      real (kind=R8), intent (out) :: p1(3), p2(3), length
+      p1(1) = rzphi(1,1)*cos(rzphi(3,1)*deg2rad)
+      p1(2) = rzphi(1,1)*sin(rzphi(3,1)*deg2rad)
+      p1(3) = rzphi(2,1)
+      p2(1) = rzphi(1,2)*cos(rzphi(3,2)*deg2rad)
+      p2(2) = rzphi(1,2)*sin(rzphi(3,2)*deg2rad)
+      p2(3) = rzphi(2,2)
+      length = sqrt((p2(1)-p1(1))**2 + (p2(2)-p1(2))**2 +               &
+     &              (p2(3)-p1(3))**2)
+      return
+      end subroutine chord_endpoints_xyz
+
+!-----------------------------------------------------------------------
+      subroutine chord_npoints (rzphi, dl, np)
+!     Number of sample points on one 3D chord (endpoints inclusive), for
+!     a spacing of about dl in 3D arc length. A degenerate/zero chord
+!     returns 1.
+      implicit none
+      real (kind=R8), intent (in)  :: rzphi(3,2), dl
       integer,        intent (out) :: np
-      real (kind=R8) :: length
-      length = sqrt((r2-r1)**2 + (z2-z1)**2)
+      real (kind=R8) :: p1(3), p2(3), length
+      call chord_endpoints_xyz(rzphi, p1, p2, length)
       if (dl.le.0.0_R8 .or. length.le.0.0_R8) then
         np = 1
       else
@@ -339,53 +374,67 @@
       end subroutine chord_npoints
 
 !-----------------------------------------------------------------------
-      subroutine chords_total_points (rzchords, nchords, dl, npt)
+      subroutine chords_total_points (rzphichords, nchords, dl, npt)
 !     Total number of sample points over all nchords chords.
       implicit none
       integer,        intent (in)  :: nchords
-      real (kind=R8), intent (in)  :: rzchords(2,2,nchords)
+      real (kind=R8), intent (in)  :: rzphichords(3,2,nchords)
       real (kind=R8), intent (in)  :: dl
       integer,        intent (out) :: npt
       integer :: k, np
       npt = 0
       do k = 1, nchords
-        call chord_npoints(rzchords(1,1,k), rzchords(2,1,k),            &
-     &                     rzchords(1,2,k), rzchords(2,2,k), dl, np)
+        call chord_npoints(rzphichords(:,:,k), dl, np)
         npt = npt + np
       end do
       return
       end subroutine chords_total_points
 
 !-----------------------------------------------------------------------
-      subroutine chords_geometry (rzchords, nchords, dl, npt,           &
-     &                            crx, cry, ds, ichord)
-!     Fill the concatenated sample-point coordinates for all chords:
-!     crx/cry are the (R,Z) of each point, ds the arc length from the
-!     start of its chord, ichord the chord index (1..nchords). The point
-!     ordering matches chords_total_points / sample_cv_at_points.
+      subroutine chords_geometry (rzphichords, nchords, dl, npt,        &
+     &                            crx, cry, cphi, ds, ichord)
+!     Fill the concatenated sample-point coordinates for all 3D chords:
+!     crx/cry are the (R,Z) [m] of each point, cphi its toroidal angle
+!     [deg], ds the 3D arc length [m] from the start of its chord and
+!     ichord the chord index (1..nchords). The points are equally spaced
+!     along the straight Cartesian line between the two end points.
+!     cphi starts at the given phi of the start point and is continuous
+!     along the chord (no 360 degree jumps). The point ordering matches
+!     chords_total_points / sample_cv_at_points.
       implicit none
       integer,        intent (in)  :: nchords, npt
-      real (kind=R8), intent (in)  :: rzchords(2,2,nchords), dl
-      real (kind=R8), intent (out) :: crx(npt), cry(npt), ds(npt)
+      real (kind=R8), intent (in)  :: rzphichords(3,2,nchords), dl
+      real (kind=R8), intent (out) :: crx(npt), cry(npt), cphi(npt),     &
+     &                                ds(npt)
       integer,        intent (out) :: ichord(npt)
       integer :: k, i, np, off
-      real (kind=R8) :: r1, z1, r2, z2, length, t
+      real (kind=R8) :: p1(3), p2(3), length, t, x, y, phi, phiprev
       off = 0
       do k = 1, nchords
-        r1 = rzchords(1,1,k)
-        z1 = rzchords(2,1,k)
-        r2 = rzchords(1,2,k)
-        z2 = rzchords(2,2,k)
-        call chord_npoints(r1, z1, r2, z2, dl, np)
-        length = sqrt((r2-r1)**2 + (z2-z1)**2)
+        call chord_endpoints_xyz(rzphichords(:,:,k), p1, p2, length)
+        call chord_npoints(rzphichords(:,:,k), dl, np)
+        phiprev = rzphichords(3,1,k)
         do i = 1, np
           if (np.gt.1) then
             t = real(i-1, R8)/real(np-1, R8)
           else
             t = 0.0_R8
           end if
-          crx(off+i)    = r1 + t*(r2-r1)
-          cry(off+i)    = z1 + t*(z2-z1)
+          x = p1(1) + t*(p2(1)-p1(1))
+          y = p1(2) + t*(p2(2)-p1(2))
+          crx(off+i) = sqrt(x*x + y*y)
+          cry(off+i) = p1(3) + t*(p2(3)-p1(3))
+          if (i.eq.1 .or. crx(off+i).le.0.0_R8) then
+!           start point (exact user phi) or a point on the axis (phi
+!           undefined there): keep the previous angle
+            phi = phiprev
+          else
+!           atan2 angle, unwrapped to within 180 deg of the previous one
+            phi = atan2(y, x)/deg2rad
+            phi = phi - 360.0_R8*anint((phi - phiprev)/360.0_R8)
+          end if
+          cphi(off+i)   = phi
+          phiprev       = phi
           ds(off+i)     = t*length
           ichord(off+i) = k
         end do
@@ -455,33 +504,36 @@
       end subroutine mask_inside_cv
 
 !-----------------------------------------------------------------------
-      subroutine compact_chords (crx0, cry0, ds0, ichord0, npt0,         &
-     &                           nchords, inside, crx, cry, ds, ichord,   &
-     &                           npt, chordid, nchord, rstart, zstart,    &
-     &                           rend, zend)
+      subroutine compact_chords (crx0, cry0, cphi0, ds0, ichord0, npt0,  &
+     &                           nchords, inside, crx, cry, cphi, ds,     &
+     &                           ichord, npt, chordid, nchord, rstart,    &
+     &                           zstart, phistart, rend, zend, phiend)
 !     Keep only the sample points flagged inside(:) and drop any chord
 !     with no inside point. The kept points are packed into
-!     crx/cry/ds/ichord (ichord renumbered 1..nchord over the surviving
-!     chords, in their original order); npt is the kept-point count and
-!     nchord the surviving-chord count. chordid(m) is the original chord
-!     index (1..nchords) of surviving chord m. rstart/zstart and
-!     rend/zend are the (R,Z) of the first and last kept point of each
-!     surviving chord (its in-domain extent). ds keeps its original
-!     arc-length-from-chord-start value, so a chord that leaves and
-!     re-enters the domain shows a gap in ds. All output arrays are
-!     allocated here.
+!     crx/cry/cphi/ds/ichord (ichord renumbered 1..nchord over the
+!     surviving chords, in their original order); npt is the kept-point
+!     count and nchord the surviving-chord count. chordid(m) is the
+!     original chord index (1..nchords) of surviving chord m.
+!     rstart/zstart/phistart and rend/zend/phiend are the (R,Z,phi) of
+!     the first and last kept point of each surviving chord (its
+!     in-domain extent). ds keeps its original arc-length-from-chord-
+!     start value, so a chord that leaves and re-enters the domain shows
+!     a gap in ds. All output arrays are allocated here.
       implicit none
       integer,        intent (in)  :: npt0, nchords
-      real (kind=R8), intent (in)  :: crx0(npt0), cry0(npt0), ds0(npt0)
+      real (kind=R8), intent (in)  :: crx0(npt0), cry0(npt0),           &
+     &                                cphi0(npt0), ds0(npt0)
       integer,        intent (in)  :: ichord0(npt0)
       logical,        intent (in)  :: inside(npt0)
-      real (kind=R8), allocatable, intent (out) :: crx(:), cry(:), ds(:)
+      real (kind=R8), allocatable, intent (out) :: crx(:), cry(:),       &
+     &                                             cphi(:), ds(:)
       integer,        allocatable, intent (out) :: ichord(:)
       integer,        intent (out) :: npt
       integer,        allocatable, intent (out) :: chordid(:)
       integer,        intent (out) :: nchord
       real (kind=R8), allocatable, intent (out) :: rstart(:), zstart(:), &
-     &                                             rend(:), zend(:)
+     &                                             phistart(:), rend(:), &
+     &                                             zend(:), phiend(:)
       integer :: i, k, m, j
       integer, allocatable :: newid(:)
       logical, allocatable :: seen(:)
@@ -506,9 +558,10 @@
         if (inside(i)) npt = npt + 1
       end do
 
-      allocate(crx(npt), cry(npt), ds(npt), ichord(npt))
+      allocate(crx(npt), cry(npt), cphi(npt), ds(npt), ichord(npt))
       allocate(chordid(nchord))
-      allocate(rstart(nchord), zstart(nchord), rend(nchord), zend(nchord))
+      allocate(rstart(nchord), zstart(nchord), phistart(nchord))
+      allocate(rend(nchord), zend(nchord), phiend(nchord))
       allocate(seen(nchord))
       seen = .false.
 
@@ -522,16 +575,19 @@
         j         = j + 1
         crx(j)    = crx0(i)
         cry(j)    = cry0(i)
+        cphi(j)   = cphi0(i)
         ds(j)     = ds0(i)
         m         = newid(ichord0(i))
         ichord(j) = m
         if (.not.seen(m)) then
-          rstart(m) = crx0(i)
-          zstart(m) = cry0(i)
-          seen(m)   = .true.
+          rstart(m)   = crx0(i)
+          zstart(m)   = cry0(i)
+          phistart(m) = cphi0(i)
+          seen(m)     = .true.
         end if
-        rend(m) = crx0(i)
-        zend(m) = cry0(i)
+        rend(m)   = crx0(i)
+        zend(m)   = cry0(i)
+        phiend(m) = cphi0(i)
       end do
 
       deallocate(newid, seen)
@@ -542,7 +598,7 @@
       subroutine point_in_cell (geo, mpg, iCv, r, z, inside)
 !     Return inside=.true. if (r,z) lies in control volume iCv, tested by
 !     fanning the cell into triangles (cell center, face vertex 1, face
-!     vertex 2) over the cell's faces. Independent of vertex ordering;
+!     vertex 2) over the faces of the cell. Independent of vertex ordering;
 !     exact for convex cells.
       implicit none
       type (geometry), intent (in)  :: geo
