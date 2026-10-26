@@ -2138,8 +2138,8 @@
 				<default>0.0</default>
 				<type>real</type>
 				<description>
-					vis_per is a multiplier to the perpendicular viscosity current contributions to the ion flows (particle and energy). Subservient to b2tfnb_xcur and b2tfnb_ycur.
-					Cannot be used in conjunction with the 9-point stencil numerical treatment. If used with the 5-point stencil treatment and with fluid neutrals, must be equal to b2tfhe_vis_per for numerical stability reasons.
+					vis_per is a multiplier to the perpendicular viscosity current contributions to the ion flows (particle and energy). Subservient to b2tfhe_vis_per, b2tfnb_xcur and b2tfnb_ycur. If 1.0, the current is carried by the ions, if 0.0, the current is carried by the electrons.
+					Cannot be used in conjunction with the 9-point stencil numerical treatment.
 				</description>
 			</switch>
 			<switch>
@@ -2147,7 +2147,7 @@
 				<default>1.0</default>
 				<type>real</type>
 				<description>
-					vis_q is a multiplier to the heat viscosity current contributions to the ion flows (particle and energy). Subservient to b2tfnb_xcur and b2tfnb_ycur.
+					vis_q is a multiplier to the heat viscosity current contributions to the ion flows (particle and energy). Subservient to b2tfhe_vis_q, b2tfnb_xcur and b2tfnb_ycur. If 1.0, the current is carried by the ions, if 0.0, the current is carried by the electrons.
 				</description>
 			</switch>
 			<switch>
@@ -4710,7 +4710,7 @@
 					vis_per is a multiplier to the perpendicular viscosity current.
 					If vis_per.ne.0.0, the electric potential equation is solved by the subroutine b2npp7 using a 7-point stencil.
 					The value '1.0' is recommended for runs with drifts when perpendicular viscosity and corresponding perpendicular viscosity current is taken into account.
-					Cannot be used in conjunction with the 9-point stencil numerical treatment. If used with the 5-point stencil treatment and with fluid neutrals, must be equal to b2tfnb_vis_per for numerical stability reasons.
+					Not available in WG code. Cannot be used in conjunction with the 9-point stencil numerical treatment.
 				</description>
 			</switch>
 			<switch>
