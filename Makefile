@@ -1474,16 +1474,21 @@ endif
 	${MAKE} VERSION
 	${MAKE} depend
 
-AM_FILES: ${AMDIR}/dbe.fnn ${AMDIR}/dc.fnn ${AMDIR}/dw.fnn
+# retrieve_fnn_datasets fetches all three FNN files in one go, so a single
+# stamp file stands for the set and the script runs at most once per make.
+# The script leaves unchanged files with their old timestamps, which is why the
+# files themselves cannot serve as targets.  A missing file forces a new fetch.
+FNN_FILES = ${AMDIR}/dbe.fnn ${AMDIR}/dc.fnn ${AMDIR}/dw.fnn
+FNN_STAMP = ${AMDIR}/.fnn_datasets_retrieved
+ifneq ($(filter-out $(wildcard ${FNN_FILES}),${FNN_FILES}),)
+$(shell rm -f ${FNN_STAMP})
+endif
 
-${AMDIR}/dbe.fnn: ${AMDIR}/retrieve_fnn_datasets
-	cd ${AMDIR} ; ./retrieve_fnn_datasets
+AM_FILES: ${FNN_STAMP}
 
-${AMDIR}/dc.fnn: ${AMDIR}/retrieve_fnn_datasets
+${FNN_STAMP}: ${AMDIR}/retrieve_fnn_datasets
 	cd ${AMDIR} ; ./retrieve_fnn_datasets
-
-${AMDIR}/dw.fnn: ${AMDIR}/retrieve_fnn_datasets
-	cd ${AMDIR} ; ./retrieve_fnn_datasets
+	touch $@
 
 $(shell [ -s ${OBJDIR}/dependencies ] || rm -f ${OBJDIR}/dependencies)
 include ${OBJDIR}/dependencies
