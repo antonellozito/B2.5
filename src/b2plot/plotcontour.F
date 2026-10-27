@@ -43,11 +43,12 @@ c$$$      INTEGER IPTP,IPTE,IPTT
 
       integer ix,iy,ixstrt,ixend,iystrt,iyend
       integer nfmtz,noz,nozm,
-     .        i,j,k,ib,ic,ie,it,je,jt,
-     .        iCv,iCn,iFc,iVx,iVx1,iVx2,iVa,iVb
+     .        i,j,k,ib,ic,ie,it,jt,nv,ks,ipte,idiag,ip(3),
+     .        iCv,iCn,iCi,iFc,iVx,iVx1,iVx2,iVa,iVb
       real(kind=R4) :: rlo, rhi, zlo, zhi, zinc, zval, clv, special
-      real(kind=R4) :: ctval(1000), rmax, rmin, zmax, zmin
-      logical right_match_found, left_match_found
+      real(kind=R4) :: ctval(1000), rswp
+      real(kind=R8) :: area
+      logical right_match_found, left_match_found, lrev
       integer no_available_colors
       real (kind=R4) :: ceil, sfloor
       external no_available_colors, ceil, sfloor, xertst
@@ -225,12 +226,10 @@ C Second, build the list of edges
           i=i+(mpg%cvFcP(iCv,2)-3)
           j=j+(mpg%cvVxP(iCv,2)-3)
         end do
-        NOEN=i
-        NEDG=NOEN*LOEN
         NOTN=j
         NTRI=NOTN*LOTN
-        allocate(IEDG(NEDG))
-        allocate(IBEG(NOEN))
+        allocate(IEDG(i*LOEN))
+        allocate(IBEG(mpg%nFc))
         allocate(ITRI(NTRI))
         allocate(done(1:maxval(mpg%cvFcP(1:mpg%nCi,2))))
         do iCv=1,mpg%nCi
@@ -278,156 +277,90 @@ cxpb First we order the vertices and edges
           end do
         end do
         deallocate(done)
-        allocate(done(3*j))
-        done=.false.
-        i=0
-        ie=0
-        je=mpg%nFc
-cxpb Copy in the existing edges information
-cxpb For now just assign the CV number as the triangle index
+C Third, order the cell vertices counter-clockwise
         do iCv=1,mpg%nCi
-          do k=1,mpg%cvFcP(iCv,2)
-            iFc=edgelist(iCv,k)
-            if(done(iFc)) cycle
-            ie=ie+1
-            IBEG(iFc)=ie
-            i=i+1
-            IEDG(i)=(IBPT(nodelist(iCv,k))-1)*LOPN
-            i=i+1
-            if (k.lt.mpg%cvVxP(iCv,2)) then
-              IEDG(i)=(IBPT(nodelist(iCv,k+1))-1)*LOPN
-            else
-              IEDG(i)=(IBPT(nodelist(iCv,1))-1)*LOPN
-            end if
-            if (k.lt.3) then
-              j=k
-            else if (k.eq.mpg%cvFcP(iCv,2)) then
-              j=3
-            else
-              j=2
-            end if
-            if (mpg%fcVx(iFc,1).eq.nodelist(iCv,k)) then
-              i=i+1
-              if (mpg%fcCv(iFc,1).gt.mpg%nCi) then
-                IEDG(i)=-1
-              else
-                IEDG(i)=(mpg%fcCv(iFc,1)-1)*LOTN+j
-              end if
-              i=i+1
-              if (mpg%fcCv(iFc,2).gt.mpg%nCi) then
-                IEDG(i)=-1
-              else
-                IEDG(i)=(mpg%fcCv(iFc,2)-1)*LOTN+j
-              end if
-            else
-              i=i+1
-              if (mpg%fcCv(iFc,2).gt.mpg%nCi) then
-                IEDG(i)=-1
-              else
-                IEDG(i)=(mpg%fcCv(iFc,2)-1)*LOTN+j
-              end if
-              i=i+1
-              if (mpg%fcCv(iFc,1).gt.mpg%nCi) then
-                IEDG(i)=-1
-              else
-                IEDG(i)=(mpg%fcCv(iFc,1)-1)*LOTN+j
-              end if
-            end if
-            i=i+1
-            IEDG(i)=0
-            done(iFc)=.true.
+          nv=mpg%cvVxP(iCv,2)
+          call xertst (mpg%cvFcP(iCv,2).eq.nv,
+     .     'faulty cell for physical domain contour plot')
+          area=0.0_R8
+          do k=1,nv
+            iVa=nodelist(iCv,k)
+            iVb=nodelist(iCv,mod(k,nv)+1)
+            area=area+geo%vxX(iVa)*geo%vxY(iVb)
+     .               -geo%vxX(iVb)*geo%vxY(iVa)
           end do
-cxpb Now add any additional diagonals
-          do k=4,mpg%cvFcP(iCv,2)
-            je=je+1
-            ie=ie+1
-            IBEG(je)=ie
-            i=i+1
-            IEDG(i)=(IBPT(nodelist(iCv,1))-1)*LOPN
-            i=i+1
-            IEDG(i)=(IBPT(nodelist(iCv,k-1))-1)*LOPN
-            i=i+1
-            IEDG(i)=(iCv-1)*LOTN+3
-            i=i+1
-            IEDG(i)=(iCv-1)*LOTN+1
-            i=i+1
-            IEDG(i)=0
-          end do
+          if (area.lt.0.0_R8) then
+            do k=2,(nv+1)/2
+              iVx=nodelist(iCv,k)
+              nodelist(iCv,k)=nodelist(iCv,nv+2-k)
+              nodelist(iCv,nv+2-k)=iVx
+            end do
+            do k=1,nv/2
+              iFc=edgelist(iCv,k)
+              edgelist(iCv,k)=edgelist(iCv,nv+1-k)
+              edgelist(iCv,nv+1-k)=iFc
+            end do
+          end if
         end do
-cxpb Now assign the triangles
+C Fourth, split the cells into triangles and link edges to triangles
+        IBEG=0
+        NOEN=0
         it=mpg%nCi
-        ie=mpg%nFc
         do iCv=1,mpg%nCi
-          do k=3,mpg%cvFcP(iCv,2)
-            if(k.eq.3) then
+          nv=mpg%cvVxP(iCv,2)
+          idiag=0
+          do k=3,nv
+            if (k.eq.3) then
               jt=iCv
             else
               it=it+1
               jt=it
-              ie=ie+1
             end if
             ib=(jt-1)*LOTN
-            if (k.eq.3) then
-              ITRI(ib+1)=(IBEG(edgelist(iCv,1))-1)*LOEN
-              ITRI(ib+2)=(IBEG(edgelist(iCv,k-1))-1)*LOEN
-              if (k.eq.mpg%cvFcP(iCv,2)) then
-                ITRI(ib+3)=(IBEG(edgelist(iCv,k))-1)*LOEN
+            ip(1)=nodelist(iCv,1)
+            ip(2)=nodelist(iCv,k-1)
+            ip(3)=nodelist(iCv,k)
+            do ks=1,3
+              iVa=ip(ks)
+              iVb=ip(mod(ks,3)+1)
+              iFc=0
+              if (ks.eq.1.and.k.eq.3) iFc=edgelist(iCv,1)
+              if (ks.eq.2) iFc=edgelist(iCv,k-1)
+              if (ks.eq.3.and.k.eq.nv) iFc=edgelist(iCv,nv)
+              if (iFc.gt.0) then
+                ie=IBEG(iFc)
+              else if (ks.eq.1) then
+                ie=idiag
               else
-                ITRI(ib+3)=(IBEG(ie+1)-1)*LOEN
+                ie=0
               end if
-            else
-              ITRI(ib+1)=(IBEG(ie)-1)*LOEN
-              IEDG((IBEG(ie)-1)*LOEN+4)=ib+1
-              ITRI(ib+2)=(IBEG(edgelist(iCv,k-1))-1)*LOEN
-              if ((IBPT(nodelist(iCv,k-1))-1)*LOPN.eq.
-     .            IEDG((IBEG(edgelist(iCv,k-1))-1)*LOEN+1)) then
-                IEDG((IBEG(edgelist(iCv,k-1))-1)*LOEN+4)=ib+2
-              else
-                IEDG((IBEG(edgelist(iCv,k-1))-1)*LOEN+3)=ib+2
-              end if
-              if (k.lt.mpg%cvFcP(iCv,2)) then
-                ITRI(ib+3)=(IBEG(ie+1)-1)*LOEN
-                IEDG((IBEG(ie+1)-1)*LOEN+4)=ib+3
-              else
-                ITRI(ib+3)=(IBEG(edgelist(iCv,k))-1)*LOEN
-                if ((IBPT(nodelist(iCv,k))-1)*LOPN.eq.
-     .            IEDG((IBEG(edgelist(iCv,k))-1)*LOEN+1)) then
-                  IEDG((IBEG(edgelist(iCv,k))-1)*LOEN+4)=ib+3
+              if (ie.eq.0) then
+                NOEN=NOEN+1
+                ie=NOEN
+                if (iFc.gt.0) then
+                  IBEG(iFc)=ie
                 else
-                  IEDG((IBEG(edgelist(iCv,k))-1)*LOEN+3)=ib+3
+                  idiag=ie
                 end if
-              endif
-            end if
+                ipte=(ie-1)*LOEN
+                IEDG(ipte+1)=(IBPT(iVa)-1)*LOPN
+                IEDG(ipte+2)=(IBPT(iVb)-1)*LOPN
+                IEDG(ipte+3)=-1
+                IEDG(ipte+4)=-1
+                IEDG(ipte+5)=0
+              end if
+              ipte=(ie-1)*LOEN
+              ITRI(ib+ks)=ipte
+              if (IEDG(ipte+1).eq.(IBPT(iVa)-1)*LOPN) then
+                IEDG(ipte+3)=ib+ks
+              else
+                IEDG(ipte+4)=ib+ks
+              end if
+            end do
             ITRI(ib+4)=0
-            rmin = MIN(RPNT(IEDG(ITRI(ib+1)+1)+1),
-     .                 RPNT(IEDG(ITRI(ib+1)+2)+1),
-     .                 RPNT(IEDG(ITRI(ib+2)+1)+1),
-     .                 RPNT(IEDG(ITRI(ib+2)+2)+1),
-     .                 RPNT(IEDG(ITRI(ib+3)+1)+1),
-     .                 RPNT(IEDG(ITRI(ib+3)+1)+1),
-     .                 RPNT(IEDG(ITRI(ib+3)+2)+1))
-            rmax = MAX(RPNT(IEDG(ITRI(ib+1)+1)+1),
-     .                 RPNT(IEDG(ITRI(ib+1)+2)+1),
-     .                 RPNT(IEDG(ITRI(ib+2)+1)+1),
-     .                 RPNT(IEDG(ITRI(ib+2)+2)+1),
-     .                 RPNT(IEDG(ITRI(ib+3)+1)+1),
-     .                 RPNT(IEDG(ITRI(ib+3)+2)+1))
-            zmin = MIN(RPNT(IEDG(ITRI(ib+1)+1)+2),
-     .                 RPNT(IEDG(ITRI(ib+1)+2)+2),
-     .                 RPNT(IEDG(ITRI(ib+2)+1)+2),
-     .                 RPNT(IEDG(ITRI(ib+2)+2)+2),
-     .                 RPNT(IEDG(ITRI(ib+3)+1)+2),
-     .                 RPNT(IEDG(ITRI(ib+3)+2)+2))
-            zmax = MAX(RPNT(IEDG(ITRI(ib+1)+1)+2),
-     .                 RPNT(IEDG(ITRI(ib+1)+2)+2),
-     .                 RPNT(IEDG(ITRI(ib+2)+1)+2),
-     .                 RPNT(IEDG(ITRI(ib+2)+2)+2),
-     .                 RPNT(IEDG(ITRI(ib+3)+1)+2),
-     .                 RPNT(IEDG(ITRI(ib+3)+2)+2))
-            IF (rmin.gt.rhi.or.rmax.gt.rlo.or.
-     .          zmin.gt.zhi.or.zmax.le.zlo) ITRI(ib+4)=1
           end do
         end do
+        NEDG=NOEN*LOEN
 
 c$$$C Plot mesh for debugging
 c$$$        CALL GSPLCI (11)
@@ -543,13 +476,6 @@ c$$$  116   CONTINUE
 c$$$        CALL GSPLCI (1)
 c$$$        CALL GSLWSC (1.)
 
-C Initialize CONPAKT
-        IF (CONTPLOT)
-     >   CALL CTMESH (RPNT,NPNT,LOPN,
-     ,                IEDG,NEDG,LOEN,
-     ,                ITRI,NTRI,LOTN,
-     ,                RWRK,LRWK,IWRK,LIWK)
-
 C Initialise Areas
         CALL ARINAM(MAP, LMAP)
         CALL GSFAIS(1)
@@ -576,7 +502,6 @@ C Initialise Areas
         end if
         CALL AREDAM(MAP,X,Y,IC,2,-1,0)
 cxpb Obtaining the contour outlines of the plasma region to be plotted
-        deallocate(done)
         allocate(done(mpg%nCi+1:mpg%nCv))
         done=.false.
         do while (.not.all(done))
@@ -589,6 +514,13 @@ cxpb Obtaining the contour outlines of the plasma region to be plotted
             Y(1)=real(geo%vxY(iVx1),R4)
             X(2)=real(geo%vxX(iVx2),R4)
             Y(2)=real(geo%vxY(iVx2),R4)
+C Reverse the outline if the plasma is on its left
+            iCi = mpg%fcCv(iFc,1)
+            if (iCi.eq.iCv) iCi = mpg%fcCv(iFc,2)
+            lrev = (geo%vxX(iVx2)-geo%vxX(iVx1))*
+     .             (geo%cvY(iCi)-geo%vxY(iVx1)) -
+     .             (geo%vxY(iVx2)-geo%vxY(iVx1))*
+     .             (geo%cvX(iCi)-geo%vxX(iVx1)) .gt. 0.0_R8
             iVa = iVx1
             iVb = iVx2
             ic=2
@@ -637,6 +569,16 @@ cxpb Obtaining the contour outlines of the plasma region to be plotted
                 done(iCn)=left_match_found.or.right_match_found
               end do
             end do
+            if (lrev) then
+              do i=1,ic/2
+                rswp=X(i)
+                X(i)=X(ic+1-i)
+                X(ic+1-i)=rswp
+                rswp=Y(i)
+                Y(i)=Y(ic+1-i)
+                Y(ic+1-i)=rswp
+              end do
+            end if
             CALL AREDAM(MAP,X,Y,IC,2,0,1)
             IF(.NOT.COLPRT.OR..NOT.CONTPLOT) CALL CURVED(X,Y,IC)
           end do
@@ -680,6 +622,12 @@ cxpb Obtaining the contour outlines of the plasma region to be plotted
         CALL CTSETI('NVS - NUMBER OF VSTRIPS',0)
 
         IF(CONTPLOT) THEN
+C Initialize CONPAKT
+          CALL CTSETI('SET - DO-SET-CALL FLAG',0)
+          CALL CTMESH (RPNT,NPNT,LOPN,
+     ,                 IEDG,NEDG,LOEN,
+     ,                 ITRI,NTRI,LOTN,
+     ,                 RWRK,LRWK,IWRK,LIWK)
 C Put contour lines in the area map
           CALL CTCLAM(RPNT,IEDG,ITRI,RWRK,IWRK,MAP)
 C Add label boxes to area map
@@ -699,6 +647,14 @@ C Set fill style to solid, and fill contours if COLPRT==TRUE
             endif
             call retsr(irold)
             CALL ARSCAM(MAP,XWRK,YWRK,NWRK,IAREA,IGRP,NOGRPS,FILL)
+          ENDIF
+C Draw Labels
+          IF(LABELS) THEN
+            CALL CTLBDR(RPNT,IEDG,ITRI,RWRK,IWRK)
+          ENDIF
+C Draw Contours
+          IF(CONTOURS) THEN
+            CALL CTCLDM(RPNT,IEDG,ITRI,RWRK,IWRK,MAP,CPDRPL)
           ENDIF
         ENDIF
 
@@ -869,8 +825,7 @@ C            CALL CPCLDR(z,RWRK,IWRK)
       IF(LBLBR.AND.CONTPLOT.and.colprt) THEN
         DO I=1,NCONT+1
           LFIN(I)=choose_color(i-1,0)
-          CALL CPSETI('PAI - PARAMETER ARRAY INDEX',I)
-          CALL CPGETR('CLV - CONTOUR LEVEL VALUES',CLV)
+          CLV=CTVAL(I)
           if(nofcls.eq.0) then ! standard contouring
             WRITE (LBLS(I), FMTZ) CLV
           else
