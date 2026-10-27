@@ -370,6 +370,7 @@ FPATH := ${VPATH}
 VPATH += :${SRCDIR}/test
 VPATH += :${SRCDIR}/ids
 VPATH += :${SRCDIR}/ids/archive
+VPATH += :${SRCDIR}/b2plot/gui
 FFPATH += :${SRCDIR}/ids
 FFPATH += :${SRCDIR}/modules
 FFPATH += :${SRCDIR}/user
@@ -459,6 +460,8 @@ ADEXTRA = ${DBGAD} ${STACKAD}
 endif
 
 GEEXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_GE}}
+GUIEXE = ${OBJDIR}/b2pl_gui.exe
+GUIOBJS = ${OBJDIR}/ncar_gui.o
 GREXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_GR}}
 XDEXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_XD}}
 MNEXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_MN}}
@@ -484,11 +487,16 @@ JSONAD = ${OBJDIR}/json.o
 STACKAD = ${OBJDIR}/adStack.o
 DBGAD = ${OBJDIR}/adDebug.o
 
-.PHONY: DEFAULT NOPLOT ALL VERSION TANGENT HESS_TGT ADJOINT DIFF_D DIFF_B DIFF_DD AM_FILES mods clean depend listobj tags echo local force test nc2text_simple nc2text ensure_adas
+.PHONY: DEFAULT NOPLOT ALL VERSION TANGENT HESS_TGT ADJOINT DIFF_D DIFF_B DIFF_DD AM_FILES mods clean depend listobj tags echo local force test nc2text_simple nc2text ensure_adas b2pl_gui
 
 DEFAULT: VERSION AM_FILES ${MNEXE} ${AMEXE} ${OEEXE} ${COEXE} ${OTEXE} ${O9EXE}
 ALL: VERSION AM_FILES ${MNEXE} ${AMEXE} ${OEEXE} ${COEXE} ${OTEXE} ${O9EXE} ${XDEXE}
 NOPLOT: VERSION AM_FILES ${MNEXE} ${AMEXE} ${OEEXE} ${COEXE} ${OTEXE} ${O9EXE}
+# b2plot for b2plot.py (no NCAR needed)
+DEFAULT: ${GUIEXE}
+ALL: ${GUIEXE}
+NOPLOT: ${GUIEXE}
+b2pl_gui: ${GUIEXE}
 DIFF_D: VERSION AM_FILES ${MNDEXE} ${OPTEXE}
 DIFF_B: VERSION AM_FILES ${MNBEXE} ${OPTEXE}
 DIFF_DD: VERSION AM_FILES ${MNHEXE}
@@ -1134,6 +1142,11 @@ ${O9EXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
 
 ${GEEXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
 	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/$*.o ${OBJDIR}/libb2.a ${EIRLIBS} ${PLLIBES} ${GRLIBES} ${LDLIBES} ${LDOPTSend}
+
+${OBJDIR}/ncar_gui.o: ${OBJDIR}/b2mod_b2plot_gui.${MOD} ${OBJDIR}/b2mod_types.${MOD}
+
+${GUIEXE}: ${OBJDIR}/b2pl.o ${GUIOBJS} ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
+	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/b2pl.o ${GUIOBJS} ${OBJDIR}/libb2.a ${EIRLIBS} ${PLLIBES} ${LDLIBES} ${LDOPTSend}
 
 ${GREXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MAKES}
 	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/$*.o ${OBJDIR}/libb2.a ${GRLIBES} ${LDLIBES} ${LDOPTSend}

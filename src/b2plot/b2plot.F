@@ -12262,6 +12262,23 @@ c     <delta wavelength in A> nspe
           endif
         case('help')     ! print the command catalogue
           call gui_help_catalog
+        case('guigeom')  ! send grid and overlays to the GUI
+          call gui_send_geometry
+        case('guifield') ! send and drop the top matrix stack field
+          stack_req=(/0,0,0,1,0,0,0/)
+          if(bad_args(stack_req)) return
+          call gui_send_field
+          iwrk=iwrk-1
+        case('guiefld')  ! send and drop the top Eirene stack field
+          stack_req=(/0,0,0,0,1,0,0/)
+          if(bad_args(stack_req)) return
+          call gui_send_efield
+          iewrk=iewrk-1
+        case('guivect')  ! send and drop the top two fields as a vector
+          stack_req=(/0,0,0,2,0,0,0/)
+          if(bad_args(stack_req)) return
+          call gui_send_vector
+          iwrk=iwrk-2
         case('dflt')     ! restore the start-up plot settings
           call set_new_page
           values=values_default
