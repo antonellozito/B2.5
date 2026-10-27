@@ -45,6 +45,8 @@ c 2002-09-11: logic revised
      &          dealloc_b2mod_zhfrtf, dealloc_b2mod_zhfrtf_df
       use b2mod_frtf_nccorr
      & , only : dealloc_b2mod_frtf_nccorr
+      use b2mod_b2plot_gui
+     & , only : gui_startup, gui_shutdown, gui_sync, gui_help_catalog
       use b2mod_ranges
       use b2us_plasma
       use b2us_data
@@ -172,7 +174,8 @@ c
       integer lucdf
       integer itmp, istart, iend, ns,
      * sput_src, refl_model, sput_phys_model,
-     * sput_chem_model, sput_phys_col, nnucl_tral, zmaxmax
+     * sput_chem_model, sput_phys_col, nnucl_tral, zmaxmax, ntri_gui
+      real (kind=R8) :: values_default(nparameters)
       character*256 stmp, filename, varname
       character*256 stmp1, stmp2
       integer lu, save_lu(10), ipos, save_ipos(10), lu_pos
@@ -1343,85 +1346,16 @@ c
       values(37)=init_value                              !smax wall
       values(38)=init_value                              !Eirene min
       values(39)=init_value                              !Eirene max
+      values_default=values
       expfile=' '
       wallfile=' '
 c
       call b2mod_math_init
-      call b2page(1,1)
-      color_set=.true.
-      call contourplot(.true.)     ! draw contour plot by default
-      call nofill(.false.)         ! fill contours by default
-      call ipolate(.false.)        ! do not use splines unless wanted
-      call clvl(.true.)            ! contour level lines plotted
-      call labelon(.true.)         ! contour labels drawn
-      call gridon(.false.)         ! overlayed mesh off by default
-      call trigon(.false.)         ! overlayed triangular grid off by default
-      call vesselon(.false.)       ! same for vessel
-      call separatrixon(.false.)   ! same for separatrix
-      call adjust_axes(.false.)    ! nice axes by default
-      call adjust_bold(.false.)    ! do not bold axes by default
-      call set_rmaj_plotting(.false.)     ! do not plot against major radius
-      call set_full_psi_plotting(.false.) ! do not plot against full psi
-      call set_norm_psi_plotting(.false.) ! do not plot against normalised psi
-      call set_root_psi_plotting(.false.) ! do not plot against root(psi)
-      call set_midplane_mapping(.false.)  ! do not map to midplane by default
-      call wallon(.false.,0,values(14),values(15),1)
-      call targeton(.false.,values(32),values(33),1)
-      call set_partition_colors(0.0_R8)
-      plotting_sep=.false.
-      plotting_wall=.false.
-      b2plot_debug=0
-      sepwidth=1.0_R8            ! standard separatrix line width
-      vwidth=1.0_R8              ! standard vessel line width
-      owidth=1.0_R8              ! standard outline line width
-      ewidth=1.0_R8              ! standard experimental data line width
-      arroww=1.0_R8              ! standard arrow line width
-      lwidth=1.0_R8              ! linewidth
-      wwidth=10.0_R8             ! wall linewidth
-      zwidth=1.0_R8              ! axis linewidth
-      lfsz=0                     ! line label font size
-      if (mpg%isClassicalGrid.eq.1) then
-        typeofplot=3             ! physical and computational
-      else
-        typeofplot=1             ! only physical domain available
-      endif
-      if (nomp.gt.0) then
-        ixref=cvIx(omp(icsepomp))
-        iyref=cvIy(omp(icsepomp))
-      end if
-      xparallel=.false.          ! default to f.y using poloidal distance
-      expline=.true.             ! default to plotting experimental data as lines
-      expsymbol=5                ! default symbol is crosses
-      call set_fill_option(0)
-      linlog=1                   ! linear plot
-      wlinlog=1                  ! linear plot
-      tlinlog=0                  ! log plot for trajectories
-      trglinlog=1                ! linear plot for targets
-      call set_square            ! square plot
+      call set_plot_defaults
       writing_to_file=.false.
-      call initialise_plotting_0
-      call linewidth(lwidth)
-      call axislinewidth(zwidth)
-      call set_line_font_size(lfsz)
       moviename=' '
       movie_skip=1
       average=1
-      use_compile=.true.
-      acol=1
-      bcol=1
-      dcol=1
-      ecol=1
-      fcol=1
-      gcol=1
-      hcol=1
-      mcol=1
-      ocol=1
-      scol=1
-      tcol=1
-      vcol=1
-      wcol=1
-      xcol=1
-      zcol=1
       neo_ic=3    ! banana plateau + Pfirsch-Schlueter
       ic_active(1:mpg%nCi)=.true.
       ic_active(mpg%nCi+1:mpg%nCv)=.false.
@@ -1564,6 +1498,14 @@ c
 c
       lu=5
       lu_pos=0
+#ifdef B25_EIRENE
+      ntri_gui=ntrii
+#else
+      ntri_gui=0
+#endif
+      call gui_startup(mpg%nCv,mpg%nCi,mpg%nFc,mpg%nVx,
+     . mpg%isClassicalGrid,mpg%nx,mpg%ny,ns,natm,nmol,nion,ntri_gui,
+     . nbnd,use_eirene,time,label,ns,textpl)
       write(*,'(a)') 'Enter your commands here:'
       call readline(textline,lu,ipos)
 c
@@ -1621,6 +1563,7 @@ c
           if (lu.eq.5) then
             if (writing_to_file) close(nwtf)
             call terminate_plotting
+            call gui_shutdown
             write(*,'(a,7i4)') 'STACK i,r,s,m,e,w,t = ',
      .       iistack,irstack,isstack,iwrk,iewrk,iwwrk,itwrk
             deallocate(pr,pz,ro,ro_ch,up,vv,ww,k1,nu1,tau)
@@ -1723,6 +1666,7 @@ c
      .           cval.eq.'end') then  ! quit/exit
           if (writing_to_file) close(nwtf)
           call terminate_plotting
+          call gui_shutdown
           write(*,'(a,7i4)') 'STACK i,r,s,m,e,w,t = ',
      .     iistack,irstack,isstack,iwrk,iewrk,iwwrk,itwrk
           deallocate(pr,pz,ro,ro_ch,up,vv,ww,k1,nu1,tau)
@@ -1793,6 +1737,83 @@ c
       goto 10
 
       contains
+
+c Start-up plot settings, also restored by the dflt command
+      subroutine set_plot_defaults
+      call b2page(1,1)
+      color_set=.true.
+      call contourplot(.true.)     ! draw contour plot by default
+      call nofill(.false.)         ! fill contours by default
+      call ipolate(.false.)        ! do not use splines unless wanted
+      call clvl(.true.)            ! contour level lines plotted
+      call labelon(.true.)         ! contour labels drawn
+      call gridon(.false.)         ! overlayed mesh off by default
+      call trigon(.false.)         ! overlayed triangular grid off by default
+      call vesselon(.false.)       ! same for vessel
+      call separatrixon(.false.)   ! same for separatrix
+      call adjust_axes(.false.)    ! nice axes by default
+      call adjust_bold(.false.)    ! do not bold axes by default
+      call set_rmaj_plotting(.false.)     ! do not plot against major radius
+      call set_full_psi_plotting(.false.) ! do not plot against full psi
+      call set_norm_psi_plotting(.false.) ! do not plot against normalised psi
+      call set_root_psi_plotting(.false.) ! do not plot against root(psi)
+      call set_midplane_mapping(.false.)  ! do not map to midplane by default
+      call wallon(.false.,0,values(14),values(15),1)
+      call targeton(.false.,values(32),values(33),1)
+      call set_partition_colors(0.0_R8)
+      plotting_sep=.false.
+      plotting_wall=.false.
+      b2plot_debug=0
+      sepwidth=1.0_R8            ! standard separatrix line width
+      vwidth=1.0_R8              ! standard vessel line width
+      owidth=1.0_R8              ! standard outline line width
+      ewidth=1.0_R8              ! standard experimental data line width
+      arroww=1.0_R8              ! standard arrow line width
+      lwidth=1.0_R8              ! linewidth
+      wwidth=10.0_R8             ! wall linewidth
+      zwidth=1.0_R8              ! axis linewidth
+      lfsz=0                     ! line label font size
+      if (mpg%isClassicalGrid.eq.1) then
+        typeofplot=3             ! physical and computational
+      else
+        typeofplot=1             ! only physical domain available
+      endif
+      if (nomp.gt.0) then
+        ixref=cvIx(omp(icsepomp))
+        iyref=cvIy(omp(icsepomp))
+      end if
+      xparallel=.false.          ! default to f.y using poloidal distance
+      expline=.true.             ! default to plotting experimental data as lines
+      expsymbol=5                ! default symbol is crosses
+      call set_fill_option(0)
+      linlog=1                   ! linear plot
+      wlinlog=1                  ! linear plot
+      tlinlog=0                  ! log plot for trajectories
+      trglinlog=1                ! linear plot for targets
+      call set_square            ! square plot
+      call initialise_plotting_0
+      call linewidth(lwidth)
+      call axislinewidth(zwidth)
+      call set_line_font_size(lfsz)
+      use_compile=.true.
+      acol=1
+      bcol=1
+      dcol=1
+      ecol=1
+      fcol=1
+      gcol=1
+      hcol=1
+      mcol=1
+      ocol=1
+      scol=1
+      tcol=1
+      vcol=1
+      wcol=1
+      xcol=1
+      zcol=1
+      return
+
+      end subroutine set_plot_defaults
 
       subroutine zhdanov_coefficients
 c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
@@ -11597,7 +11618,7 @@ c
       end subroutine select_constants
 
       subroutine select_flvalue
-      integer ix, iy, is, iclv
+      integer ix, iy, is, iclv, isync
 
       cflag=.true.
       FLVALUE: select case(cval)
@@ -12227,6 +12248,25 @@ c     <delta wavelength in A> nspe
      .       'Faulty iy = ',istack(iistack),' chosen for iyref!'
             call pop_stack(stack_req)
           endif
+        case('sync')     ! handshake for GUI front ends
+          stack_req=(/1,0,0,0,0,0,0/)
+          if(bad_args(stack_req)) return
+          isync=ipop(istack,iistack)
+          write(*,'(a,i12)') ' b2plot sync ',isync
+          if(iwrk.gt.0) then
+            call gui_sync(isync,(/iistack,irstack,isstack,iwrk,iewrk,
+     .       iwwrk,itwrk/),graphlabel(iwrk),ndim(2,iwrk))
+          else
+            call gui_sync(isync,(/iistack,irstack,isstack,iwrk,iewrk,
+     .       iwwrk,itwrk/),' ',0)
+          endif
+        case('help')     ! print the command catalogue
+          call gui_help_catalog
+        case('dflt')     ! restore the start-up plot settings
+          call set_new_page
+          values=values_default
+          call set_plot_defaults
+          call reset_plotting_flags
         case default FLVALUE
           cflag=.false.
       END SELECT FLVALUE

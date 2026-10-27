@@ -125,24 +125,38 @@ c
       implicit none
       real (kind=R8), intent(in) :: time
 c
+      runtime=real(time,R4)
+      initialised_plotting=.false.
+      color_map_loaded=.false.
+      color_file=' '
+      device='psc'
+      call reset_plotting_flags
+      return
+      end subroutine initialise_plotting_flags
+
+c Plot appearance flags, also restored by the dflt command
+      subroutine reset_plotting_flags
+      use b2mod_types
+      use b2mod_graphics
+      implicit none
+c
       extralabel=' '
       globalheader=' '
       xlabel=' '
       ylabel=' '
-      runtime=real(time,R4)
       glsz=1.0_R4
       lbsz=1.0_R4
       ndec=10
-      initialised_plotting=.false.
       want_aspect=.true.
       lzero=.false.
       label_same_lines=.true.
-      color_map_loaded=.false.
-      color_file=' '
-      device='psc'
       bold=.false.
+      nofcls=0
+      nofecls=0
+      nofwcls=0
+      noftcls=0
       return
-      end subroutine initialise_plotting_flags
+      end subroutine reset_plotting_flags
 
       subroutine set_color_map(sval)
       use b2mod_types
