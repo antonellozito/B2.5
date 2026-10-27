@@ -9,6 +9,8 @@ C =====================================================================
      , , only : cvIx, cvIy
       use b2mod_b2plot_debug
       use b2mod_graphics
+      use b2mod_b2plot_gui
+     , , only : gui_active, gui_tag
       implicit none
       type(mapping) :: mpg
       type(geometry) :: geo
@@ -267,6 +269,7 @@ cxpb Do not plot dead cells in physical domain
             call plcol(ici)
             call plfill(n,xbox,ybox)
 #else
+            if (gui_active) call gui_tag(1,iCv,work(iCv))
             call sfsgfa(xbox,ybox,n,dst,nst,ind,nnd,ici)
 #endif
           endif

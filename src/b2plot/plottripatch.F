@@ -5,6 +5,8 @@ C =====================================================================
       use b2mod_types
       use b2mod_b2plot_debug
       use b2mod_graphics
+      use b2mod_b2plot_gui
+     , , only : gui_active, gui_tag
       implicit none
       integer nCv,ntrii,nrknot,is,linlog
       integer necke(3,ntrii)
@@ -195,6 +197,7 @@ C =====================================================================
           call plcol(ici)
           call plfill(n,xbox,ybox)
 #else
+          if (gui_active) call gui_tag(2,i,work(i))
           call sfsgfa(xbox,ybox,n,dst,nst,ind,nnd,ici)
 #endif
         endif
