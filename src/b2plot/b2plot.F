@@ -12267,6 +12267,13 @@ c     <delta wavelength in A> nspe
           values=values_default
           call set_plot_defaults
           call reset_plotting_flags
+#ifndef PLPLOT
+          call sfseti('TY',0)
+          call pcseti('FN',0)
+#endif
+          arrowl=0.0_R8
+          earrowl=0.0_R8
+          y_transform_l=0
         case default FLVALUE
           cflag=.false.
       END SELECT FLVALUE

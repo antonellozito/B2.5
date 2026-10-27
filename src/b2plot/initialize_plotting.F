@@ -151,10 +151,21 @@ c
       lzero=.false.
       label_same_lines=.true.
       bold=.false.
+      outline=.false.
       nofcls=0
       nofecls=0
       nofwcls=0
       noftcls=0
+      clval=0.0_R4
+      eclval=0.0_R4
+      wclval=0.0_R4
+      tclval=0.0_R4
+      zcol=0
+      hcol=0
+      gcol=0
+      bcol=0
+      xcol=0
+      fcol=0
       return
       end subroutine reset_plotting_flags
 
