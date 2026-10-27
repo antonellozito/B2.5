@@ -35,6 +35,16 @@ c 2002-09-11: logic revised
       use b2mod_neoclassical
       use b2mod_b2cmfs
       use b2mod_b2cmpa
+      use b2mod_b2mrel
+     & , only : alloc_b2mod_mrel, dealloc_b2mod_mrel
+      use b2mod_b2zhco
+     & , only : alloc_b2mod_zhco, dealloc_b2mod_zhco,
+     &          alloc_b2mod_zhco_amfact, amfact
+      use b2mod_zhfrtf
+     & , only : alloc_b2mod_zhfrtf, alloc_b2mod_zhfrtf_df,
+     &          dealloc_b2mod_zhfrtf, dealloc_b2mod_zhfrtf_df
+      use b2mod_frtf_nccorr
+     & , only : dealloc_b2mod_frtf_nccorr
       use b2mod_ranges
       use b2us_plasma
       use b2us_data
@@ -162,7 +172,7 @@ c
       integer lucdf
       integer itmp, istart, iend, ns,
      * sput_src, refl_model, sput_phys_model,
-     * sput_chem_model, sput_phys_col
+     * sput_chem_model, sput_phys_col, nnucl_tral, zmaxmax
       character*256 stmp, filename, varname
       character*256 stmp1, stmp2
       integer lu, save_lu(10), ipos, save_ipos(10), lu_pos
@@ -170,6 +180,7 @@ c
       integer is, iss, isp, is2
       character*512 textline, save_textline(10)
       character*8 cval
+      character*3 chns
       character*1 cc
       character*256 sval
       character*256 description
@@ -854,6 +865,28 @@ c
      > call alloc_b2mod_diag(mpg%nCv,mpg%nFc,ns,mpg%nnreg(0),nstra,natm,
      >                       switch)
       call alloc_b2mod_user(geo,mpg,ns,nlim,nmol,switch)
+c Zhdanov variables, allocated as in b2mndr_0
+      if (switch%Zhdanov_closure.eq.1) then
+        call b2trnu (ns, nnucl_tral, zmaxmax)
+        call xertst (nnucl_tral.eq.nspecies,
+     &   'Error while building isonuclear sequences!')
+        call alloc_b2mod_mrel(nspecies, zmaxmax, ns)
+        call alloc_b2mod_zhco(nspecies, mpg%nCv)
+        call alloc_b2mod_zhfrtf(mpg%nCv, ns)
+        if (switch%zh_dist_fun.eq.1) then
+          call alloc_b2mod_zhfrtf_df(mpg%nCv, ns)
+        endif
+        call alloc_b2mod_zhco_amfact(nspecies)
+        amfact(0:nspecies-1) = 1.0_R8
+        if (switch%amfact_on.ne.0) then
+          do is = 0, nspecies-1
+            write (chns,'(i3.3)') is
+            call ipgetr ('b2tral_amfact_'//chns, amfact(is))
+          enddo
+        endif
+        if (switch%Zhdanov_nc.eq.1)
+     >   call xerrab ('b2plot does not support b2tral_Zhdanov_nc 1')
+      endif
       if (nomp.gt.0) then
         allocate(dsomp(nomp),wdomp(nomp))
         call set_distances(mpg,geo,nomp,omp,icsepomp-1,dsomp,wdomp)
@@ -874,6 +907,7 @@ c
       call b2stel (mpg%nCv, mpg%nFc, state%ns, ismain,
      & switch, geo, mpg, state%pl, state%dv, state%rt,
      & state%rtw, state%srw)
+      if (switch%Zhdanov_closure.eq.1) call zhdanov_coefficients
       call b2sihs_ (mpg%nCv, mpg%nFc, mpg%nVx, state%ns,
      & switch, geo, mpg, ismain,
      & state%dv%fac_ExB, state%dv%lnlam, state%pl%na, state%pl%ua,
@@ -1599,6 +1633,11 @@ c
             call dealloc_b2mod_b2plot_wall
             call dealloc_b2mod_neoclassical
             call dealloc_b2plot_wall_loading
+            call dealloc_b2mod_mrel
+            call dealloc_b2mod_zhco
+            call dealloc_b2mod_zhfrtf
+            call dealloc_b2mod_zhfrtf_df
+            call dealloc_b2mod_frtf_nccorr
 #ifdef B25_EIRENE
             if (allocated(emach)) then
               deallocate(emach)
@@ -1695,6 +1734,11 @@ c
           call dealloc_b2mod_b2plot_wall
           call dealloc_b2mod_neoclassical
           call dealloc_b2plot_wall_loading
+          call dealloc_b2mod_mrel
+          call dealloc_b2mod_zhco
+          call dealloc_b2mod_zhfrtf
+          call dealloc_b2mod_zhfrtf_df
+          call dealloc_b2mod_frtf_nccorr
 #ifdef B25_EIRENE
           if (allocated(emach)) then
             deallocate(emach)
@@ -1725,6 +1769,62 @@ c
       goto 10
 
       contains
+
+      subroutine zhdanov_coefficients
+c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
+      real (kind=R8) ::
+     &  hci_al_ast(mpg%nCv,0:nspecies-1), hci_a(mpg%nCv,0:ns-1),
+     &  chci0_nofl(mpg%nFc,0:1), chci0_fl(mpg%nFc,0:1),
+     &  chci0_luc(mpg%nFc,0:1),
+     &  chci0_al(mpg%nFc,0:1,0:nspecies-1),
+     &  chci_al_luc(mpg%nFc,0:1,0:nspecies-1),
+     &  chci0_a(mpg%nFc,0:1,0:ns-1), chci_a(mpg%nFc,0:1,0:ns-1),
+     &  vsaf0_luc(mpg%nFc,0:1,0:ns-1), vsaf_drho(mpg%nFc,0:1,0:ns-1),
+     &  vsaf_uAdp_albe(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  vsaf_uBdp_al(mpg%nFc,0:1,0:nspecies-1),
+     &  cvsahz0_nofl(mpg%nFc,0:1,0:ns-1),
+     &  cvsahz0_fl(mpg%nFc,0:1,0:ns-1),
+     &  cvsahz0_luc(mpg%nFc,0:1,0:ns-1),
+     &  cvsahz_drho(mpg%nFc,0:1,0:ns-1),
+     &  cvsa0_luc(mpg%nFc,0:1,0:ns-1), cvsa_drho(mpg%nFc,0:1,0:ns-1),
+     &  cvsa0_hAdp(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  cvsa0_hBdp(mpg%nFc,0:1,0:nspecies-1),
+     &  cvsa_hAdp_albe(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  cvsa_hBdp_al(mpg%nFc,0:1,0:nspecies-1),
+     &  cvsahz0_hAdp(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  cvsahz0_hBdp(mpg%nFc,0:1,0:nspecies-1),
+     &  cvsahz_hAdp_albe(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  cvsahz_hBdp_al(mpg%nFc,0:1,0:nspecies-1),
+     &  cvsa_uAdp_fl(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  cvsa_uBdp_fl(mpg%nFc,0:1,0:nspecies-1),
+     &  cvsa_uAdp_albe(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  cvsa_uBdp_al(mpg%nFc,0:1,0:nspecies-1),
+     &  cvsahz_uAdp_fl(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  cvsahz_uBdp_fl(mpg%nFc,0:1,0:nspecies-1),
+     &  cvsahz_uAdp_albe(mpg%nFc,0:1,0:nspecies-1,0:nspecies-1),
+     &  cvsahz_uBdp_al(mpg%nFc,0:1,0:nspecies-1)
+
+      call b2trzh (mpg%nCv, mpg%nFc, mpg%nVx, ns, switch,
+     &  geo, mpg, state%pl, state%dv, state%co,
+     &  hci_al_ast, hci_a,
+     &  chci0_nofl, chci0_fl, chci0_luc,
+     &  chci0_al, chci_al_luc, chci0_a, chci_a,
+     &  vsaf0_luc, vsaf_drho,
+     &  vsaf_uAdp_albe, vsaf_uBdp_al,
+     &  cvsahz0_nofl, cvsahz0_fl, cvsahz0_luc, cvsahz_drho,
+     &  cvsa0_luc, cvsa_drho,
+     &  cvsa0_hAdp, cvsa0_hBdp,
+     &  cvsa_hAdp_albe, cvsa_hBdp_al,
+     &  cvsahz0_hAdp, cvsahz0_hBdp,
+     &  cvsahz_hAdp_albe, cvsahz_hBdp_al,
+     &  cvsa_uAdp_fl, cvsa_uBdp_fl,
+     &  cvsa_uAdp_albe, cvsa_uBdp_al,
+     &  cvsahz_uAdp_fl, cvsahz_uBdp_fl,
+     &  cvsahz_uAdp_albe, cvsahz_uBdp_al)
+      if (switch%zh_vis_type.eq.1) state%co%cvsa_drho = cvsa_drho
+      return
+
+      end subroutine zhdanov_coefficients
 
       subroutine select_matrix
       integer i, j, is, ix, iy, ibc, iCv, iFc, iFt
