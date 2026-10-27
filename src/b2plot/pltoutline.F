@@ -49,6 +49,29 @@ c       call gslwsc_d(1.0_R8)
       return
       end subroutine pltoutline
 c
+c (R,Z) direction of the arrow of cell iCv for the poloidal and radial
+c components ax and ay (used by plot_arrows and the GUI)
+      subroutine arrow_rz(iCv,ax,ay,ur,uz)
+      use b2mod_types
+      use b2us_data
+      implicit none
+      integer, intent(in) :: iCv
+      real (kind=R8), intent(in) :: ax, ay
+      real (kind=R8), intent(out) :: ur, uz
+      real (kind=R8) :: s, t, u, v, rmagst, rmaguv
+      intrinsic sqrt
+
+      s= geo%cvEb(iCv,0)
+      t= geo%cvEb(iCv,1)
+      u= geo%cvEb(iCv,1)*geo%signmf
+      v=-geo%cvEb(iCv,0)*geo%signmf
+      rmagst=sqrt(s**2+t**2)
+      rmaguv=sqrt(u**2+v**2)
+      ur=ax*s/rmagst+ay*u/rmaguv
+      uz=ax*t/rmagst+ay*v/rmaguv
+      return
+      end subroutine arrow_rz
+
       subroutine plot_arrows(is)
       use b2mod_types
       use b2us_data
@@ -57,9 +80,10 @@ c
       implicit none
       integer is,iCv
       real (kind=R8) ::
-     * fmax,fmay,fmmax,rmagst,rmaguv,r,s,t,u,v,sb,cb,rl,rd,
+     * fmax,fmay,fmmax,r,sb,cb,rl,rd,
      1 uu1,vv1,uu2,vv2,brx,bzy,dfx,dfy,uuu,vvv
       intrinsic max, sqrt
+      external arrow_rz
 
       fmax=arrowx(1,is)
       fmay=arrowy(1,is)
@@ -82,18 +106,13 @@ c
       do iCv=1,mpg%nCi
         brx=geo%cvX(iCv)
         bzy=geo%cvY(iCv)
-        s= geo%cvEb(iCv,0)
-        t= geo%cvEb(iCv,1)
-        u= geo%cvEb(iCv,1)*geo%signmf
-        v=-geo%cvEb(iCv,0)*geo%signmf
-        rmagst=sqrt(s**2+t**2)
-        rmaguv=sqrt(u**2+v**2)
 
         dfx=arrowx(iCv,is)/fmmax
         dfy=arrowy(iCv,is)/fmmax
 
-        uuu=arrowl*(dfx*s/rmagst+dfy*u/rmaguv)
-        vvv=arrowl*(dfx*t/rmagst+dfy*v/rmaguv)
+        call arrow_rz(iCv,dfx,dfy,uuu,vvv)
+        uuu=arrowl*uuu
+        vvv=arrowl*vvv
         r=sqrt(uuu**2+vvv**2)
         sb=vvv/r
         cb=uuu/r
