@@ -49,22 +49,58 @@ c       call gslwsc_d(1.0_R8)
       return
       end subroutine pltoutline
 c
+c Sense of the poloidal field (geo%signmf) where the geometry leaves it
+c zero, as init_geometry does not run in b2plot: the formula of
+c init_geometry, with the core cells (region 1) as the closed surfaces
+      subroutine plot_signmf
+      use b2mod_types
+      use b2us_data
+      implicit none
+      real (kind=R8) :: r0, z0, t0, s
+      integer :: iCv
+
+      if (geo%signmf.ne.0.0_R8) return
+      r0 = 0.0_R8
+      z0 = 0.0_R8
+      t0 = 0.0_R8
+      do iCv = 1, mpg%nCi
+        if (mpg%cvReg(iCv).ne.1) cycle
+        r0 = r0+geo%cvX(iCv)*geo%cvHx(iCv)
+        z0 = z0+geo%cvY(iCv)*geo%cvHx(iCv)
+        t0 = t0+geo%cvHx(iCv)
+      end do
+      if (t0.le.0.0_R8) then
+        geo%signmf = sign(1.0_R8,geo%cvEb(1,0))
+        return
+      end if
+      r0 = r0/t0
+      z0 = z0/t0
+      s = 0.0_R8
+      do iCv = 1, mpg%nCi
+        if (mpg%cvReg(iCv).ne.1) cycle
+        s = s-(geo%cvX(iCv)-r0)*geo%cvEb(iCv,1)
+     .       +(geo%cvY(iCv)-z0)*geo%cvEb(iCv,0)
+      end do
+      geo%signmf = sign(1.0_R8,s)
+      return
+      end subroutine plot_signmf
+
 c (R,Z) direction of the arrow of cell iCv for the poloidal and radial
-c components ax and ay, sgn the sense of the poloidal field (signmf)
-      subroutine arrow_rz(iCv,sgn,ax,ay,ur,uz)
+c components ax and ay (used by plot_arrows and the GUI)
+      subroutine arrow_rz(iCv,ax,ay,ur,uz)
       use b2mod_types
       use b2us_data
       implicit none
       integer, intent(in) :: iCv
-      real (kind=R8), intent(in) :: sgn, ax, ay
+      real (kind=R8), intent(in) :: ax, ay
       real (kind=R8), intent(out) :: ur, uz
       real (kind=R8) :: s, t, u, v, rmagst, rmaguv
       intrinsic sqrt
 
       s= geo%cvEb(iCv,0)
       t= geo%cvEb(iCv,1)
-      u= geo%cvEb(iCv,1)*sgn
-      v=-geo%cvEb(iCv,0)*sgn
+      u= geo%cvEb(iCv,1)*geo%signmf
+      v=-geo%cvEb(iCv,0)*geo%signmf
       rmagst=sqrt(s**2+t**2)
       rmaguv=sqrt(u**2+v**2)
       ur=ax*s/rmagst+ay*u/rmaguv
@@ -110,7 +146,7 @@ c components ax and ay, sgn the sense of the poloidal field (signmf)
         dfx=arrowx(iCv,is)/fmmax
         dfy=arrowy(iCv,is)/fmmax
 
-        call arrow_rz(iCv,geo%signmf,dfx,dfy,uuu,vvv)
+        call arrow_rz(iCv,dfx,dfy,uuu,vvv)
         uuu=arrowl*uuu
         vvv=arrowl*vvv
         r=sqrt(uuu**2+vvv**2)

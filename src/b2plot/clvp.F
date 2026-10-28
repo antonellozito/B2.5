@@ -221,7 +221,7 @@ c     ,                            (nedim(i,iwwrk),i=1,2)  !###
 c*** Sort the data
 
       ewrk_hlp(1:ntrii) = eirene_stack(1:ntrii,0,iewrk)
-      call sortda(ewrk_hlp,ind_hlp,ntrii)
+      call sortda(ewrk_hlp,eind_hlp,ntrii)
 
 c*** Calculate the integral over the whole volume
 
@@ -254,7 +254,7 @@ c*** Calculate the necessary levels and put them on the real stack
         f=d
         do m=mm,ntrii !{
           if(l.lt.npplvm-1) then !{
-            k=ind_hlp(m)
+            k=eind_hlp(m)
             t=t+abs(ewrk_hlp(k)*triangle_vol(k))
             v=v+triangle_vol(k)
             if(t.ge.f) then !{
@@ -274,7 +274,7 @@ c     ,                                          l,m,f,v,ewrk_hlp(l) !###
         i=0
         do m=mm,ntrii !{
           if(i.eq.0) then !{
-            k=ind_hlp(m)
+            k=eind_hlp(m)
             if(ewrk_hlp(k).gt.0.0_R8) i=m
           end if !}
         end do !}
@@ -295,7 +295,7 @@ c     ,              ewrk_hlp(ind_hlp(mm)),ewrk_hlp(ind_hlp(mm-1))  !###
         do m=mm,ntrii !{
           if(l.lt.nn) then !{
             kk=k
-            k=ind_hlp(m)
+            k=eind_hlp(m)
             t=t+abs(ewrk_hlp(k)*triangle_vol(k))
             v=v+triangle_vol(k)
             if(t.ge.f) then !{

@@ -49,7 +49,7 @@
      *  pp2(2,2*DEF_NLIM+4*DEF_NYD)
 
       integer, allocatable, save ::
-     *  ind_hlp(:), indt_hlp(:), b2_fnmti(:)
+     *  ind_hlp(:), indt_hlp(:), eind_hlp(:), b2_fnmti(:)
 
       integer, allocatable, save ::
      *  cvIx(:), cvIy(:), fcxIx(:), fcxIy(:), fcyIx(:), fcyIy(:),
@@ -245,6 +245,7 @@ cank
       allocate(earrowx(ntrii,0:max(1,natmd,nmold,niond)-1))
       allocate(earrowy(ntrii,0:max(1,natmd,nmold,niond)-1))
       allocate(ewrk_hlp(ntrii))
+      allocate(eind_hlp(ntrii))
 
       return
       end subroutine alloc_b2mod_b2plot_eirene
@@ -345,6 +346,7 @@ cank
       deallocate(earrowx)
       deallocate(earrowy)
       deallocate(ewrk_hlp)
+      deallocate(eind_hlp)
 
       return
       end subroutine dealloc_b2mod_b2plot_eirene
