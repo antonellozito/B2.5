@@ -7,3 +7,4 @@ Added b2mod_convergence for potential equation inner iterations variables
 Added b2mod_umfpack as new optional matrix solver
 Added b2mod_b2plot_gui, the binary message channel of b2plot to the b2plot.py GUI
 Added gui_data.F (b2plot), the GUI data commands guigeom, guifield, guiefld and guivect of b2plot for b2plot.py
+Added gui_movies.F (b2plot), the GUI movie commands guimvinf, guimovie and guimvvec of b2plot for b2plot.py
