@@ -50,21 +50,21 @@ c       call gslwsc_d(1.0_R8)
       end subroutine pltoutline
 c
 c (R,Z) direction of the arrow of cell iCv for the poloidal and radial
-c components ax and ay (used by plot_arrows and the GUI)
-      subroutine arrow_rz(iCv,ax,ay,ur,uz)
+c components ax and ay, sgn the sense of the poloidal field (signmf)
+      subroutine arrow_rz(iCv,sgn,ax,ay,ur,uz)
       use b2mod_types
       use b2us_data
       implicit none
       integer, intent(in) :: iCv
-      real (kind=R8), intent(in) :: ax, ay
+      real (kind=R8), intent(in) :: sgn, ax, ay
       real (kind=R8), intent(out) :: ur, uz
       real (kind=R8) :: s, t, u, v, rmagst, rmaguv
       intrinsic sqrt
 
       s= geo%cvEb(iCv,0)
       t= geo%cvEb(iCv,1)
-      u= geo%cvEb(iCv,1)*geo%signmf
-      v=-geo%cvEb(iCv,0)*geo%signmf
+      u= geo%cvEb(iCv,1)*sgn
+      v=-geo%cvEb(iCv,0)*sgn
       rmagst=sqrt(s**2+t**2)
       rmaguv=sqrt(u**2+v**2)
       ur=ax*s/rmagst+ay*u/rmaguv
@@ -110,7 +110,7 @@ c components ax and ay (used by plot_arrows and the GUI)
         dfx=arrowx(iCv,is)/fmmax
         dfy=arrowy(iCv,is)/fmmax
 
-        call arrow_rz(iCv,dfx,dfy,uuu,vvv)
+        call arrow_rz(iCv,geo%signmf,dfx,dfy,uuu,vvv)
         uuu=arrowl*uuu
         vvv=arrowl*vvv
         r=sqrt(uuu**2+vvv**2)
