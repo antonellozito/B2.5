@@ -6,7 +6,7 @@ c GUI message channel of b2plot: binary messages on the FIFO named by
 c B2PLOT_GUI_FIFO (see the b2plot.py documentation in the manual)
       integer, parameter :: gui_i1 = selected_int_kind(2)
       integer, parameter :: gui_i4 = selected_int_kind(9)
-      integer, parameter :: gui_protocol_version = 2
+      integer, parameter :: gui_protocol_version = 3
       integer, parameter :: gui_magic = 1110593607
       logical, save :: gui_active = .false., gui_drawn = .false.
       integer, save :: gui_unit = -1

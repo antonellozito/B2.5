@@ -12253,6 +12253,11 @@ c     <delta wavelength in A> nspe
           if(bad_args(stack_req)) return
           call gui_send_vector
           iwrk=iwrk-2
+        case('guievect') ! send and drop two Eirene fields as a vector
+          stack_req=(/0,0,0,0,2,0,0/)
+          if(bad_args(stack_req)) return
+          call gui_send_evector
+          iewrk=iewrk-2
         case('dflt')     ! restore the start-up plot settings
           call set_new_page
           values=values_default
