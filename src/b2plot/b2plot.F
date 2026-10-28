@@ -12254,6 +12254,24 @@ c     <delta wavelength in A> nspe
           if(bad_args(stack_req)) return
           call gui_send_vector
           iwrk=iwrk-2
+        case('guimvinf') ! send the movie files and variables to the GUI
+          call gui_send_movieinfo
+        case('guimovie') ! push a movie variable, frames k1 to k2
+          stack_req=(/3,0,1,0,0,0,0/)
+          if(bad_args(stack_req)) return
+          iend=ipop(istack,iistack)
+          istart=ipop(istack,iistack)
+          itmp=ipop(istack,iistack)
+          call gui_movie_push(itmp,spop(sstack,isstack),' ',istart,iend)
+        case('guimvvec') ! push both components of a movie vector
+          stack_req=(/3,0,2,0,0,0,0/)
+          if(bad_args(stack_req)) return
+          iend=ipop(istack,iistack)
+          istart=ipop(istack,iistack)
+          itmp=ipop(istack,iistack)
+          stmp2=spop(sstack,isstack)
+          stmp1=spop(sstack,isstack)
+          call gui_movie_push(itmp,stmp1,stmp2,istart,iend)
         case('guiclv')   ! send the custom contour levels to the GUI
           call gui_send_levels(1)
         case('guieclv')  ! send the custom Eirene levels to the GUI

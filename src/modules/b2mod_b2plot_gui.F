@@ -6,7 +6,7 @@ c GUI message channel of b2plot: binary messages on the FIFO named by
 c B2PLOT_GUI_FIFO (see the b2plot.py documentation in the manual)
       integer, parameter :: gui_i1 = selected_int_kind(2)
       integer, parameter :: gui_i4 = selected_int_kind(9)
-      integer, parameter :: gui_protocol_version = 4
+      integer, parameter :: gui_protocol_version = 5
       integer, parameter :: gui_magic = 1110593607
       logical, save :: gui_active = .false., gui_drawn = .false.
       integer, save :: gui_unit = -1
@@ -14,6 +14,19 @@ c B2PLOT_GUI_FIFO (see the b2plot.py documentation in the manual)
       integer, save :: gnbuf = 0, gop = 0
       integer, save :: gui_tag_kind = 0, gui_tag_index = 0
       real (kind=R8), save :: gui_tag_value = 0.0_R8
+c Movie files of the GUI (gui_movies.F): netCDF ids, frame counts and
+c running sums of frame means, a full sum after gui_mv_maxupd updates
+      integer, parameter :: gui_mv_nslot = 4, gui_mv_maxupd = 200
+      type gui_mv_slot
+        character*64 :: name = ' '
+        integer :: ifile = 0, lo = 1, hi = 0, nupd = 0, used = 0
+        real (kind=R8), allocatable :: s(:,:)
+      end type gui_mv_slot
+      logical, save :: gui_mv_opened = .false.
+      integer, save :: gui_mv_ncid(2) = -1, gui_mv_nt(2) = 0
+      integer, save :: gui_mv_clock = 0
+      character*256, save :: gui_mv_path(2) = ' '
+      type (gui_mv_slot), save :: gui_mv_c(gui_mv_nslot)
 
       contains
 
@@ -101,6 +114,8 @@ c RUNINFO
 c Send BYE and close the FIFO
       subroutine gui_shutdown
       implicit none
+      external gui_movie_close
+      call gui_movie_close
       if (.not.gui_active) return
       call gui_begin(4)
       call gui_end
