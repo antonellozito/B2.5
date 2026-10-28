@@ -1481,6 +1481,7 @@ c
 #else
       ntri_gui=0
 #endif
+      call plot_signmf
       call gui_startup(mpg%nCv,mpg%nCi,mpg%nFc,mpg%nVx,
      . mpg%isClassicalGrid,mpg%nx,mpg%ny,ns,natm,nmol,nion,ntri_gui,
      . nbnd,use_eirene,time,label,ns,textpl)
@@ -7947,7 +7948,7 @@ cdpc still in testing phase
           end do
           call pop_stack(stack_req)
         case('eclvp')    ! customise Eirene contour level by proportion
-          stack_req=(/2,0,0,0,0,1,0/)
+          stack_req=(/2,0,0,0,1,0,0/)
           if(bad_args(stack_req)) return
           ix=ipop(istack,iistack)
           iy=ipop(istack,iistack)
@@ -12253,6 +12254,10 @@ c     <delta wavelength in A> nspe
           if(bad_args(stack_req)) return
           call gui_send_vector
           iwrk=iwrk-2
+        case('guiclv')   ! send the custom contour levels to the GUI
+          call gui_send_levels(1)
+        case('guieclv')  ! send the custom Eirene levels to the GUI
+          call gui_send_levels(2)
         case('guievect') ! send and drop two Eirene fields as a vector
           stack_req=(/0,0,0,0,2,0,0/)
           if(bad_args(stack_req)) return

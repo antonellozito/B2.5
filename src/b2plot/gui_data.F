@@ -259,9 +259,8 @@ c (R,Z) vector at the cell centres and at the vertices (VECTOR)
       implicit none
       real (kind=R8), allocatable :: vr(:,:), vz(:,:), fvx(:)
       real (kind=R4), allocatable :: buf(:)
-      real (kind=R8) :: sgn
       integer :: iCv, iz, nz, ip, ir
-      external arrow_rz, intvertex, gui_signmf
+      external arrow_rz, intvertex
 
       if (.not.gui_active.or.iwrk.lt.2) return
       ip = iwrk-1
@@ -271,10 +270,9 @@ c (R,Z) vector at the cell centres and at the vertices (VECTOR)
       allocate(buf(max(mpg%nCv,mpg%nVx)))
       vr = 0.0_R8
       vz = 0.0_R8
-      call gui_signmf(sgn)
       do iz = 0, nz-1
         do iCv = 1, mpg%nCi
-          call arrow_rz(iCv,sgn,work(iCv,iz,ip),work(iCv,iz,ir),
+          call arrow_rz(iCv,work(iCv,iz,ip),work(iCv,iz,ir),
      .     vr(iCv,iz),vz(iCv,iz))
         end do
       end do
@@ -611,41 +609,25 @@ c Central differences of psi at node (i,j) of the rzpsi.dat grid
       return
       end subroutine gui_psi_derivs
 
-c Sense of the poloidal field for the GUI vectors: geo%signmf, or, where
-c b2plot leaves it zero (init_geometry does not run in b2plot), the
-c formula of init_geometry with the core cells (region 1) as the closed
-c flux surfaces
-      subroutine gui_signmf(sgn)
+c Contour levels set by clvs, clvd, clvn or clvp (kind 1) or by their
+c Eirene versions (kind 2), for the GUI (LEVELS)
+      subroutine gui_send_levels(kind)
       use b2mod_types
-      use b2us_data
+      use b2mod_graphics
+      use b2mod_b2plot_gui
       implicit none
-      real (kind=R8), intent(out) :: sgn
-      real (kind=R8) :: r0, z0, t0, s
-      integer :: iCv
+      integer, intent(in) :: kind
 
-      sgn = geo%signmf
-      if (sgn.ne.0.0_R8) return
-      r0 = 0.0_R8
-      z0 = 0.0_R8
-      t0 = 0.0_R8
-      do iCv = 1, mpg%nCi
-        if (mpg%cvReg(iCv).ne.1) cycle
-        r0 = r0+geo%cvX(iCv)*geo%cvHx(iCv)
-        z0 = z0+geo%cvY(iCv)*geo%cvHx(iCv)
-        t0 = t0+geo%cvHx(iCv)
-      end do
-      if (t0.le.0.0_R8) then
-        sgn = sign(1.0_R8,geo%cvEb(1,0))
-        return
+      if (.not.gui_active) return
+      call gui_begin(78)
+      call gui_put_i4(kind)
+      if (kind.eq.1) then
+        call gui_put_i4(nofcls)
+        call gui_put_r4v(nofcls,clval)
+      else
+        call gui_put_i4(nofecls)
+        call gui_put_r4v(nofecls,eclval)
       end if
-      r0 = r0/t0
-      z0 = z0/t0
-      s = 0.0_R8
-      do iCv = 1, mpg%nCi
-        if (mpg%cvReg(iCv).ne.1) cycle
-        s = s-(geo%cvX(iCv)-r0)*geo%cvEb(iCv,1)
-     .       +(geo%cvY(iCv)-z0)*geo%cvEb(iCv,0)
-      end do
-      sgn = sign(1.0_R8,s)
+      call gui_end
       return
-      end subroutine gui_signmf
+      end subroutine gui_send_levels
