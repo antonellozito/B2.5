@@ -1,4 +1,4 @@
-c NCAR Graphics replacement for b2pl_gui.exe: each NCAR and GKS entry
+c NCAR Graphics replacement for b2pl_py.exe: each NCAR and GKS entry
 c point used by b2plot sends a message on the GUI FIFO instead of
 c drawing (protocol in the b2plot.py documentation of the manual)
 
