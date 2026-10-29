@@ -1762,8 +1762,13 @@
           if(m%imapCv(ix,iy)/=0) then
             ic = m%imapCv(ix,iy)
             m%cvReg(ic) = region(ix,iy,0)
-            m%cvOnClosedSurface(ic) = on_closed_surface(ix,iy)
-          endif
+            if (leftix(ix,iy).ne.-2 .and. rightix(ix,iy).ne.nx+1 .and.
+     &          bottomiy(ix,iy).ne.-2 .and. topiy(ix,iy).ne.ny+1) then
+              m%cvOnClosedSurface(ic) = on_closed_surface(ix,iy)
+            else
+              m%cvOnClosedSurface(ic) = .false.
+            end if
+          end if
         end do
       end do
 
