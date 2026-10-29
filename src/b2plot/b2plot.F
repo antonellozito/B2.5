@@ -2887,18 +2887,18 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
           description='Poloidal mass flux (kg/s)'
           nz=ns
           do is=0,ns-1
-            wrkfs(:,is)=state%dv%fna(:,0,is)*am(is)*mp
+            wrkf2s(:,:,is)=state%dv%fna(:,:,is)*am(is)*mp
           end do
-          call intflux1(mpg%nFc,mpg%nCv,ns,mpg,geo,wrkfs,ro,wrkc2s)
+          call intflux1(mpg%nFc,mpg%nCv,ns,mpg,geo,wrkf2s,ro,wrkc2s)
           mach(:,:)=wrkc2s(:,0,:)
           call copy(mach,1.0_R8,nz,textpl)
         case ('fmy')
           description='Radial mass flux (kg/s)'
           nz=ns
           do is=0,ns-1
-            wrkfs(:,is)=state%dv%fna(:,1,is)*am(is)*mp
+            wrkf2s(:,:,is)=state%dv%fna(:,:,is)*am(is)*mp
           end do
-          call intflux1(mpg%nFc,mpg%nCv,ns,mpg,geo,wrkfs,ro,wrkc2s)
+          call intflux1(mpg%nFc,mpg%nCv,ns,mpg,geo,wrkf2s,ro,wrkc2s)
           mach(:,:)=wrkc2s(:,1,:)
           call copy(mach,1.0_R8,nz,textpl)
         case ('p*')
@@ -5527,7 +5527,7 @@ c     assumes that bb is OK for 1d cases
       FVALUE: select case (cval)
         case('mdims')    ! print out matrix stack information
           do is=1,iwrk
-            write(*,'(4i5,1x,a)') is,ndim(1:2,is),trim(graphlabel(is))
+            write(*,'(3i5,1x,a)') is,ndim(1:2,is),trim(graphlabel(is))
           enddo
         case('sumx')     ! sum over x
           stack_req=(/0,0,0,1,0,0,0/)
