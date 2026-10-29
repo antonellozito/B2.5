@@ -250,9 +250,9 @@ c
 !DIAG      common /chord_diag/ rectangles, triangles, chain      ! diag
 
       integer ntrii,nrknot
-      integer necke(3,nrknot)
+      integer necke(3,ntrii)
       real (kind=R8) ::
-     *   xtrian(ntrii), ytrian(ntrii)
+     *   xtrian(nrknot), ytrian(nrknot)
       real (kind=R8) ::
      *   xp,yp,zp
       logical found
@@ -283,7 +283,7 @@ c
 #endif
 
       external xerrab
-      save covered,rmin,rmax,zmin,zmax,first,tcov,icov
+      save covered,rmin,rmax,zmin,zmax,first,tcov,icov,i
 
       data first/.true./
 
