@@ -331,10 +331,10 @@ c
           ymax=0
           do ip=1,mpg%cvFcP(iCvsv,2)
             iFc=mpg%cvFc(mpg%cvFcP(iCvsv,1)+ip-1)
-            r1=geo%cvX(mpg%fcVx(iFc,1))
-            z1=geo%cvY(mpg%fcVx(iFc,1))
-            r2=geo%cvX(mpg%fcVx(iFc,2))
-            z2=geo%cvY(mpg%fcVx(iFc,2))
+            r1=geo%vxX(mpg%fcVx(iFc,1))
+            z1=geo%vxY(mpg%fcVx(iFc,1))
+            r2=geo%vxX(mpg%fcVx(iFc,2))
+            z2=geo%vxY(mpg%fcVx(iFc,2))
             ir=irpos(r1)
             iz=izpos(z1)
 c assert ir,iz is inside
@@ -519,8 +519,8 @@ cxpb  The cell sides must be travelled in order
       z1=geo%vxY(iVx1)
       r2=geo%vxX(iVx2)
       z2=geo%vxY(iVx2)
-      angle = asin( ((r1-r)*(z2-z)-(z1-z)*(r2-r))/
-     .  (sqrt((r1-r)**2+(z1-z)**2)*sqrt((r2-r)**2+(z2-z)**2)) )
+      angle = atan2((r1-r)*(z2-z)-(z1-z)*(r2-r),
+     .  (r1-r)*(r2-r)+(z1-z)*(z2-z))
       done(1)=.true.
       do while (iVx1.ne.iVx2)
         do i=2,mpg%cvFcP(iCv,2)
@@ -561,8 +561,8 @@ cxpb  The cell sides must be travelled in order
             end if
           end if
           if (done(i)) angle = angle +
-     .      asin( ((r1-r)*(z2-z)-(z1-z)*(r2-r))/
-     .       (sqrt((r1-r)**2+(z1-z)**2)*sqrt((r2-r)**2+(z2-z)**2)) )
+     .      atan2((r1-r)*(z2-z)-(z1-z)*(r2-r),
+     .       (r1-r)*(r2-r)+(z1-z)*(z2-z))
         end do
       end do
       inside_cell=nint(angle/(2.0_R8*pi)).ne.0

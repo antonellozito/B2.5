@@ -341,7 +341,8 @@ c
       real (kind=R8) :: time(1), z_cvt(1:nCv)
       integer iret
       integer ncid, varid
-      integer start(2), count(2)
+      integer start(3), count(3), ndims, nlen
+      integer dimids(NF_MAX_VAR_DIMS)
 c
       iret=nf_open(filename,NF_NOWRITE,ncid)
       call check_cdf_status(iret)
@@ -355,12 +356,24 @@ c
 c
       iret=nf_inq_varid(ncid,name,varid)
       call check_cdf_status(iret)
-      start(1)=1
-      start(2)=ntstep
-      count(1)=nCv
-      count(2)=1
-      iret=nf_get_vara_double(ncid,varid,start,count,z_cvt)
+      iret=nf_inq_varndims(ncid,varid,ndims)
       call check_cdf_status(iret)
+      iret=nf_inq_vardimid(ncid,varid,dimids)
+      call check_cdf_status(iret)
+      iret=nf_inq_dimlen(ncid,dimids(1),nlen)
+      call check_cdf_status(iret)
+c Cell variables only; of a species variable the first species
+      if (nlen.ne.nCv.or.ndims.lt.2.or.ndims.gt.3) then
+        write(*,*) 'get_cdf: ',trim(name),' is not a cell variable'
+        z_cvt=0.0_R8
+      else
+        start=1
+        count=1
+        count(1)=nCv
+        start(ndims)=ntstep
+        iret=nf_get_vara_double(ncid,varid,start,count,z_cvt)
+        call check_cdf_status(iret)
+      end if
       iret = nf_close (ncid)
       call check_cdf_status(iret)
       end subroutine get_cdf
