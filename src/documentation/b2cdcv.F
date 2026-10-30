@@ -351,6 +351,7 @@
 *
 *     cvOnClosedSurface - (1:nCv) integer array
 *     Logical to indicate whether a cell belongs to a closed flux tube.
+*     Always .false. for guard cells.
 *
 *     bcCvP -(1:nBc,1:2) integer array
 *     Pointer array to find the numbers of the guard cells belonging to boundary condition iBc.
