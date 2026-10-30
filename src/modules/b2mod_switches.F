@@ -2749,9 +2749,9 @@ c check the inter-consistency of different switches (e.g. certain combinations o
       if (s%pot_eq .eq. 1) then
        call xertst(s%fch_ion_neutral .gt. 0.0_R8 .or.
      *             s%fch_anomalous .gt. 0.0_R8 .or.
-     *             s%fhe_vis_q .gt. 0.0_R8 .or.  !fnb/fhe?
+     *             s%fhe_vis_q .gt. 0.0_R8 .or.
      *             s%fch_inert .gt. 0.0_R8 .or.
-     *             s%fhe_vis_per .gt. 0.0_R8 .or. !fnb/fhe?
+     *             s%fhe_vis_per .gt. 0.0_R8 .or.
      *             s%fch_stochastic .gt. 0.0_R8 .or.
      *             s%dia_cur .gt. 0.0_R8 .or.
      *             s%fhe_vis_par .gt. 0.0_R8,

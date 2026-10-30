@@ -44,7 +44,7 @@
         integer, allocatable :: cvReg(:)               ! Region numbers of the cells
         integer, allocatable :: ftReg(:)               ! Region numbers of the flux tubes
         integer, allocatable :: fcAligned(:)           ! Integer to indicate whether a face is aligned with the magnetic field
-        logical, allocatable :: cvOnClosedSurface(:)   ! Logical to indicate whether a cell is on a closed flux surface
+        logical, allocatable :: cvOnClosedSurface(:)   ! Logical to indicate whether a cell belongs to a closed flux tube
 
         integer, allocatable :: bcCvP(:,:)             ! (nBc,2) pointing for each boundary condition to the first index in the bcCv list, and its number of guard cells
         integer, allocatable :: bcCv(:,:)              !         listing for each boundary condition the guard cells, and the corresponding domain cells

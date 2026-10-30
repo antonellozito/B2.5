@@ -2806,6 +2806,7 @@ c
           if (nomp.gt.0) then
             do ix=1,nomp
               iCv = omp(ix)
+              if (iCv.gt.mpg%nCi) cycle
               if (mpg%cvOnClosedSurface(iCv)) cycle
               sumomp = sumomp+mach(iCv,0)*geo%cvX(iCv)*wdomp(ix)*
      1          sqrt(geo%cvBb(iCv,0)**2+geo%cvBb(iCv,1)**2)
@@ -2814,6 +2815,7 @@ c
           if (nimp.gt.0) then
             do ix=1,nimp
               iCv = imp(ix)
+              if (iCv.gt.mpg%nCi) cycle
               if (mpg%cvOnClosedSurface(iCv)) cycle
               sumimp = sumimp+mach(iCv,0)*geo%cvX(iCv)*wdimp(ix)*
      1          sqrt(geo%cvBb(iCv,0)**2+geo%cvBb(iCv,1)**2)
@@ -12241,8 +12243,28 @@ c calculate neoclassical diagnostics
           ds(i)=ds(i)-ds_offset
         enddo
       endif
-      if(.not.mpg%cvOnClosedSurface(cvlist(1)).and.
-     &        mpg%cvOnClosedSurface(cvlist(nlist))) then ! flip sign
+      i = 1
+      iCv1 = 0
+      do while (iCv1.eq.0 .and. i.le.nlist)
+        if (iCv1.eq.0 .and. cvlist(i).gt.mpg%nCi) then
+          i = i + 1
+        else if (iCv1.eq.0) then
+          iCv1 = cvlist(i)
+        endif
+      enddo
+      i = nlist
+      iCv2 = 0
+      do while (iCv2.eq.0 .and. i.gt.0)
+        if (iCv2.eq.0 .and. cvlist(i).gt.mpg%nCi) then
+          i = i - 1
+        else if (iCv2.eq.0) then
+          iCv2 = cvlist(i)
+        endif
+      enddo
+      call xertst(iCv1.gt.0.and.iCv2.gt.0,
+     & 'List does not include internal cells!')
+      if(.not.mpg%cvOnClosedSurface(iCv1).and.
+     &        mpg%cvOnClosedSurface(iCv2)) then ! flip sign
         ds(1:nlist)=-ds(1:nlist)
       endif
       do i=1,nlist
