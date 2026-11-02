@@ -120,9 +120,7 @@ c
      *   deltab(mpg%nCv,0:nsd_local),
      *   deltapar(mpg%nCv,0:nsd_local),
      *   vtha(mpg%nCv,0:nsd_local), q,
-#ifdef WG_TODO
      *   zaf(0:nsd_local-1), pxf, tif,
-#endif
      9   pb0, t0
       real (kind=R8) ::                                                !cjk
      *   dn_neo(mpg%nCv,0:nsd_local),
@@ -215,10 +213,12 @@ c
 c
       real (kind=R8) ::
      * dummy,rval,time,minpsi,maxpsi,sumomp,sumimp,suml(2),sumr(2)
+      integer isign
+      real (kind=R8) :: phi_app
 #ifdef WG_TODO
-      integer icell,idir,isign,ixn,iy,iyn,ixf,iyf
+      integer icell,idir,ixn,iy,iyn,ixf,iyf
       real (kind=R8) ::
-     * hh, hhn, phi_app
+     * hh, hhn
 #endif
       integer i,j,il,imi,
      1 is1,ival,ix1,ix2,iy1,iy2,izend,izstrt,
@@ -1070,6 +1070,44 @@ cxpb  Western boundary
      &         gs(ixf,iyf,idir)*
      &         ((0.5_R8*mp*am_ext(is)*ua_ext(ix,iy,is)**2+
      &           ta_ext(ix,iy,is))*(1.0_R8-switch%BoRiS) + pxf*ev)
+        enddo
+      enddo
+#else
+      wall_flux=0.0_R8
+      incident_energy=0.0_R8
+      do ibnd = 1, nbnd
+        iFc = imapfc(ibnd)
+        iCv = max(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+        isign = merge(1,-1,mpg%fcCv(iFc,2).eq.iCv)
+        Phi_app = get_phi_applied(boundary_namelist,mpg,iFc)
+        wall_heatflux(ibnd)=max(0.0_R8,
+     .    isign*(state%dv%fht(iFc,0)+state%dv%fht(iFc,1)+
+     .           state_ext%fhi(iFc,0)+state_ext%fhi(iFc,1)))/
+     .                                 geo%fcS(iFc)
+*    ..compute cell-faced quantities
+        do is = 0, ns-1
+          zaf(is) = (state%rt%rza(mpg%fcCv(iFc,1),is)*geo%fcHc(iFc,2)+
+     .               state%rt%rza(mpg%fcCv(iFc,2),is)*geo%fcHc(iFc,1))/
+     .              (geo%fcHc(iFc,1)+geo%fcHc(iFc,2))
+        enddo
+        tif = (state%pl%ti(mpg%fcCv(iFc,1))*geo%fcHc(iFc,2)+
+     .         state%pl%ti(mpg%fcCv(iFc,2))*geo%fcHc(iFc,1))/
+     .        (geo%fcHc(iFc,1)+geo%fcHc(iFc,2))
+        do is = 0, ns-1
+          incident_energy(ibnd,is)=
+     .     max(0.0_R8,tif/ev+(state%pl%po(iCv)-Phi_app)*zaf(is))
+          wall_flux(ibnd,is)=max(0.0_R8,
+     .     isign*(state%dv%fna(iFc,0,is)+state%dv%fna(iFc,1,is)))
+        enddo
+        do is = 0, state_ext%ns-1
+          pxf = (state_ext%pt(mpg%fcCv(iFc,1),is)*geo%fcHc(iFc,2)+
+     &           state_ext%pt(mpg%fcCv(iFc,2),is)*geo%fcHc(iFc,1))/
+     &          (geo%fcHc(iFc,1)+geo%fcHc(iFc,2))
+          wall_heatflux(ibnd)=wall_heatflux(ibnd)+
+     &     max(0.0_R8,isign*(state_ext%fa(iFc,0,is)+
+     &                       state_ext%fa(iFc,1,is)))/geo%fcS(iFc)*
+     &         ((0.5_R8*mp*state_ext%am(is)*state_ext%ua(iCv,is)**2+
+     &           state_ext%ta(iCv,is))*(1.0_R8-switch%BoRiS) + pxf*ev)
         enddo
       enddo
 #endif
@@ -6320,7 +6358,6 @@ c     assumes that bb is OK for 1d cases
 #endif
           eirene_label(iewrk)=graphlabel(iwrk)
           goto 2059
-#ifdef WG_TODO
         case('stow')     ! matrix --> wall array
           stack_req=(/0,0,0,1,0,0,0/)
           if(bad_args(stack_req)) return
@@ -6329,8 +6366,14 @@ c     assumes that bb is OK for 1d cases
           nwdim(1,iwwrk)=nbnd
           nwdim(2,iwwrk)=ndim(2,iwrk)
           do i = 1, nbnd
+#ifdef WG_TODO
             wall_stack(i,0:ndim(2,iwrk)-1,iwwrk)=
      .       work(imapx(i),imapy(i),0:ndim(2,iwrk)-1,iwrk)
+#else
+            iCv=maxval(mpg%fcCv(imapfc(i),1:2))
+            wall_stack(i,0:ndim(2,iwrk)-1,iwwrk)=
+     .       work(iCv,0:ndim(2,iwrk)-1,iwrk)
+#endif
           enddo
           values(14)=minval(wall_stack(1:nbnd,0:nwdim(2,iwwrk)-1,iwwrk))
           values(15)=maxval(wall_stack(1:nbnd,0:nwdim(2,iwwrk)-1,iwwrk))
@@ -6338,7 +6381,6 @@ c     assumes that bb is OK for 1d cases
           textwwk(0:nwdim(2,iwwrk),iwwrk)=textwk(0:ndim(2,iwrk),iwrk)
           call set_wallbarlabel(wall_label(iwwrk))
           goto 2059
-#endif
         case('xtow')     ! x dimension of matrix --> wall array
           stack_req=(/1,0,0,1,0,0,0/)
           if(bad_args(stack_req)) return
@@ -8840,7 +8882,6 @@ c
           description='Wall area (m^{2})'
           nz=1
           call wall_copy(wall_area,1.0_R8,nz,textbl)
-#ifdef WG_TODO
         case('ei')
           description='Incident energy (eV)'
           nz=nsw
@@ -8853,7 +8894,6 @@ c
           description='Wall heat flux (W/m^{2})'
           nz=1
           call wall_copy(wall_heatflux,1.0_R8,nz,textbl)
-#endif
         case('r1')
           description='Wall start R position (m)'
           nz=1
@@ -9474,7 +9514,7 @@ c normalised weights is 1
           enddo
           call wall_copy(wall_tmp,1.0_R8,nz,texttrack)
 #else
-        case('ei','wallflux','wallhflx','walltemp','plathick',
+        case('walltemp','plathick',
      .       'coathick','cooltemp','vaprtemp','sput','sput2',
      .       'sputchem','thermev','sputres','backscat','backscae',
      .       'erosion','deposit','ero_ml','depo_ml','time','kappa_a',
@@ -9507,7 +9547,7 @@ c normalised weights is 1
       end subroutine select_wall_stack
 
       subroutine select_wall_command
-      integer i, is, ix, iy, iclv, iseg
+      integer i, is, ix, iy, iclv, iseg, iCv
 
       cflag=.true.
       WFVALUE: select case (cval)
@@ -9691,14 +9731,9 @@ c normalised weights is 1
           call pop_stack(stack_req)
           call set_wallbarlabel(wall_label(iwwrk))
         case('pwne')     ! wall data per ne
-#ifdef WG_TODO
           stack_req=(/0,0,0,0,0,1,0/)
           if(bad_args(stack_req)) return
           call pwne
-#else
-          write(*,*) 'Wall function pwne not available in this '//
-     .     'version! Skipping...'
-#endif
         case('wm+')      ! wall stack addition
           stack_req=(/0,0,0,0,0,2,0/)
           if(bad_args(stack_req)) return   ! 5900
@@ -10249,12 +10284,12 @@ c normalised weights is 1
           end do
           wall_label(iwwrk)=trim(wall_label(iwwrk))//' (CHS)'
           call set_wallbarlabel(wall_label(iwwrk))
-#ifdef WG_TODO
         case('wtos')     ! wall array -> m
           stack_req=(/0,0,0,0,0,1,0/)
           if(bad_args(stack_req)) return
           if(iwrk .eq. wklng) call dropstackbottom()
           iwrk=iwrk+1
+#ifdef WG_TODO
           ndim(1,iwrk)=nx
           ndim(2,iwrk)=ny
           ndim(2,iwrk)=nwdim(2,iwwrk)
@@ -10267,10 +10302,21 @@ c normalised weights is 1
      1         0:ndim(2,iwrk)-1,iwrk))
           values(10)=maxval(work(-1:ndim(1,iwrk),-1:ndim(2,iwrk),
      1         0:ndim(2,iwrk)-1,iwrk))
+#else
+          ndim(1,iwrk)=mpg%nCv
+          ndim(2,iwrk)=nwdim(2,iwwrk)
+          work(:,0:ndim(2,iwrk)-1,iwrk)=0.0_R8
+          do i=1,nbnd
+            iCv=maxval(mpg%fcCv(imapfc(i),1:2))
+            work(iCv,0:ndim(2,iwrk)-1,iwrk)=
+     .       wall_stack(i,0:ndim(2,iwrk)-1,iwwrk)
+          enddo
+          values(9)=minval(work(:,0:ndim(2,iwrk)-1,iwrk))
+          values(10)=maxval(work(:,0:ndim(2,iwrk)-1,iwrk))
+#endif
           textwk(0:ndim(2,iwrk)-1,iwrk)=textwwk(0:ndim(2,iwrk)-1,iwwrk)
           graphlabel(iwrk)=wall_label(iwwrk)
           goto 5059
-#endif
         case('wtot')     ! wall array --> target
           stack_req=(/0,0,0,0,0,1,0/)
           if(bad_args(stack_req)) return
