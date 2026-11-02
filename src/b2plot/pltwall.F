@@ -8,12 +8,14 @@ C =====================================================================
       use b2mod_b2plot_debug
       use b2mod_graphics
       use b2mod_wall
+      use b2us_data, only : mpg
       implicit none
       logical physical, from_target
 
       real (kind=R8) :: zlod,zhid
       real (kind=R4) :: zlo,zhi,rlo,rhi,zinc,zval,clv
       real (kind=R8) :: wallx1,wallx2,wally1,wally2
+      logical lsouth, lnorth, lwest, least
       integer i, icol, ici, noz, nozm, nfmtz
       INTEGER LFIN(100),choose_color
       CHARACTER*20 LBLS(100)
@@ -188,36 +190,45 @@ C =====================================================================
         call gsplci(ici)
         if (physical) then
           call lined_d(r1(i),z1(i),r2(i),z2(i))
-#ifdef WG_TODO
-        else if (.not.from_target) then
+        else if (.not.from_target .and. imapx(i).ge.-1) then
           wallx1 = real(imapx(i),R4)
           wallx2 = real(imapx(i),R4)
           wally1 = real(imapy(i),R4)
           wally2 = real(imapy(i),R4)
-          if (bottomiy(imapx(i),imapy(i)).eq.-2) then
+#ifdef WG_TODO
+          lsouth = bottomiy(imapx(i),imapy(i)).eq.-2
+          lnorth = topiy(imapx(i),imapy(i)).eq.ny+1
+          lwest = leftix(imapx(i),imapy(i)).eq.-2
+          least = rightix(imapx(i),imapy(i)).eq.nx+1
+#else
+          lsouth = imapy(i).eq.-1
+          lnorth = imapy(i).eq.mpg%ny
+          lwest = imapx(i).eq.-1
+          least = imapx(i).eq.mpg%nx
+#endif
+          if (lsouth) then
             wallx1 = wallx1 - 0.5_R4
             wallx2 = wallx2 + 0.5_R4
             wally1 = wally1 - 0.5_R4
             wally2 = wally2 - 0.5_R4
-          else if (topiy(imapx(i),imapy(i)).eq.ny+1) then
+          else if (lnorth) then
             wallx1 = wallx1 - 0.5_R4
             wallx2 = wallx2 + 0.5_R4
             wally1 = wally1 + 0.5_R4
             wally2 = wally2 + 0.5_R4
           endif
-          if (leftix(imapx(i),imapy(i)).eq.-2) then
+          if (lwest) then
             wallx1 = wallx1 - 0.5_R4
             wallx2 = wallx2 - 0.5_R4
             wally1 = wally1 - 0.5_R4
             wally2 = wally2 + 0.5_R4
-          elseif (rightix(imapx(i),imapy(i)).eq.nx+1) then
+          elseif (least) then
             wallx1 = wallx1 + 0.5_R4
             wallx2 = wallx2 + 0.5_R4
             wally1 = wally1 - 0.5_R4
             wally2 = wally2 + 0.5_R4
           endif
           call lined_d(wallx1,wally1,wallx2,wally2)
-#endif
         else if (from_target) then
           wallx1 = i - 0.5_R4
           wallx2 = i + 0.5_R4

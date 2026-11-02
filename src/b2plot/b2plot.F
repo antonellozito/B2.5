@@ -4972,13 +4972,19 @@ c     assumes that bb is OK for 1d cases
           description='fac_vis'
           nz=1
           call copy(state%dv%fac_vis,1.0_R8,nz,textbl)
-#ifdef WG_TODO
         case ('xymap')
           description='xymap'
           nz=1
+#ifdef WG_TODO
           mach(-1:nx,-1:ny,0)=real(xymap(-1:nx,-1:ny),R8)
-          call copy(mach,1.0_R8,nz,textbl)
+#else
+          mach(:,0)=0.0_R8
+          do i=1,nbnd
+            iCv=maxval(mpg%fcCv(imapfc(i),1:2))
+            mach(iCv,0)=real(i,R8)
+          enddo
 #endif
+          call copy(mach,1.0_R8,nz,textbl)
         case ('fnax32')
           description='Convective poloidal particle flux (s^{-1})'
           nz=ns
