@@ -398,6 +398,160 @@ cxpb Recopy geometrical arrays into namelist defaults
       return
       end subroutine init_wall
 
+c Wall elements: the boundary face of each guard cell outside the closed
+c flux surfaces, chained along the boundary with the plasma on the
+c right; a new segment where the boundary condition changes
+      subroutine init_wall_elements(mpg,geo)
+      use b2mod_types
+      use b2mod_wall
+      use b2us_map
+      use b2us_geo
+      use b2mod_subsys
+      implicit none
+      type (mapping), intent(in) :: mpg
+      type (geometry), intent(in) :: geo
+      integer nfc, ipass, k, k0, m, j, j0, jp, ibnd, iCv, iCp, iFc, iv,
+     *  ix, iy
+      integer, allocatable :: fcw(:), vxs(:), vxe(:), keyw(:),
+     *  nxtw(:), prvw(:), lst(:), ord(:), ixw(:), iyw(:), kvx(:),
+     *  kcv(:)
+      logical, allocatable :: done(:), brk(:)
+      real (kind=R8) :: dx, dy
+      external xertst
+
+      call subini('init_wall_elements')
+      allocate(fcw(mpg%nCg), vxs(mpg%nCg), vxe(mpg%nCg),
+     *  keyw(mpg%nCg), nxtw(mpg%nCg), prvw(mpg%nCg), lst(mpg%nCg),
+     *  ord(mpg%nCg), ixw(mpg%nCg), iyw(mpg%nCg), done(mpg%nCg),
+     *  brk(mpg%nCg))
+      allocate(kvx(mpg%nVx), kcv(mpg%nCi+1:mpg%nCv))
+c Boundary faces, oriented with the plasma cell on the right
+      nfc=0
+      kcv=0
+      do iCv=mpg%nCi+1,mpg%nCv
+        iFc=mpg%cvFc(mpg%cvFcP(iCv,1))
+        iCp=min(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+        if (mpg%cvOnClosedSurface(iCp)) cycle
+        nfc=nfc+1
+        kcv(iCv)=nfc
+        fcw(nfc)=iFc
+        keyw(nfc)=-mpg%fcLbl(iFc)
+        if (allocated(mpg%fcBc)) then
+          if (mpg%fcBc(iFc,2).gt.0) keyw(nfc)=mpg%fcBc(iFc,2)
+        endif
+        vxs(nfc)=mpg%fcVx(iFc,1)
+        vxe(nfc)=mpg%fcVx(iFc,2)
+        dx=geo%vxX(vxe(nfc))-geo%vxX(vxs(nfc))
+        dy=geo%vxY(vxe(nfc))-geo%vxY(vxs(nfc))
+        if ((geo%cvX(iCp)-geo%vxX(vxs(nfc)))*dy-
+     .      (geo%cvY(iCp)-geo%vxY(vxs(nfc)))*dx.lt.0.0_R8) then
+          iv=vxs(nfc)
+          vxs(nfc)=vxe(nfc)
+          vxe(nfc)=iv
+        endif
+      enddo
+      call xertst (nfc.le.nwall,
+     . 'Increase size of B2 contribution to nwall in b2mod_layer')
+c Classical indices of the guard cells
+      ixw=-2
+      iyw=-2
+      if (mpg%isClassicalGrid.eq.1) then
+        do iy=-1,mpg%ny
+          do ix=-1,mpg%nx
+            iCv=mpg%imapCv(ix,iy)
+            if (iCv.le.mpg%nCi) cycle
+            if (kcv(iCv).eq.0) cycle
+            ixw(kcv(iCv))=ix
+            iyw(kcv(iCv))=iy
+          enddo
+        enddo
+      endif
+c Next face along the boundary: the one starting where a face ends
+      kvx=0
+      do k=1,nfc
+        if (kvx(vxs(k)).eq.0) kvx(vxs(k))=k
+      enddo
+      prvw=0
+      do k=1,nfc
+        nxtw(k)=kvx(vxe(k))
+        if (nxtw(k).eq.k) nxtw(k)=0
+        if (nxtw(k).eq.0) cycle
+        if (prvw(nxtw(k)).eq.0) then
+          prvw(nxtw(k))=k
+        else
+          nxtw(k)=0
+        endif
+      enddo
+c Open chains from their first face, then closed chains from a change
+c of boundary condition (classical grids: from the guard cell (0,ny))
+      nbnd=0
+      done=.false.
+      do ipass=1,2
+        do k0=1,nfc
+          if (done(k0)) cycle
+          if (ipass.eq.1.and.prvw(k0).ne.0) cycle
+          m=0
+          k=k0
+          do while (k.ne.0)
+            if (done(k)) exit
+            m=m+1
+            lst(m)=k
+            done(k)=.true.
+            k=nxtw(k)
+          enddo
+          j0=1
+          if (ipass.eq.2) then
+            do j=1,m
+              jp=j-1
+              if (jp.eq.0) jp=m
+              if (keyw(lst(j)).ne.keyw(lst(jp))) then
+                j0=j
+                exit
+              endif
+            enddo
+            do j=1,m
+              if (ixw(lst(j)).eq.0.and.iyw(lst(j)).eq.mpg%ny) j0=j
+            enddo
+          endif
+          do j=1,m
+            ord(nbnd+j)=lst(mod(j0+j-2,m)+1)
+            brk(nbnd+j)=j.eq.1
+            if (j.gt.1) brk(nbnd+j)=
+     .        keyw(ord(nbnd+j)).ne.keyw(ord(nbnd+j-1))
+          enddo
+          nbnd=nbnd+m
+        enddo
+      enddo
+c Wall element arrays and segments
+      nsegments=0
+      itrack_0=0
+      do ibnd=1,nbnd
+        k=ord(ibnd)
+        iFc=fcw(k)
+        if (brk(ibnd)) then
+          if (nsegments.gt.0) wall_end(nsegments)=ibnd-1
+          nsegments=nsegments+1
+          wall_begin(nsegments)=ibnd
+        endif
+        imapfc(ibnd)=iFc
+        imapx(ibnd)=ixw(k)
+        imapy(ibnd)=iyw(k)
+        r1(ibnd)=geo%vxX(vxs(k))
+        z1(ibnd)=geo%vxY(vxs(k))
+        r2(ibnd)=geo%vxX(vxe(k))
+        z2(ibnd)=geo%vxY(vxe(k))
+        plate_area(ibnd)=geo%fcS(iFc)
+      enddo
+      if (nsegments.gt.0) wall_end(nsegments)=nbnd
+      wall_begin(nsegments+1:nwall_segments)=nbnd+1
+      write(*,'(a,i6,a,i4,a)') ' Wall:',nbnd,' elements in',nsegments,
+     . ' segments'
+      deallocate(fcw, vxs, vxe, keyw, nxtw, prvw, lst, ord, ixw, iyw,
+     *  done, brk, kvx, kcv)
+      call subend()
+      return
+      end subroutine init_wall_elements
+
       subroutine get_wall_data(mpg,nx,ny,ns,BoRiS,wall_namelist_used)
       use b2mod_types
       use b2mod_geo
