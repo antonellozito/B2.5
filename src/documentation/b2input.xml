@@ -1925,7 +1925,7 @@
 			<switchgroup>
 				<name>b2stbr_sputtering...</name>
 				<description>
-					Sputtering model switches. Not yet available for WG. See the code in b2stbr and the b2mod_sputter module for specific implementation details and references.
+					Sputtering model switches. See the code in b2stbr and the b2mod_sputter module for specific implementation details and references.
 					The default values represent the case of Graphite plates. Sput_src is the atomic number of the plasma species which causes chemical sputtering.
 					Sput_dst (when .ge.0) is the species index of the destination species produced by physical sputtering, chemical sputtering and/or RES. If either of the latter two processes are included, the chemical sputtering and RES production rate calculations provided in the code assume that sput_dst points to a Carbon species.
 					Sput_dst2 and sput_dst3 (when .ge.0) represent other species produced by wall interactions for mixed materials scenarios.
@@ -2068,7 +2068,6 @@
 				<description>
 					Reflection model switches. If the recycling coefficients (particle and energy) are set to zero, then the code attempts to use, for surfaces in contact with walls, the TRIM reflection data for particle and energy reflection coefficients, when refl_model.eq.1. If refl_model.eq.0, an empirical formula is used instead. The model switch is subservient to reflection_on.ne.0. If reflection_on.eq.0, then no reflection is used.
 					If reflection_on.eq.1 (default), then the incident species is reflected unchanged. Otherwise, the reflected flux is of the associated neutral species to the incident particles.
-					Not converted for WG. It is recommended to use the advanced fluid neutral (AFN) models instead.
 				</description>
 				<switch>
 					<name>b2stbr_refl_model</name>
@@ -4756,6 +4755,7 @@
 				<description>
 					If temperature_at_guard_cell.eq.1, the temperatures used for recycling and reflection are taken as the value in the guard cell.
 					If temperature_at_guard_cell.eq.0, the temperatures are interpolated between the guard cell and the neighbouring real cell.
+					The wall model (sputtering, ion reflection, evaporation) always uses the interpolated ion temperature.
 				</description>
 			</switch>
 			<switch>

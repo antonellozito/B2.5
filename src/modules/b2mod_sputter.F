@@ -383,6 +383,74 @@ cxpb  Replaced with explicit writing of nonzero elements only
       return
       end subroutine write_b2mod_sputter_namelist
 
+c Sputter yields of the wall elements, in the format read at start-up
+      subroutine write_b2mod_wall_sputter_namelist(nwrite,ns,edition)
+      use b2mod_math
+      implicit none
+      integer nwrite, ns
+      character*4 edition
+      integer ix, iy, is, ib, ibnd
+      real (kind=R8) :: tmp1, tmp2
+      character*256 filename
+
+      if (any(xymap_tmp.ne.0)) then
+        sputter_yield=0.0_R8
+        sputter_yield2=0.0_R8
+        do iy = -1, ny_sp
+          do ix = -1, nx_sp
+            ibnd = xymap_tmp(ix,iy)
+            if (ibnd.gt.0) then
+              sputter_yield(ix,iy,:,:) = wall_sputter_yield(ibnd,:,:)
+              sputter_yield2(ix,iy,:,:) = wall_sputter_yield2(ibnd,:,:)
+            endif
+          enddo
+        enddo
+        call write_b2mod_sputter_namelist(nwrite,nx_sp,ny_sp,ns,edition)
+      else if(maxval(wall_sputter_yield).gt.0.0_R8.or.
+     .        maxval(wall_sputter_yield2).gt.0.0_R8) then
+        if (edition.eq.'    ') then
+          filename = 'b2.sputter_save.parameters'
+        else
+          filename = 'b2.sputter_save.parameters.'//edition
+        endif
+        open(nwrite,file=trim(filename))
+        write(nwrite,'(a18)') '&WALL_SPUTTER_SAVE'
+        write(nwrite,'(a10,i5,a1)') 'NBND_SP = ', nbnd, ','
+        write(nwrite,'(a8,i4,a1)') 'NS_SP = ', ns, ','
+        do ibnd = 1, nbnd
+          do is = 0, ns-1
+            if ( wall_sputter_yield(ibnd,is,1).ne.0.0_R8 .or.
+     &           wall_sputter_yield(ibnd,is,2).ne.0.0_R8 .or.
+     &          wall_sputter_yield2(ibnd,is,1).ne.0.0_R8 .or.
+     &          wall_sputter_yield2(ibnd,is,2).ne.0.0_R8) then
+              do ib = 1, 2
+                if (abs(wall_sputter_yield(ibnd,is,ib)).lt.cutlo) then
+                  tmp1 = 0.0_R8
+                else
+                  tmp1 = wall_sputter_yield(ibnd,is,ib)
+                end if
+                if (abs(wall_sputter_yield2(ibnd,is,ib)).lt.cutlo) then
+                  tmp2 = 0.0_R8
+                else
+                  tmp2 = wall_sputter_yield2(ibnd,is,ib)
+                end if
+                write(nwrite,
+     &           '(a19,i5,a1,i3,a1,i1,a2,1pe21.13e3,'//
+     &            'a22,i5,a1,i3,a1,i1,a2,1pe21.13e3,a1)')
+     .           'WALL_SPUTTER_YIELD(',ibnd,',',is,',',ib,')=',tmp1,
+     .           ', WALL_SPUTTER_YIELD2(',ibnd,',',is,',',ib,')=',tmp2,
+     .           ','
+              end do
+            end if
+          end do
+        end do
+        write(nwrite,'(a1)') '/'
+        close(nwrite)
+        write(*,*) 'Saved ',trim(filename)
+      endif
+      return
+      end subroutine write_b2mod_wall_sputter_namelist
+
       subroutine read_sputter_data(nsd,column,sput_model,refl_model)
       use b2mod_b2cmpa
       use b2mod_elements

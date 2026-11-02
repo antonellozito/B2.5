@@ -545,6 +545,12 @@ c Wall element arrays and segments
       if (nsegments.gt.0) wall_end(nsegments)=nbnd
       wall_begin(nsegments+1:nwall_segments)=nbnd+1
       plate_area(nbnd+1:nwall)=0.0_R8
+      if (allocated(cvwall)) deallocate(cvwall)
+      allocate(cvwall(mpg%nCi+1:mpg%nCv))
+      cvwall=0
+      do ibnd=1,nbnd
+        cvwall(maxval(mpg%fcCv(imapfc(ibnd),1:2)))=ibnd
+      enddo
 c Reverse classical map, if the grid fits the namelist arrays
       xymap_tmp=0
       if (mpg%isClassicalGrid.eq.1.and.mpg%nx.le.DEF_NXD.and.

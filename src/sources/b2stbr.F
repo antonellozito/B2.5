@@ -6,12 +6,12 @@
      &  switch, geo, mpg, st, st_ext, st_avg, main_call)
       use b2mod_types
       use b2mod_openmp
-!WG_TODO      use b2mod_wall
+      use b2mod_wall
       use b2mod_diag
       use b2mod_time
-!WG_TODO      use b2mod_layer
-!WG_TODO      use b2mod_elements
-!WG_TODO      use b2mod_sputter
+      use b2mod_layer
+      use b2mod_elements
+      use b2mod_sputter
       use b2mod_first_flight
       use b2mod_constants
       use b2mod_neutrals_namelist
@@ -105,9 +105,9 @@
 *.declarations
 
 *   ..local variables
-      integer iCv, iFc, is, k
+      integer iCv, iFc, is, k, ibnd, itrack
 #ifdef WG_TODO
-      integer ib, ic, ibnd, itrack
+      integer ib, ic
       integer, save :: jxi, jxa, jsep
 #endif
       integer, save :: no_b2stbr_phys_call = 0
@@ -125,9 +125,7 @@
      *  tchem(0:ns-1), tchee(0:ns-1), tphys(0:ns-1),
      *  tphye(0:ns-1), thevp(0:ns-1), thvpe(0:ns-1), tresn(0:ns-1),
      *  trese(0:ns-1), trfln(0:ns-1), trfle(0:ns-1)
-#ifdef WG_TODO
-     *, t_frac, t0
-#endif
+     *, t_frac, t0, lnorm
       real (kind=R8) ::                                              !srv 29.04.10 {
      &  sna0_eir(nCv,0:1,0:ns-1), smo0_eir(nCv,0:3,0:ns-1),
      &  smr0_eir(nCv,0:3,0:ns-1), smd0_eir(nCv,0:3,0:ns-1),
@@ -151,7 +149,7 @@
       real (kind=R8) ::
 #ifdef WG_TODO
      *  pfrpuff, mainpuff, corepuff,
-     *  sum_start, sum_end, lnorm,
+     *  sum_start, sum_end,
      *  sum_strti, sum_ndi, sum_nde,
      *  work(nCv,0:1), wrk2(nCv), wrk3(nCv),
 #endif
@@ -162,9 +160,7 @@
 #else
       real (kind=R4) :: start_time, end_time
 #endif
-#ifdef WG_TODO
       logical equilibrium(ntrack), over_erosion
-#endif
       logical new_sputter_namelist, catch_up
 #ifndef NO_CDF
 #include <netcdf.inc>
@@ -248,10 +244,8 @@
         call ipgeti ('b2stbr_sput_src', sput_src)
         call ipgeti ('b2stbr_sput_chem_model', sput_chem_model)
         if(switch%b2stbr_sput_phys.ne.0.0_R8) then
-#ifdef WG_TODO
           call xertst (sput_dst.lt.ns,
      1     'faulty b2stbr_sput_dst')
-#endif
         endif
         call ipgeti ('b2stbr_reflection_on', reflection_on)
         call ipgeti ('b2stbr_sputter_energy_on', sputter_energy_on)
@@ -373,29 +367,37 @@ c   --> better solution wanted here..
        if(switch%b2stbr_redep_alpha.eq.0.0_R8) then
         f_redep=0.0_R8
        else
-        call xerrab ('WG - redep_alpha .ne. 0')
-#ifdef WG_TODO
         do is=0, ns-1
           if(is_neutral(is).and.lnext(is,is+1)) then
-            do iy=-1,ny
-              do ix=-1,nx
-                f_redep(ix,iy,is) = 1.0_R8 /
+            do iCv=1,nCv
+              if (switch%b2stbr_redep_alpha.gt.0.0_R8) then
+cxpb The prompt redeposition fraction formula below is from:
+cxpb R. Dux et al., Nucl. Fusion 51 (2011) 053002
+                f_redep(iCv,is) = 1.0_R8 /
      1           ( 1.0_R8 + switch%b2stbr_redep_alpha*
-     2           (qe*bb(ix,iy,3)/(am(is)*mp)/
-     3           (rsa(ix,iy,is)*ne(ix,iy)))**2 )
-              enddo
+     2           (qe*geo%cvBb(iCv,3)/(am(is)*mp)/
+     3           (st%rtw%rsa(iCv,is)*st%dv%ne(iCv)))**2 )
+              else if (switch%b2stbr_redep_alpha.lt.0.0_R8) then
+cxpb The prompt redeposition fraction formula below is from:
+cxpb D. Tskhakaya et al., JNM 463 (2015) 624
+cxpb Recommended value is abs(redep_alpha) = 0.01
+cxpb This formula is meant for tungsten when l_ion < 5 * rho_i
+                f_redep(iCv,is) = 1.0_R8 / ( 1.0_R8 +
+     1           abs(switch%b2stbr_redep_alpha)*
+     2           (st%pl%ti(iCv)/st%pl%te(iCv))*
+     3           (qe*geo%cvBb(iCv,3)/(am(ismain)*mp)/
+     4           (st%rtw%rsa(iCv,is)*st%dv%ne(iCv))) )
+              end if
             enddo
-            if(main_call.and.output.ge.1) then
-              write(*,'(a,i3,16384(1x,f9.6))') 'is,f_redep_W ',
-     1         is,f_redep(0,:,is)
-              write(*,'(a,i3,16384(1x,f9.6))') 'is,f_redep_E ',
-     1         is,f_redep(nx-1,:,is)
+            if(main_call.and.switch%b2stbr_output.ge.1) then
+              write(*,'(a,i3,16384(1x,f9.6))') 'is,f_redep ',
+     1         is,(f_redep(minval(mpg%fcCv(imapfc(ibnd),1:2)),is),
+     2             ibnd=1,nbnd)
             endif
           else
-            f_redep(:,:,is)=0.0_R8
+            f_redep(:,is)=0.0_R8
           endif
         enddo
-#endif
        endif
        if(ncall_b2stbr.eq.0) write(*,*) 'b2stbr: using b2stbr_phys'
 #ifndef FIXED_POINT
@@ -856,7 +858,6 @@ cwdk remove this if-test, to allow runs without Eirene if code is compiled with 
      1 st%srw%sne0(:,0)+
      2 st%srw%sne0(:,1)*st%dv%ne(:)
 
-#ifdef WG_TODO
       if(main_call) then
         do ibnd = 1, nbnd
           over_erosion = .false.
@@ -893,7 +894,7 @@ cxpb  plate_thickness.eq.0 means we are not doing full inventories
           enddo
           if (.not.over_erosion) then
             plate_time(ibnd)=plate_time(ibnd)+
-     1       dtim*plate_time_factor(ibnd)
+     1       dteff*plate_time_factor(ibnd)
             do itrack = 1, ntargsp
               if (.not.equilibrium(itrack)) then
                 if (switch%b2stbr_sput_frac_flag.ne.0)
@@ -917,7 +918,7 @@ cxpb  plate_thickness.eq.0 means we are not doing full inventories
             enddo
           else
             plate_time(ibnd)=plate_time(ibnd)+
-     1       dtim*plate_time_factor(ibnd)*t_frac
+     1       dteff*plate_time_factor(ibnd)*t_frac
             do itrack = 1, ntargsp
               particle_inventory(ibnd,itrack)= max( 0.0_R8,
      .         particle_inventory(ibnd,itrack)+t_frac*
@@ -948,7 +949,6 @@ cxpb  plate_thickness.eq.0 means we are not doing full inventories
           endif
         enddo
       endif
-#endif
       if(switch%b2stbr_b2wall_netcdf.ne.0 .and. ntargsp.gt.0) then
 #ifndef NO_CDF
         if(ncall_b2stbr.eq.0) then
