@@ -5,3 +5,4 @@ Added new PARDISO solver option
 Added b2mod_blns which produces the tracing/blnn_SPb.trc file
 Added b2mod_convergence for potential equation inner iterations variables
 Added b2mod_umfpack as new optional matrix solver
+Added b2mod_heatdiff_common, the data of the plate heat diffusion model shared by heatdiff1D and its routines

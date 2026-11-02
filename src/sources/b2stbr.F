@@ -1215,18 +1215,24 @@ c        write(*,*) 'Called neutr_scl'
 *-----------------------------------------------------------------------
 *.specification
 
-      subroutine b2stbr_init (ns, switch, mpg)
+      subroutine b2stbr_init (ns, switch, mpg, geo, dv, st_ext)
       use b2mod_types
       use b2mod_time
       use b2mod_wall
       use b2mod_b2cmpa
       use b2mod_sputter
-     , , only : sput_dst, sput_dst2, sput_dst3
+     , , only : sput_dst, sput_dst2, sput_dst3, sputter_namelist_used,
+     ,   sputter_yield, sputter_yield2, wall_sputter_yield,
+     ,   wall_sputter_yield2, nx_sp, ny_sp, ns_sp, nbnd_sp,
+     ,   alloc_b2mod_sputter, read_b2mod_sputter_namelist,
+     ,   read_b2mod_wall_sputter_namelist
       use b2mod_neutrals_namelist
       use b2mod_neutr_src_scaling
       use b2mod_recycle
       use b2mod_switches
       use b2us_map
+      use b2us_geo
+      use b2us_plasma
       use b2mod_subsys
       use b2mod_dimensions
       implicit none
@@ -1234,6 +1240,9 @@ c        write(*,*) 'Called neutr_scl'
       integer, intent(in) :: ns
       type (switches), intent(in) :: switch
       type (mapping), intent(inout) :: mpg
+      type (geometry), intent(in) :: geo
+      type (B2Derivatives), intent(in) :: dv
+      type (B2StateExt), intent(in) :: st_ext
 *-----------------------------------------------------------------------
 *.documentation
 *
@@ -1246,16 +1255,12 @@ c        write(*,*) 'Called neutr_scl'
 *.declarations
 
 *   ..local variables
-#ifdef WG_TODO
-      integer nCg_tmp, ns_tmp
-#endif
-      integer is, istra
+      integer is, istra, ix, iy, ibnd, nx_cl, ny_cl
       integer neutrals_namelist
       integer sput_src, sput_chem_model
-      logical new_sputter_namelist, catch_up, wall_namelist_used
-#ifdef WG_TODO
+      logical new_sputter_namelist, catch_up, wall_namelist_used,
+     *  classical
       character*256 filename
-#endif
 *   ..procedures
       intrinsic mod
       external xertst, xerrab, ipgeti, ipgetr
@@ -1400,37 +1405,55 @@ cxpb Reading of neutrals namelist moved here as it is needed by init_wall
         if(sput_dst3.ge.0)
      1   write(*,*) 'Additional sputtering producing ',sput_dst3
       end if
-#ifdef WG_TODO
 *   ..reading wall and sputter namelist data on first call
+*   ..(namelist files with classical indices where the grid fits)
+      classical = mpg%isClassicalGrid.eq.1
+      if (classical) classical =
+     .  mpg%nx.le.DEF_NXD .and. mpg%ny.le.DEF_NYD
+      nx_cl = 0
+      ny_cl = 0
+      if (classical) then
+        nx_cl = mpg%nx
+        ny_cl = mpg%ny
+      endif
       write(*,*) 'Calling alloc_b2mod_sputter'
-      call alloc_b2mod_sputter(nx,ny,ns)
+      call alloc_b2mod_sputter(nx_cl,ny_cl,ns)
       write(*,*) 'Calling alloc_b2mod_wall'
-      call alloc_b2mod_layer(nx,ny,nncut,nlim,nsts)
-      call alloc_b2mod_wall_init(nx,ny,nncut)
-#endif
+      call alloc_b2mod_layer(nx_cl,ny_cl,DEF_NCUT,DEF_NLIM,DEF_NSTS)
       call alloc_b2mod_wall(ns)
-      call init_wall(mpg)
+      call alloc_b2mod_wall_elements(nwall)
+      call init_wall_elements(mpg,geo)
       call read_b2mod_wall_namelist(99,'    ',wall_namelist_used)
-#ifdef WG_TODO
       call xertst (ndepth_nml.gt.1.or.plate_model.eq.0,
      .   'Inconsistent values of ndepth_nml and plate_model')
-      call get_wall_data (nx,ny,ns,switch%BoRiS,wall_namelist_used)
-#ifdef ALLOCATE_AND_NAMELIST
-      nCg_tmp = mpg%nCg
-      ns_tmp = ns
-#else
-      nCg_tmp = 2*(DEF_NXD+2)+(DEF_NCUT+2)*(DEF_NYD+2)
-      ns_tmp = DEF_NSD
-#endif
+      call get_wall_data (mpg,geo,dv,st_ext,ns,switch%BoRiS,
+     .   wall_namelist_used)
       filename='b2.sputter_save.parameters'
       call find_file(filename,sputter_namelist_used)
       if (sputter_namelist_used) then
-        call read_b2mod_sputter_namelist
-     .     (99,'    ',sputter_namelist_used)
+        if (classical) then
+          call read_b2mod_sputter_namelist
+     .       (99,'    ',sputter_namelist_used)
+          do iy = -1, ny_cl
+            do ix = -1, nx_cl
+              ibnd = xymap_tmp(ix,iy)
+              if (ibnd.gt.0) then
+                wall_sputter_yield(ibnd,:,:) =
+     .           sputter_yield(ix,iy,:,:)
+                wall_sputter_yield2(ibnd,:,:) =
+     .           sputter_yield2(ix,iy,:,:)
+              endif
+            enddo
+          enddo
+        else
+          call read_b2mod_wall_sputter_namelist
+     .       (99,'    ',sputter_namelist_used)
+        endif
       endif
-      nCg_sp = nCg_tmp
-      ns_sp = ns_tmp
-#endif
+      nx_sp = nx_cl
+      ny_sp = ny_cl
+      ns_sp = ns
+      nbnd_sp = nbnd
 
 cmb  Load pre-evaluated integrals for advanced recyling mocdel based on TRIM data
       if (switch%recycle_afn.eq.1) then

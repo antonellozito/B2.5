@@ -99,6 +99,7 @@ cxpb Data file material properties
 
       integer, allocatable, save :: imapw(:),
      *  imapreg(:), imapfc(:), wall_begin(:), wall_end(:)
+      integer, save :: xymap_tmp(-1:DEF_NXD,-1:DEF_NYD)
 
 cxpb Data file material properties
       character*32, allocatable, save :: surface_long_name(:)
