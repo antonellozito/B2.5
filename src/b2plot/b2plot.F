@@ -982,6 +982,14 @@ cxpb  Bring in wall data and compute oft-needed wall quantities
      *   trg_tmp(1:nwall,1:ndepth_nml))
       call alloc_b2mod_b2plot_wall(nsd_local,natmi,nmoli,nioni,
      *   nwall,ndepth_nml,wklng)
+#else
+      call alloc_b2mod_wall(ns)
+      call alloc_b2mod_wall_elements(nwall)
+      call init_wall_elements(mpg,geo)
+      allocate(wall_tmp(1:nwall,0:nsd_local-1+natmi+nmoli+nioni),
+     *   trg_tmp(1:nwall,1:ndepth_nml))
+      call alloc_b2mod_b2plot_wall(nsd_local,natmi,nmoli,nioni,
+     *   nwall,ndepth_nml,wklng)
 #endif
       call build_reverse_mapping(mpg)
       call alloc_b2mod_b2plot_ank(nwall)
@@ -1560,6 +1568,7 @@ c
             deallocate(energy_balance_old)
             if (allocated(dsomp)) deallocate(dsomp,wdomp)
             if (allocated(dsimp)) deallocate(dsimp,wdimp)
+            if (allocated(wall_tmp)) deallocate(wall_tmp,trg_tmp)
             deallocate(mach)
             call dealloc_b2mod_diag
             call dealloc_b2mod_wall
@@ -1662,6 +1671,7 @@ c
           deallocate(energy_balance_old)
           if (allocated(dsomp)) deallocate(dsomp,wdomp)
           if (allocated(dsimp)) deallocate(dsimp,wdimp)
+          if (allocated(wall_tmp)) deallocate(wall_tmp,trg_tmp)
           deallocate(mach)
           call dealloc_b2mod_diag
           call dealloc_b2mod_wall
@@ -6310,7 +6320,7 @@ c     assumes that bb is OK for 1d cases
           iy = ipop(istack,iistack)
           if(iwwrk .eq. wklng) call dropwallstackbottom()
           iwwrk=iwwrk+1
-          nwdim(1,iwwrk)=ndim(1,iwrk)+2
+          nwdim(1,iwwrk)=mpg%nx+2
           nwdim(2,iwwrk)=ndim(2,iwrk)
           do ix=-1,mpg%nx
            if (mpg%imapCv(ix,iy).ne.0)
@@ -6332,7 +6342,7 @@ c     assumes that bb is OK for 1d cases
           if(iwwrk .eq. wklng) call dropwallstackbottom()
           ix = ipop(istack,iistack)
           iwwrk=iwwrk+1
-          nwdim(1,iwwrk)=ndim(1,iwrk)
+          nwdim(1,iwwrk)=mpg%ny+2
           nwdim(2,iwwrk)=ndim(2,iwrk)
           do iy=-1,mpg%ny
            if (mpg%imapCv(ix,iy).ne.0)
@@ -8793,7 +8803,10 @@ c
       end subroutine select_eirene_command
 
       subroutine select_wall_stack
-      integer i, ibnd, itrack
+      integer i
+#ifdef WG_TODO
+      integer ibnd, itrack
+#endif
 
       cflag=.true.
       WVALUE: select case(cval)
@@ -8801,6 +8814,7 @@ c
           description='Wall area (m^{2})'
           nz=1
           call wall_copy(wall_area,1.0_R8,nz,textbl)
+#ifdef WG_TODO
         case('ei')
           description='Incident energy (eV)'
           nz=nsw
@@ -8813,6 +8827,7 @@ c
           description='Wall heat flux (W/m^{2})'
           nz=1
           call wall_copy(wall_heatflux,1.0_R8,nz,textbl)
+#endif
         case('r1')
           description='Wall start R position (m)'
           nz=1
@@ -8829,6 +8844,7 @@ c
           description='Wall end Z position (m)'
           nz=1
           call wall_copy(z2,1.0_R8,nz,textbl)
+#ifdef WG_TODO
         case('walltemp')
           description='Wall surface temperature (K)'
           nz=1
@@ -8849,7 +8865,6 @@ c
           description='Vaporisation temperature (K)'
           nz=1
           call wall_copy(matsurf_vapor_temp,1.0_R8,nz,textbl)
-#ifdef WG_TODO
         case('north')
           description='North boundary'
           nz=1
@@ -8894,6 +8909,26 @@ c
             endif
           enddo
           call wall_copy(data,1.0_R8,nz,textbl)
+#else
+        case('north','south','west','east')
+          stack_req=(/0,0,0,0,0,0,0/)
+          if(.not.check_classical_grid(mpg)) return
+          nz=1
+          select case(cval)
+          case('north')
+            description='North boundary'
+            data(1:nbnd)=merge(1.0_R8,0.0_R8,imapy(1:nbnd).eq.mpg%ny)
+          case('south')
+            description='South boundary'
+            data(1:nbnd)=merge(1.0_R8,0.0_R8,imapy(1:nbnd).eq.-1)
+          case('west')
+            description='West boundary'
+            data(1:nbnd)=merge(1.0_R8,0.0_R8,imapx(1:nbnd).eq.-1)
+          case('east')
+            description='East boundary'
+            data(1:nbnd)=merge(1.0_R8,0.0_R8,imapx(1:nbnd).eq.mpg%nx)
+          end select
+          call wall_copy(data,1.0_R8,nz,textbl)
 #endif
         case('nseg')
           description='Wall segment'
@@ -8909,18 +8944,13 @@ c
               data(wall_begin(i):wall_end(i)) = real(i)
             enddo
           elseif(istack(iistack) .gt. 0) then
-            data(wall_begin(1):wall_end(istack(iistack)-1)) = 0.0_R8
+            data(1:nbnd) = 0.0_R8
             data(wall_begin(istack(iistack)):
      .           wall_end(istack(iistack))) = 1.0_R8
-            data(wall_begin(istack(iistack)+1):
-     .           wall_end(nsegments)) = 0.0_R8
           else
-            data(wall_begin(1):
-     .           wall_end(abs(istack(iistack))-1)) = 1.0_R8
+            data(1:nbnd) = 1.0_R8
             data(wall_begin(abs(istack(iistack))):
      .           wall_end(abs(istack(iistack)))) = 0.0_R8
-            data(wall_begin(abs(istack(iistack))+1):
-     .           wall_end(nsegments)) = 1.0_R8
           endif
           write(*,*) '"nseg" option with ',ipop(istack,iistack)
           call wall_copy(data,1.0_R8,nz,textbl)
@@ -9061,6 +9091,7 @@ c
             data(i) = sqrt((r2(i)-r1(i))**2+(z2(i)-z1(i))**2)
           enddo
           call wall_copy(data,1.0_R8,nz,textbl)
+#ifdef WG_TODO
         case('sput')
           description='Physical sputtering yield'
           if (sput_frac_flag.eq.0) then
@@ -9123,16 +9154,22 @@ c
           description='Plate time (s)'
           nz=1
           call wall_copy(plate_time,1.0_R8,nz,textbl)
+#endif
         case('imapx')
           description='imapx'
+          stack_req=(/0,0,0,0,0,0,0/)
+          if(.not.check_classical_grid(mpg)) return
           nz=1
           data(1:nbnd)=real(imapx(1:nbnd))
           call wall_copy(data,1.0_R8,nz,textbl)
         case('imapy')
           description='imapy'
+          stack_req=(/0,0,0,0,0,0,0/)
+          if(.not.check_classical_grid(mpg)) return
           nz=1
           data(1:nbnd)=real(imapy(1:nbnd))
           call wall_copy(data,1.0_R8,nz,textbl)
+#ifdef WG_TODO
         case('kappa_a')
           description='Bulk Kappa A factor (1/AT+B) (m/W)'
           nz=1
@@ -9410,6 +9447,25 @@ c normalised weights is 1
             endif
           enddo
           call wall_copy(wall_tmp,1.0_R8,nz,texttrack)
+#else
+        case('ei','wallflux','wallhflx','walltemp','plathick',
+     .       'coathick','cooltemp','vaprtemp','sput','sput2',
+     .       'sputchem','thermev','sputres','backscat','backscae',
+     .       'erosion','deposit','ero_ml','depo_ml','time','kappa_a',
+     .       'kappa_b','kappa_a1','kappa_a2','kappa_a3','kappa_a4',
+     .       'kappa_a5','kappapa1','kappapa2','kappapa3','kappapa4',
+     .       'kappapa5','tgdns','cp_b1','cp_b2','cp_b3','cp_b4',
+     .       'ckappa_a','ckappa_b','ckappaa1','ckappaa2','ckappaa3',
+     .       'ckappaa4','ckappaa5','ckapppa1','ckapppa2','ckapppa3',
+     .       'ckapppa4','ckapppa5','ctgdns','c_cp_b1','c_cp_b2',
+     .       'c_cp_b3','c_cp_b4','erel','bbdyemis','vapprs_a',
+     .       'vapprs_b','vapprs','qevap','qrad','stckcoef','sublheat',
+     .       'lkappa','lrho','lcp','lemis','lthick','ldepth',
+     .       'sputfrac')
+          write(*,*) 'Wall quantity '//trim(cval)//
+     .     ' not available in this version! Skipping...'
+          return
+#endif
         case default WVALUE
           cflag=.false.
       END SELECT WVALUE
@@ -9452,6 +9508,8 @@ c normalised weights is 1
           if (wlinlog.gt.2) wlinlog=wlinlog-2
           call set_wlinlog(wlinlog)
         case('plwl')     ! plot in wall domain
+          stack_req=(/0,0,0,0,0,1,0/)
+          if(bad_args(stack_req)) return
           call walloff
           call plot_wall_elements
         case('sumw')     ! sum over walls
@@ -9522,7 +9580,7 @@ c normalised weights is 1
           stack_req=(/0,0,0,0,0,1,0/)
           if(bad_args(stack_req)) return
           do is=0,nwdim(2,iwwrk)-1
-            do i=-1,nwdim(1,iwwrk)
+            do i=1,nwdim(1,iwwrk)
               wall_stack(i,is,iwwrk)=abs(wall_stack(i,is,iwwrk))
             end do
           end do
@@ -9607,9 +9665,14 @@ c normalised weights is 1
           call pop_stack(stack_req)
           call set_wallbarlabel(wall_label(iwwrk))
         case('pwne')     ! wall data per ne
+#ifdef WG_TODO
           stack_req=(/0,0,0,0,0,1,0/)
           if(bad_args(stack_req)) return
           call pwne
+#else
+          write(*,*) 'Wall function pwne not available in this '//
+     .     'version! Skipping...'
+#endif
         case('wm+')      ! wall stack addition
           stack_req=(/0,0,0,0,0,2,0/)
           if(bad_args(stack_req)) return   ! 5900
