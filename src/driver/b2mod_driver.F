@@ -2154,6 +2154,9 @@ c   --> better way doing this is necessary)
       call alloc_b2mod_diag(nCv,nFc,ns,mpg%nnreg(0),nstra,natm,switch)
 *   ..total energy fluxes of the initial state, for the wall model
       if (sput_dst.ge.0) then
+        call b2xpfe (nCv, nFc, ns, state_ext%ns, geo, mpg, qe,
+     &    state%rt%rza, state_ext%za, state%dv%fna, state_ext%fa,
+     &    state%dv%fch, state%dv%fne)
         call b2xpen (nCv, nFc, ns, mpg, switch,
      &    state%dv%fna, state%dv%fna, state%dv%fne,
      &    state%dv%fch, state%dv%fhe, state%dv%fhi, state%dv%fhn,

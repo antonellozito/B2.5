@@ -989,26 +989,30 @@ c         write(*,*) 'te >= upper limit'
             elseif(te.gt.reflect_energy(ih,iss,itargsp)) then
               ib=ih
             else
-              reffrac=reflect_coefficient(ih,iss,itargsp)
-              return
+              ib=ih
+              it=ih
             endif
           enddo
 c         write(*,*)
 c    1     reflect_energy(ib,iss,itargsp)/ev,te/ev,
 c    2     reflect_energy(it,iss,itargsp)/ev
-          f=(te-reflect_energy(ib,iss,itargsp))/
-     1         (reflect_energy(it,iss,itargsp)-
-     2          reflect_energy(ib,iss,itargsp))
-          if(jagged_rates.eq.0) then
-            reffrac=f*
-     1       (reflect_coefficient(it,iss,itargsp)-
-     2        reflect_coefficient(ib,iss,itargsp))+
-     1        reflect_coefficient(ib,iss,itargsp)
+          if(it.eq.ib) then  ! TRIM energy node
+            reffrac=reflect_coefficient(ib,iss,itargsp)
           else
-            reffrac=f*
-     1       (reflect_coefficient(it,iss,itargsp)-
-     2        reflect_coefficient(ib,iss,itargsp))+
-     1        reflect_coefficient(it,iss,itargsp)
+            f=(te-reflect_energy(ib,iss,itargsp))/
+     1           (reflect_energy(it,iss,itargsp)-
+     2            reflect_energy(ib,iss,itargsp))
+            if(jagged_rates.eq.0) then
+              reffrac=f*
+     1         (reflect_coefficient(it,iss,itargsp)-
+     2          reflect_coefficient(ib,iss,itargsp))+
+     1          reflect_coefficient(ib,iss,itargsp)
+            else
+              reffrac=f*
+     1         (reflect_coefficient(it,iss,itargsp)-
+     2          reflect_coefficient(ib,iss,itargsp))+
+     1          reflect_coefficient(it,iss,itargsp)
+            endif
           endif
         endif
         reflect=reflect+reffrac*layer_relconstituents(ibnd,isp)
@@ -1066,23 +1070,27 @@ c       write(*,*) 'te >= upper limit'
             elseif(te.gt.reflect_energy2(ih,iss,itargsp)) then
               ib=ih
             else
-              reffrac=reflect_coefficient2(ih,iss,itargsp)
-              return
+              ib=ih
+              it=ih
             endif
           enddo
 c       write(*,*) reflect_energy2(ib,iss,itargsp)/ev,te/ev,
 c     @     reflect_energy2(it,iss,itargsp)/ev
-          f=(te-reflect_energy2(ib,iss,itargsp))/
-     1       (reflect_energy2(it,iss,itargsp)-
-     2        reflect_energy2(ib,iss,itargsp))
-          if(jagged_rates.eq.0) then
-            reffrac=f*(reflect_coefficient2(it,iss,itargsp)-
-     1       reflect_coefficient2(ib,iss,itargsp))+
-     1       reflect_coefficient2(ib,iss,itargsp)
+          if(it.eq.ib) then  ! TRIM energy node
+            reffrac=reflect_coefficient2(ib,iss,itargsp)
           else
-            reffrac=f*(reflect_coefficient2(it,iss,itargsp)-
-     1       reflect_coefficient2(ib,iss,itargsp))+
-     1       reflect_coefficient2(it,iss,itargsp)
+            f=(te-reflect_energy2(ib,iss,itargsp))/
+     1         (reflect_energy2(it,iss,itargsp)-
+     2          reflect_energy2(ib,iss,itargsp))
+            if(jagged_rates.eq.0) then
+              reffrac=f*(reflect_coefficient2(it,iss,itargsp)-
+     1         reflect_coefficient2(ib,iss,itargsp))+
+     1         reflect_coefficient2(ib,iss,itargsp)
+            else
+              reffrac=f*(reflect_coefficient2(it,iss,itargsp)-
+     1         reflect_coefficient2(ib,iss,itargsp))+
+     1         reflect_coefficient2(it,iss,itargsp)
+            endif
           endif
         endif
         reflect2=reflect2+reffrac*layer_relconstituents(ibnd,isp)

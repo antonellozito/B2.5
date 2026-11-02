@@ -2646,8 +2646,6 @@ c b2stbr
      &  'faulty b2stbr_sput_res')
       call xertst (0.0_R8.le.s%b2stbr_sput_phys,
      &  'faulty input b2stbr_sput_phys')
-      call xertst (0.0_R8.le.s%b2stbr_redep_alpha,
-     &  'faulty internal parameter redep_alpha')
       call xertst (0.0_R8.le.s%recycled_neutrals_contr,
      &  'faulty internal parameter recycled_neutrals_contr')
       call xertst (0.0_R8.le.s%sput_phys_alpha,
