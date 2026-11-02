@@ -1144,7 +1144,7 @@ cxpb Normalise surface constituents
           endif
           filename='Surface_properties/'//trim(layer_alloys(ifile))
           if(open_file(99,filename,
-     .       'data.local|imodules/B2.5/Database')) then
+     .       'data.local|modules/B2.5/Database')) then
             read(99,*) adum
             read(99,*) alloy_nconstituents(ifile)
             read(99,*) alloy_nzconstituents
