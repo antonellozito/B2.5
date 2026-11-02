@@ -46,11 +46,25 @@
 #ifdef _OPENMP
 !$OMP THREADPRIVATE(sputter_yield, sputter_yield2)
 #endif
+c Relaxed sputter yields per wall element, as used in the run
+#ifdef ALLOCATE_AND_NAMELIST
+      real (kind=R8), allocatable, save ::
+     *  wall_sputter_yield(:,:,:), wall_sputter_yield2(:,:,:)
+#else
+      real (kind=R8), save ::
+     *  wall_sputter_yield(nwall,0:NSDMAX-1,1:2),
+     *  wall_sputter_yield2(nwall,0:NSDMAX-1,1:2)
+#endif
+#ifdef _OPENMP
+!$OMP THREADPRIVATE(wall_sputter_yield, wall_sputter_yield2)
+#endif
       integer, save :: jagged_rates=0
 
-      integer, save :: nx_sp, ny_sp, ns_sp
+      integer, save :: nx_sp, ny_sp, ns_sp, nbnd_sp
       namelist /sputter_save/ nx_sp, ny_sp, ns_sp,
      *   sputter_yield, sputter_yield2
+      namelist /wall_sputter_save/ nbnd_sp, ns_sp,
+     *   wall_sputter_yield, wall_sputter_yield2
       real (kind=R8), save :: a1t(95), a2t(92), dd(92)
 c
 c  data table a1t : * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -172,6 +186,8 @@ c  z2 = 91 - 92
 #ifdef ALLOCATE_AND_NAMELIST
       allocate(sputter_yield(-1:nxd,-1:nyd,0:nsd-1,2))
       allocate(sputter_yield2(-1:nxd,-1:nyd,0:nsd-1,2))
+      allocate(wall_sputter_yield(nwall,0:nsd-1,2))
+      allocate(wall_sputter_yield2(nwall,0:nsd-1,2))
 #else
       errdim=.false.
       if(nxd.gt.nxmax) then
@@ -191,6 +207,8 @@ c  z2 = 91 - 92
 #endif
       sputter_yield=0.0_R8
       sputter_yield2=0.0_R8
+      wall_sputter_yield=0.0_R8
+      wall_sputter_yield2=0.0_R8
       ntargsp=0
       target_index=0
       target_intcode=-1
@@ -224,6 +242,8 @@ c  z2 = 91 - 92
 #ifdef ALLOCATE_AND_NAMELIST
       deallocate(sputter_yield)
       deallocate(sputter_yield2)
+      deallocate(wall_sputter_yield)
+      deallocate(wall_sputter_yield2)
 #endif
       deallocate(monolayer_l)
       return
@@ -263,6 +283,46 @@ c  z2 = 91 - 92
   999 call xerrab ('Error while reading SPUTTER_SAVE namelist!')
 #endif
       end subroutine read_b2mod_sputter_namelist
+
+c Sputter yields per wall element, where XYMAP is not used
+      subroutine read_b2mod_wall_sputter_namelist(nread,edition,found)
+      implicit none
+      integer nread
+      character*4 edition
+      logical found
+      character*256 filename
+      logical file_ok
+      external find_file, xertst
+
+      if (edition.eq.'    ') then
+        filename = 'b2.sputter_save.parameters'
+      else
+        filename = 'b2.sputter_save.parameters.'//edition
+      endif
+      call find_file(filename,file_ok)
+      if(file_ok) then
+        open(nread,file=trim(filename))
+        write(6,*) 'Reading ',trim(filename)
+        nbnd_sp = nbnd
+#ifdef USE_MPI
+        read(nread,wall_sputter_save,err=999)
+#else
+        read(nread,wall_sputter_save)
+#endif
+        write(6,*) 'Read ',trim(filename)
+        close(nread)
+        call xertst(nbnd_sp.eq.nbnd,
+     .   'b2.sputter_save.parameters: inconsistent wall elements')
+      else
+        write(*,*) 'No ', trim(filename)
+      endif
+      found = maxval(wall_sputter_yield).gt.0.0_R8 .or.
+     .        maxval(wall_sputter_yield2).gt.0.0_R8
+      return
+#ifdef USE_MPI
+  999 call xerrab ('Error while reading WALL_SPUTTER_SAVE namelist!')
+#endif
+      end subroutine read_b2mod_wall_sputter_namelist
 
       subroutine write_b2mod_sputter_namelist(nwrite,nx,ny,ns,edition)
       use b2mod_math
@@ -883,7 +943,7 @@ c    2     reflect_energy(it,iss,itargsp)/ev
      1        reflect_coefficient(it,iss,itargsp)
           endif
         endif
-        reflect=reflect+reffrac*layer_nrelconstituents(ibnd,isp)
+        reflect=reflect+reffrac*layer_relconstituents(ibnd,isp)
       enddo
       return
       end function reflect
@@ -957,7 +1017,7 @@ c     @     reflect_energy2(it,iss,itargsp)/ev
      1       reflect_coefficient2(it,iss,itargsp)
           endif
         endif
-        reflect2=reflect2+reffrac*layer_nrelconstituents(ibnd,isp)
+        reflect2=reflect2+reffrac*layer_relconstituents(ibnd,isp)
       enddo
       return
       end function reflect2
@@ -1393,7 +1453,7 @@ cxpb Contribution from bulk if species is part of bulk
       if (bulk) then
         vappres = 10.0_R8**(A/tp + B)
         flxthev = alpha*vappres/sqrt(2.0_R8*pi*am2*mp*tp*KBolt)*
-     .     (layer_nrelconstituents(ibnd,1)/
+     .     (layer_relconstituents(ibnd,1)/
      .    matsurf_relconstituents(ibnd,1))
         if (flxthev.le.0.0_R8) then
 c       write(*,*) 'Thermal evaporation < 0, Surface temp = ',tp
@@ -1414,7 +1474,7 @@ cxpb Also need to consider alloy contributions
       am2 = atomic_mass(layer_nzconstituents(ibnd,nz+itrack))
       vappres = 10.0_R8**(A/tp + B)
       flxthev = flxthev+alpha*vappres/sqrt(2.0_R8*pi*am2*mp*tp*KBolt)*
-     .  layer_nrelconstituents(ibnd,nz+itrack)
+     .  layer_relconstituents(ibnd,nz+itrack)
       qthev = qthev + flxthev * am(is) * mp * matsurf_heat_sublim(ibnd)
 
       return
@@ -1426,26 +1486,22 @@ c  surface assuming a 1-D steady state, heat diffusion with a
 c  thermal conductivity that varies with temperature as
 c   K(T) = 1/(KA * T + KB)
 
-      subroutine heatdiff0D(ibnd,qin,qel,Tp)
+      subroutine heatdiff0D(ibnd,Qtot,Tp)
       use b2mod_math
       implicit none
       integer ibnd
-      real (kind=R8) :: qin, qel, Qtot, TL, L, K, KB, KA, Tp, Tc, Td
-      logical, save  :: coating
-#ifdef _OPENMP
-!$OMP THREADPRIVATE(coating)
-#endif
+      real (kind=R8) :: Qtot, TL, L, K, KB, KA, Tp, Tc, Td
+      logical :: coating
       real (kind=R8) :: layer_Kappa
       external layer_Kappa
 
 c  Inputs:
-c  qin -> incident ion heat flux (Joules/m^2/sec)
-c  qel -> incident electron heat flux (Joules/m^2/sec)
-c  TL  -> Temperature at x=L (x=0 is plasma facing surface,
-c                             x=L is the cold end).
-c  L   -> Thickness of the target plate (m).
-c  KB  -> parameter in the expression for conductivity (see above)
-c  KA  -> parameter in the expression for conductivity (see above)
+c  Qtot -> incident heat flux (Joules/m^2/sec)
+c  TL   -> Temperature at x=L (x=0 is plasma facing surface,
+c                              x=L is the cold end).
+c  L    -> Thickness of the target plate (m).
+c  KB   -> parameter in the expression for conductivity (see above)
+c  KA   -> parameter in the expression for conductivity (see above)
 
 c  Outputs:
 c  Tp -> Surface temperature (at x=0) (in Kelvins).
@@ -1467,7 +1523,6 @@ c  Consider adding the option of layer_thermal_contact
         Tp = TL
         return
       endif
-      Qtot = qel + qin
       coating = coating_thickness(ibnd).gt.0.0_R8 .and.
      . (coating_thickness(ibnd)+layer_thickness(ibnd)).gt.0.0_R8
       if (.not. coating) then
@@ -1608,8 +1663,8 @@ cxpb   in mixed materials scenarios, the layer_ arrays may vary over time
       sum = 0.0_R8
       do i = 1, layer_nconstituents(ibnd)
         a2 = a2t(layer_nzconstituents(ibnd,i))
-        a2eff = a2eff + layer_nrelconstituents(ibnd,i) * a2
-        sum = sum + layer_nrelconstituents(ibnd,i)
+        a2eff = a2eff + layer_relconstituents(ibnd,i) * a2
+        sum = sum + layer_relconstituents(ibnd,i)
       enddo
       a2 = a2eff / sum
       delta = a1 / a2
@@ -1633,7 +1688,7 @@ c     write(*,*)'delta = ',delta
       do 70 i = 1, layer_nconstituents(ibnd)
         z2 = layer_nzconstituents(ibnd,i)
         a2 = a2t(layer_nzconstituents(ibnd,i))
-        wi = layer_nrelconstituents(ibnd,i)
+        wi = layer_relconstituents(ibnd,i)
         z2eff = z2eff + wi * z2
         a2eff = a2eff + wi * a2
         sum = sum + wi
@@ -1774,8 +1829,8 @@ cxpb   in mixed materials scenarios, the layer_ arrays may vary over time
       sum = 0.0_R8
       do i = 1, layer_nconstituents(ibnd)
         a2 = a2t(layer_nzconstituents(ibnd,i))
-        a2eff = a2eff + layer_nrelconstituents(ibnd,i) * a2
-        sum = sum + layer_nrelconstituents(ibnd,i)
+        a2eff = a2eff + layer_relconstituents(ibnd,i) * a2
+        sum = sum + layer_relconstituents(ibnd,i)
       enddo
       a2 = a2eff / sum
       delta = a1 / a2
@@ -1799,7 +1854,7 @@ c     write(*,*)'delta = ',delta
       do 70 i = 1, layer_nconstituents(ibnd)
         z2 = layer_nzconstituents(ibnd,i)
         a2 = a2t(layer_nzconstituents(ibnd,i))
-        wi = layer_nrelconstituents(ibnd,i)
+        wi = layer_relconstituents(ibnd,i)
         z2eff = z2eff + wi * z2
         a2eff = a2eff + wi * a2
         sum = sum + wi

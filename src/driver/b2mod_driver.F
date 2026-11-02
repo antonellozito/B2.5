@@ -2148,8 +2148,17 @@ c   --> better way doing this is necessary)
       call xertst (natmi.le.DEF_NATM,
      .  'Increase DEF_NATM in b2mod_dimensions and recompile !')
       call alloc_b2mod_diag(nCv,nFc,ns,mpg%nnreg(0),nstra,natm,switch)
+*   ..total energy fluxes of the initial state, for the wall model
+      if (sput_dst.ge.0) then
+        call b2xpen (nCv, nFc, ns, mpg, switch,
+     &    state%dv%fna, state%dv%fna, state%dv%fne,
+     &    state%dv%fch, state%dv%fhe, state%dv%fhi, state%dv%fhn,
+     &    state%rt%rpt, state%pl%te, state%pl%ti, state%pl%tn,
+     &    state%pl%po, state%dv%fhm, state%dv%fhp, state%dv%fhj,
+     &    state%dv%fht)
+      endif
 cxpb initialize the data necessary for boundary conditions
-      call b2stbr_init (ns, switch, mpg)
+      call b2stbr_init (ns, switch, mpg, geo, state%dv, state_ext)
 cxpb read the Eirene output for 0-timestep runs and
 cxpb for neutral fluxes used in b2stbc_phys
       if(switch%b2stbc_feedback.eq.1.or.lfeedback) then
