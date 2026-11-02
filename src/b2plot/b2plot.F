@@ -983,9 +983,19 @@ cxpb  Bring in wall data and compute oft-needed wall quantities
       call alloc_b2mod_b2plot_wall(nsd_local,natmi,nmoli,nioni,
      *   nwall,ndepth_nml,wklng)
 #else
+      write(*,*) 'Calling alloc_b2mod_sputter'
+      if (mpg%isClassicalGrid.eq.1.and.mpg%nx.le.DEF_NXD.and.
+     .    mpg%ny.le.DEF_NYD) then
+        call alloc_b2mod_sputter(mpg%nx,mpg%ny,ns)
+        call alloc_b2mod_layer(mpg%nx,mpg%ny,DEF_NCUT,DEF_NLIM,DEF_NSTS)
+      else
+        call alloc_b2mod_sputter(0,0,ns)
+        call alloc_b2mod_layer(0,0,DEF_NCUT,DEF_NLIM,DEF_NSTS)
+      endif
       call alloc_b2mod_wall(ns)
       call alloc_b2mod_wall_elements(nwall)
       call init_wall_elements(mpg,geo)
+      call read_b2mod_wall_namelist(99,'    ',found)
       allocate(wall_tmp(1:nwall,0:nsd_local-1+natmi+nmoli+nioni),
      *   trg_tmp(1:nwall,1:ndepth_nml))
       call alloc_b2mod_b2plot_wall(nsd_local,natmi,nmoli,nioni,
@@ -1072,6 +1082,8 @@ cxpb  Western boundary
         enddo
       enddo
 #else
+      call get_wall_data(mpg,geo,state%dv,state_ext,ns,switch%BoRiS,
+     .  found)
       wall_flux=0.0_R8
       incident_energy=0.0_R8
       do ibnd = 1, nbnd
@@ -8852,9 +8864,7 @@ c
 
       subroutine select_wall_stack
       integer i
-#ifdef WG_TODO
       integer ibnd, itrack
-#endif
 
       cflag=.true.
       WVALUE: select case(cval)
@@ -8890,7 +8900,6 @@ c
           description='Wall end Z position (m)'
           nz=1
           call wall_copy(z2,1.0_R8,nz,textbl)
-#ifdef WG_TODO
         case('walltemp')
           description='Wall surface temperature (K)'
           nz=1
@@ -8911,6 +8920,7 @@ c
           description='Vaporisation temperature (K)'
           nz=1
           call wall_copy(matsurf_vapor_temp,1.0_R8,nz,textbl)
+#ifdef WG_TODO
         case('north')
           description='North boundary'
           nz=1
@@ -9137,7 +9147,6 @@ c
             data(i) = sqrt((r2(i)-r1(i))**2+(z2(i)-z1(i))**2)
           enddo
           call wall_copy(data,1.0_R8,nz,textbl)
-#ifdef WG_TODO
         case('sput')
           description='Physical sputtering yield'
           if (sput_frac_flag.eq.0) then
@@ -9200,7 +9209,6 @@ c
           description='Plate time (s)'
           nz=1
           call wall_copy(plate_time,1.0_R8,nz,textbl)
-#endif
         case('imapx')
           description='imapx'
           stack_req=(/0,0,0,0,0,0,0/)
@@ -9215,7 +9223,6 @@ c
           nz=1
           data(1:nbnd)=real(imapy(1:nbnd))
           call wall_copy(data,1.0_R8,nz,textbl)
-#ifdef WG_TODO
         case('kappa_a')
           description='Bulk Kappa A factor (1/AT+B) (m/W)'
           nz=1
@@ -9493,25 +9500,6 @@ c normalised weights is 1
             endif
           enddo
           call wall_copy(wall_tmp,1.0_R8,nz,texttrack)
-#else
-        case('walltemp','plathick',
-     .       'coathick','cooltemp','vaprtemp','sput','sput2',
-     .       'sputchem','thermev','sputres','backscat','backscae',
-     .       'erosion','deposit','ero_ml','depo_ml','time','kappa_a',
-     .       'kappa_b','kappa_a1','kappa_a2','kappa_a3','kappa_a4',
-     .       'kappa_a5','kappapa1','kappapa2','kappapa3','kappapa4',
-     .       'kappapa5','tgdns','cp_b1','cp_b2','cp_b3','cp_b4',
-     .       'ckappa_a','ckappa_b','ckappaa1','ckappaa2','ckappaa3',
-     .       'ckappaa4','ckappaa5','ckapppa1','ckapppa2','ckapppa3',
-     .       'ckapppa4','ckapppa5','ctgdns','c_cp_b1','c_cp_b2',
-     .       'c_cp_b3','c_cp_b4','erel','bbdyemis','vapprs_a',
-     .       'vapprs_b','vapprs','qevap','qrad','stckcoef','sublheat',
-     .       'lkappa','lrho','lcp','lemis','lthick','ldepth',
-     .       'sputfrac')
-          write(*,*) 'Wall quantity '//trim(cval)//
-     .     ' not available in this version! Skipping...'
-          return
-#endif
         case default WVALUE
           cflag=.false.
       END SELECT WVALUE
