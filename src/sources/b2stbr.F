@@ -1072,40 +1072,42 @@ cxpb  plate_thickness.eq.0 means we are not doing full inventories
         endif
        enddo                                                          !srv 29.04.10
 #ifdef B25_EIRENE
-       do ia = 1,nnatmi
-        write (chns,'(i3.3)') ia
-        wrk0(:)=rfluxa(:,ia,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_rfluxa_eir'//chns)
-        wrk0(:)=tfluxa(:,ia,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_tfluxa_eir'//chns)
-        call my_out_us(70,nFc,0,fatm_eir(:,1,ia),              ! IYS 27.01.2017
-     &                'b2stbr_fatmy_eir'//chns)
-        wrk0(:)=pfluxa(:,ia,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_pfluxa_eir'//chns)
-        call my_out_us(70,nFc,0,fatm_eir(:,0,ia),              ! IYS 27.01.2017
-     &                'b2stbr_fatmx_eir'//chns)
-        wrk0(:)=dab2(:,ia,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_dab2_eir'//chns)
-        wrk0(:)=tab2(:,ia,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_tab2_eir'//chns)
-       enddo
-       do im = 1,nnmoli
-        write (chns,'(i3.3)') im
-        wrk0(:)=rfluxm(:,im,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_rfluxm_eir'//chns)
-        wrk0(:)=tfluxm(:,im,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_tfluxm_eir'//chns)
-        call my_out_us(70,nFc,0,fmol_eir(:,1,im),              ! IYS 27.01.2017
-     &              'b2stbr_fmoly_eir'//chns)
-        wrk0(:)=pfluxm(:,im,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_pfluxm_eir'//chns)
-        call my_out_us(70,nFc,0,fmol_eir(:,0,im),              ! IYS 27.01.2017
-     &              'b2stbr_fmolx_eir'//chns)
-        wrk0(:)=dmb2(:,im,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_dmb2_eir'//chns)
-        wrk0(:)=tmb2(:,im,1)
-        call my_out_us(70,nCv,0,wrk0,'b2stbr_tmb2_eir'//chns)
-       enddo
+       if (switch%use_eirene.ne.0) then                               !xpb 26.10.26
+        do ia = 1,nnatmi
+         write (chns,'(i3.3)') ia
+         wrk0(:)=rfluxa(:,ia,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_rfluxa_eir'//chns)
+         wrk0(:)=tfluxa(:,ia,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_tfluxa_eir'//chns)
+         call my_out_us(70,nFc,0,fatm_eir(:,1,ia),             ! IYS 27.01.2017
+     &                 'b2stbr_fatmy_eir'//chns)
+         wrk0(:)=pfluxa(:,ia,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_pfluxa_eir'//chns)
+         call my_out_us(70,nFc,0,fatm_eir(:,0,ia),             ! IYS 27.01.2017
+     &                 'b2stbr_fatmx_eir'//chns)
+         wrk0(:)=dab2(:,ia,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_dab2_eir'//chns)
+         wrk0(:)=tab2(:,ia,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_tab2_eir'//chns)
+        enddo
+        do im = 1,nnmoli
+         write (chns,'(i3.3)') im
+         wrk0(:)=rfluxm(:,im,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_rfluxm_eir'//chns)
+         wrk0(:)=tfluxm(:,im,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_tfluxm_eir'//chns)
+         call my_out_us(70,nFc,0,fmol_eir(:,1,im),             ! IYS 27.01.2017
+     &               'b2stbr_fmoly_eir'//chns)
+         wrk0(:)=pfluxm(:,im,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_pfluxm_eir'//chns)
+         call my_out_us(70,nFc,0,fmol_eir(:,0,im),             ! IYS 27.01.2017
+     &               'b2stbr_fmolx_eir'//chns)
+         wrk0(:)=dmb2(:,im,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_dmb2_eir'//chns)
+         wrk0(:)=tmb2(:,im,1)
+         call my_out_us(70,nCv,0,wrk0,'b2stbr_tmb2_eir'//chns)
+        enddo
+       endif                                                          !xpb 26.10.26
 #endif
       endif
       wrk0=she0_eir(:,0)+she0_eir(:,1)*st%pl%te+
