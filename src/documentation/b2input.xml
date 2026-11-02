@@ -1925,7 +1925,7 @@
 			<switchgroup>
 				<name>b2stbr_sputtering...</name>
 				<description>
-					Sputtering model switches. Not yet available for WG. See the code in b2stbr and the b2mod_sputter module for specific implementation details and references.
+					Sputtering model switches. See the code in b2stbr and the b2mod_sputter module for specific implementation details and references.
 					The default values represent the case of Graphite plates. Sput_src is the atomic number of the plasma species which causes chemical sputtering.
 					Sput_dst (when .ge.0) is the species index of the destination species produced by physical sputtering, chemical sputtering and/or RES. If either of the latter two processes are included, the chemical sputtering and RES production rate calculations provided in the code assume that sput_dst points to a Carbon species.
 					Sput_dst2 and sput_dst3 (when .ge.0) represent other species produced by wall interactions for mixed materials scenarios.
@@ -1945,7 +1945,11 @@
 					The switch sputter_energy_on turns on the energy contribution from the sputtered particles (physical and chemical). If sputter_energy_on.eq.0, the particles are sputtered cold, with no energy contribution to the ion heat equation.
 					If sputter_energy_on.ne.0 (default), the chemically sputtered particles are re-introduced into the plasma with the thermal energy corresponding to the surface temperature of the material, while physically sputtered particles are re-introduced with the TRIM-calculated energy sputtering yield (if the TRIM model is used).
 					Therm_evap turns on thermal evaporation when .gt.0.0 and is a multiplier to the thermal evaporation rate.
-					Redep_alpha is the multiplier to the reduction of the sputtering yield due to prompt redeposition. The promptly redeposited species is counted as eroded-then-deposited species.
+					Redep_alpha is the multiplier to the reduction of the sputtering yield due to prompt redeposition. The promptly redeposited species is counted as eroded-then-deposited species. If redep_alpha is positive, the formula used for the prompt redeposition fraction is from R. Dux et al., Nucl. Fusion 51 (2011) 053002:
+					  f_{prompt} = 1/(1 + &alpha;*(l_{ion}/&rho;_W)^2).
+					If redep_alpha is negative, the formula used is from D. Tskhakaya et al., JNM 463 (2015) 624:
+					  f_{prompt} = 1/(1 + abs(&alpha;)*(l_{ion}/&rho;_i)*(T_i/T_e) ).
+					In this case, the recommended value is abs(redep_alpha)=0.01. This formula is meant for tungsten when l_{ion} is less than 5 * &rho;_i.
 				</description>
 				<switch>
 					<name>b2stbr_plate_model</name>
@@ -2068,7 +2072,6 @@
 				<description>
 					Reflection model switches. If the recycling coefficients (particle and energy) are set to zero, then the code attempts to use, for surfaces in contact with walls, the TRIM reflection data for particle and energy reflection coefficients, when refl_model.eq.1. If refl_model.eq.0, an empirical formula is used instead. The model switch is subservient to reflection_on.ne.0. If reflection_on.eq.0, then no reflection is used.
 					If reflection_on.eq.1 (default), then the incident species is reflected unchanged. Otherwise, the reflected flux is of the associated neutral species to the incident particles.
-					Not converted for WG. It is recommended to use the advanced fluid neutral (AFN) models instead.
 				</description>
 				<switch>
 					<name>b2stbr_refl_model</name>
@@ -4756,6 +4759,7 @@
 				<description>
 					If temperature_at_guard_cell.eq.1, the temperatures used for recycling and reflection are taken as the value in the guard cell.
 					If temperature_at_guard_cell.eq.0, the temperatures are interpolated between the guard cell and the neighbouring real cell.
+					The wall model (sputtering, ion reflection, evaporation) always uses the interpolated ion temperature.
 				</description>
 			</switch>
 			<switch>
@@ -7182,6 +7186,7 @@
 				<type>integer array of size (NWALL)</type>
 				<description>
 					Indicates the (ix) position in the grid of wall element (iwall). Default ordering of the wall elements proceeds clockwise in physical space from the lower left corner.
+					On grids without classical indices, it is -2 and the wall elements follow the boundary with the plasma on their right.
 				</description>
 			</switch>
 			<switch>
@@ -7189,6 +7194,7 @@
 				<type>integer array of size (NWALL)</type>
 				<description>
 					Indicates the (iy) position in the grid of wall element (iwall). Default ordering of the wall elements proceeds clockwise in physical space from the lower left corner.
+					On grids without classical indices, it is -2.
 				</description>
 			</switch>
 			<switch>
@@ -7197,6 +7203,7 @@
 				<description>
 					XYMAP(ix,iy) contains the wall index (iwall) of the wall element located a grid locaion (ix,iy). If there is no wall element at this position, contains 0.
 					Default ordering of the wall elements proceeds clockwise in physical space from the lower left corner.
+					Used only on classical grids that fit the dimensions DEF_NXD and DEF_NYD.
 				</description>
 			</switch>
 			<switch>
@@ -7365,6 +7372,7 @@
 				<type>real array of size (NWALL)</type>
 				<description>
 					Indicates the wall area (in square metres) for wall element (iwall). Defaults to the area computed from the B2.5 grid information.
+					Where XYMAP is not used, the areas read are checked against the grid to verify the numbering of the wall elements.
 				</description>
 			</switch>
 			<switch>
@@ -9982,6 +9990,49 @@
 				<type>real array of size (-1:NX,-1:NY,0:NS-1,1:2)</type>
 				<description>
 					Contains the energy chemical sputtering yield of species (is) at position (ix,iy) in element (:,:,:,1) and the energy physical sputtering yield in element(:,:,:,2).
+				</description>
+			</switch>
+		</category>
+		<category name="b2.sputter_save.parameters">
+			<introduction>
+				<note> where XYMAP of b2.wall_save.parameters is not used</note>
+				<namelist>WALL_SPUTTER_SAVE</namelist>
+				<description>
+					Read if file is present, in place of SPUTTER_SAVE, on grids without classical indices and on classical grids that do not fit the dimensions DEF_NXD and DEF_NYD.
+					Used to regulate the temporal evolution of sputtering and restarts.
+					Not intended for human use.
+				</description>
+			</introduction>
+			<switch>
+				<name>NBND_SP</name>
+				<default>nbnd</default>
+				<type>integer</type>
+				<description>
+					Number of wall elements used in this namelist.
+				</description>
+			</switch>
+			<switch>
+				<name>NS_SP</name>
+				<default>ns</default>
+				<type>integer</type>
+				<description>
+					Array dimension NS used in this namelist.
+				</description>
+			</switch>
+			<switch>
+				<name>WALL_SPUTTER_YIELD</name>
+				<default>0.0</default>
+				<type>real array of size (1:NBND,0:NS-1,1:2)</type>
+				<description>
+					Contains the chemical sputtering yield of species (is) at wall element (iwall) in element (:,:,1) and the physical sputtering yield in element (:,:,2).
+				</description>
+			</switch>
+			<switch>
+				<name>WALL_SPUTTER_YIELD2</name>
+				<default>0.0</default>
+				<type>real array of size (1:NBND,0:NS-1,1:2)</type>
+				<description>
+					Contains the energy chemical sputtering yield of species (is) at wall element (iwall) in element (:,:,1) and the energy physical sputtering yield in element (:,:,2).
 				</description>
 			</switch>
 		</category>
