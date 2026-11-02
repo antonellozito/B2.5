@@ -13,12 +13,13 @@
      &          feedback_namelist_used, she_rad_tot, she_eir_tot,
      &          fb_current_prev
       use b2mod_sputter
-     & , only : sput_dst, dealloc_sputter_data, dealloc_b2mod_sputter
+     & , only : sput_dst, dealloc_sputter_data, dealloc_b2mod_sputter,
+     &          nx_sp, ny_sp, write_b2mod_wall_sputter_namelist
       use b2mod_solpstop
       use b2mod_ysmp_sdrv
      & , only : dealloc_b2mod_ysmp_sdrv
       use b2mod_wall
-     & , only : dealloc_b2mod_wall
+     & , only : dealloc_b2mod_wall, write_b2mod_wall_namelist
       use b2mod_neoclassical
      & , only : dealloc_b2mod_neoclassical
       use b2mod_facdrift_exb
@@ -65,6 +66,8 @@
       use b2mod_equation_sources                                        !srv 26.02.18
       use b2mod_boundary_sources                                        !srv 26.02.18
       use b2mod_switches
+      use b2mod_numerics_namelist
+     & , only : dteff
       use b2us_map
       use b2us_geo
       use b2us_plasma
@@ -1016,6 +1019,7 @@
        call ipgetr ('b2mndr_dtim', dtim)
        call xertst (0.le.ntim.and.0.0_R8.lt.dtim,
      &   'faulty internal parameter ntim, dtim')
+       dteff = dtim
        call ipgeti ('b2mndr_inverse_ua', inverse_ua)                    !srv 11.01.13
        call ipgetr ('b2mndr_etim', etim)
        call ipgeti ('b2news_no_solve', no_solve)
@@ -2475,6 +2479,7 @@ csw 09oct2012 set default potential already at this point (BCs)
             stack_ntim(stack_ptr)=ntim-itim     ! dpc 2000.06.24 was ntim+10
             stack_dtim(stack_ptr)=dtim
             dtim=dtim/10.0_R8
+            dteff=dteff/10.0_R8
             ntim=itim+10
             itim_plas=itim_plas-10
             call putB2PlasmaSnapshot( state%pl, state%dv, state%psnc )
@@ -2571,10 +2576,12 @@ csw 09oct2012 set default potential already at this point (BCs)
           if(max_delta.gt.delta_max) then
             write(*,*) 'b2mndr_delta: max_delta > delta_max'
             dtim=max(dt_min,dtim*dt_change_dec)
+            dteff=max(dt_min,dteff*dt_change_dec)
             write(*,*) 'b2mndr_dtim: dtim ',dtim
           elseif(max_delta.lt.delta_min) then
             write(*,*) 'b2mndr_delta: max_delta < delta_min'
             dtim=min(dt_max,dtim*dt_change_inc)
+            dteff=min(dt_max,dteff*dt_change_inc)
             write(*,*) 'b2mndr_dtim: dtim ',dtim
           else
             write(*,*) 'b2mndr_delta: max_delta OK'
@@ -2586,6 +2593,7 @@ csw 09oct2012 set default potential already at this point (BCs)
      .     'b2mndr_01:itim,dtim,ntim,stack_ptr',
      1                itim,dtim,ntim,stack_ptr
           ntim=stack_ntim(stack_ptr)+itim-1     ! dpc 2000.06.24 was stack_ntim(stack_ptr)
+          dteff=dteff*stack_dtim(stack_ptr)/dtim
           dtim=stack_dtim(stack_ptr)
           stack_ptr=stack_ptr-1
           write(*,'(a,i8,1p,g14.7,i8,i3)')
@@ -2826,16 +2834,14 @@ c new CDF chord option
           call find_file(filename,found)
           if (found)
      >     call write_b2mod_neutrals_save(99,savefile(13:16))
-#ifdef WG_TODO
           filename='b2.sputter_save.parameters'
           call find_file(filename,found)
-          if (found) call write_b2mod_sputter_namelist(99,nx,ny,ns,
+          if (found) call write_b2mod_wall_sputter_namelist(99,ns,
      >     savefile(13:16))
           filename='b2.wall_save.parameters'
           call find_file(filename,found)
-          if (found) call write_b2mod_wall_namelist(99,nx,ny,ns,
+          if (found) call write_b2mod_wall_namelist(99,nx_sp,ny_sp,ns,
      >     savefile(13:16))
-#endif
           filename='b2.transport_models_save.parameters'
           call find_file(filename,found)
           if (found) call write_b2mod_transport_models(99,
@@ -3543,10 +3549,8 @@ cxpb Copy the IDS to a temporary location with the new DD and then bring it back
 #ifndef NO_CDF
       integer nVx
 #endif
-#ifdef WG_TODO
       character*256 filename
       logical found
-#endif
       logical ids_done
 #ifdef IMAS
       integer l, tmp_run, time_slice_index, status
@@ -3603,14 +3607,14 @@ cxpb Copy the IDS to a temporary location with the new DD and then bring it back
       call write_b2us_feedback(99,'    ')
 * finalise transport_models
       call write_b2mod_transport_models(99,'    ')
-#ifdef WG_TODO
 * finalise sputtering
-      call write_b2mod_sputter_namelist(99, nx, ny, ns, '    ')
+      call write_b2mod_wall_sputter_namelist(99, ns, '    ')
 * finalise time-dependent wall data
       filename='b2.wall_save.parameters'
       call find_file(filename,found)
-      call wall_final(nx,ny,ns,found)
+      call wall_final(nx_sp,ny_sp,ns,found)
 
+#ifdef WG_TODO
 * ..display and save the result of the calculation
 *   ..write summary of final state
       call b2wfpi (nout(0), idout1, nx, ny, ns, ne, na, ua,

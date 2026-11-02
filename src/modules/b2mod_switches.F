@@ -2015,7 +2015,8 @@ c b2stbr
       call ipgetr ('b2stbr_redep_alpha', s % b2stbr_redep_alpha)
       call ipgetr ('b2stbr_recycled_neutrals_contr',
      & s % recycled_neutrals_contr)
-      call ipgetr ('b2stbr_sput_phys_alpha', s % sput_phys_alpha)
+      if(s%b2stbr_sput_phys.ne.0.0_R8)
+     &  call ipgetr ('b2stbr_sput_phys_alpha', s % sput_phys_alpha)
       call ipgetr ('b2stbr_first_flight_dl', s % b2stbr_in_dl)
 
 c b2sihs_
