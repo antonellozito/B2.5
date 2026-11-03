@@ -441,6 +441,8 @@
               end if
             end do
           end do
+*   ..no inner flux tube: one-sided difference
+          if (iFm.eq.0) iFm=iFt
 
 *   ..flux averages
 *     temperatures in keV, densities in 10^19 m^-3
