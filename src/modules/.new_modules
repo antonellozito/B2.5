@@ -12,3 +12,4 @@ Added b2mod_b2plot_gui, the binary message channel of b2plot to the b2plot.py GU
 Added gui_data.F (b2plot), the GUI data commands guigeom, guifield, guiefld and guivect of b2plot for b2plot.py
 Added gui_movies.F (b2plot), the GUI movie commands guimvinf, guimovie and guimvvec of b2plot for b2plot.py
 Added b2mod_heatdiff_common, the data of the plate heat diffusion model shared by heatdiff1D and its routines
+Renamed b2mod_b2plot_gui to b2mod_b2plot_py, gui_movies.F to movie_frames.F and b2plot/gui/ncar_gui.F to b2plot/py/ncar_py.F (shared by the b2plot.py command line and GUI)

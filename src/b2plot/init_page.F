@@ -7,8 +7,8 @@
       use b2mod_b2plot_debug
       use b2mod_graphics
       use b2mod_wall
-      use b2mod_b2plot_gui
-     , , only : gui_active, gui_page_meta
+      use b2mod_b2plot_py
+     , , only : b2py_active, b2py_page_meta
       implicit none
 
       character*(*) title
@@ -336,7 +336,7 @@
      1   reserve_bottom*YSIZE+YPOS,
      2   (1.0_R4-reserve_top)*YSIZE+YPOS,
      2   XLO,XHI,YLO,YHI,LINLOG)
-      if (gui_active) call gui_page_meta(title,linlog,physical,
+      if (b2py_active) call b2py_page_meta(title,linlog,physical,
      . aspect.and.want_aspect,colorbar)
       if(noax.gt.0) then
         CALL GASETI('LTY',1) ! ====> use PLCHHQ for drawing labels
