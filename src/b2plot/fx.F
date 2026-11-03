@@ -7,7 +7,8 @@ c
       implicit none
       integer, intent(in) :: iy
       character*12 hlp_frm
-      character*32 tmpstring1,tmpstring2
+      character*40 tmpstring1
+      character*32 tmpstring2
       character*256 tmpstring,titlestring
       real (kind=R8) ::
      *   lmin,lmax,dsep,xmin,xmax,xmult
@@ -274,7 +275,8 @@ c
       implicit none
       integer, intent(in) :: iFt
       character*12 hlp_frm
-      character*32 tmpstring1,tmpstring2
+      character*40 tmpstring1
+      character*32 tmpstring2
       character*256 tmpstring,titlestring
       real (kind=R8) :: dsep,lmin,lmax,xmin,xmax,xmult
       real (kind=R8), allocatable :: wrk(:)

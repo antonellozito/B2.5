@@ -77,14 +77,15 @@
       parameter (wklng=10)
 
 #ifndef PSR
+      character*40, allocatable, save ::
+     *  textplel2(:,:),
+     *  textwk(:,:),
+     *  textwwk(:,:)
       character*19, allocatable, save ::
      *  textpl(:),
      *  textplel(:),
-     *  textplel2(:,:),
      *  textsp(:),
-     *  textwk(:,:),
      *  textewk(:,:),
-     *  textwwk(:,:),
      *  textbl(:),
      *  textni(:),
      *  textcomponents(:),
@@ -94,15 +95,16 @@
      *  texttrack(:),
      *  texttargsp(:)    
 #else
+      character*40, save ::
+     *  textplel2(0:DEF_NPLS,0:DEF_NPLS),
+     *  textwk(0:(DEF_NSD+1)*(DEF_NSD+1),wklng),
+     *  textwwk(0:DEF_NSD-1+DEF_NATM+DEF_NMOL+DEF_NION,wklng)
       character*19, save ::
      *  textpl(0:DEF_NPLS-1),
      *  textplel(0:DEF_NPLS),
-     *  textplel2(0:DEF_NPLS,0:DEF_NPLS),
      *  textsp(0:DEF_NATM-1),
      *  textwl(0:DEF_NSD-1+DEF_NATM+DEF_NMOL+DEF_NION),
-     *  textwk(0:(DEF_NSD+1)*(DEF_NSD+1),wklng),
      *  textewk(0:max(DEF_NATM,DEF_NMOL,DEF_NION)-1,wklng),
-     *  textwwk(0:DEF_NSD-1+DEF_NATM+DEF_NMOL+DEF_NION,wklng),
      *  textbl(0:0),
      *  textni(0:1),
      *  textcomponents(0:3),
