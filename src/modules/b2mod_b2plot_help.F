@@ -716,7 +716,7 @@
      4 'f.t'  , 'sumft', 't_xy' , 'icse'   , 'fteq'  ,
      5 'sync' , 'help' , 'dflt' , 'guigeom', 'guifield',
      6 'guiefld', 'guivect', 'guievect', 'guiclv', 'guieclv',
-     7 'guimvinf', 'guimovie', 'guimvvec' /
+     7 'guimvinf', 'mvframe', 'mvframev' /
       data wlabels /
      1 'wallarea', 'ei'      , 'wallflux', 'wallhflx', 'r1'      ,
      2 'r2'      , 'z1'      , 'z2'      , 'walltemp', 'plathick',

@@ -45,8 +45,9 @@ c 2002-09-11: logic revised
      &          dealloc_b2mod_zhfrtf, dealloc_b2mod_zhfrtf_df
       use b2mod_frtf_nccorr
      & , only : dealloc_b2mod_frtf_nccorr
-      use b2mod_b2plot_gui
-     & , only : gui_startup, gui_shutdown, gui_sync, gui_help_catalog
+      use b2mod_b2plot_py
+     & , only : b2py_startup, b2py_shutdown, b2py_sync,
+     &   b2py_help_catalog
       use b2mod_ranges
       use b2us_plasma
       use b2us_data
@@ -172,7 +173,7 @@ c
       integer lucdf
       integer itmp, istart, iend, ns,
      * sput_src, refl_model, sput_phys_model,
-     * sput_chem_model, sput_phys_col, nnucl_tral, zmaxmax, ntri_gui
+     * sput_chem_model, sput_phys_col, nnucl_tral, zmaxmax, ntri_py
       real (kind=R8) :: values_default(nparameters)
       character*256 stmp, filename, varname
       character*256 stmp1, stmp2
@@ -1545,13 +1546,13 @@ c
       lu=5
       lu_pos=0
 #ifdef B25_EIRENE
-      ntri_gui=ntrii
+      ntri_py=ntrii
 #else
-      ntri_gui=0
+      ntri_py=0
 #endif
       call plot_signmf
-      call gui_startup(mpg%nCv,mpg%nCi,mpg%nFc,mpg%nVx,
-     . mpg%isClassicalGrid,mpg%nx,mpg%ny,ns,natm,nmol,nion,ntri_gui,
+      call b2py_startup(mpg%nCv,mpg%nCi,mpg%nFc,mpg%nVx,
+     . mpg%isClassicalGrid,mpg%nx,mpg%ny,ns,natm,nmol,nion,ntri_py,
      . nbnd,use_eirene,time,label,ns,textpl)
       write(*,'(a)') 'Enter your commands here:'
       call readline(textline,lu,ipos)
@@ -1610,7 +1611,7 @@ c
           if (lu.eq.5) then
             if (writing_to_file) close(nwtf)
             call terminate_plotting
-            call gui_shutdown
+            call b2py_shutdown
             write(*,'(a,7i4)') 'STACK i,r,s,m,e,w,t = ',
      .       iistack,irstack,isstack,iwrk,iewrk,iwwrk,itwrk
             deallocate(pr,pz,ro,ro_ch,up,vv,ww,k1,nu1,tau)
@@ -1714,7 +1715,7 @@ c
      .           cval.eq.'end') then  ! quit/exit
           if (writing_to_file) close(nwtf)
           call terminate_plotting
-          call gui_shutdown
+          call b2py_shutdown
           write(*,'(a,7i4)') 'STACK i,r,s,m,e,w,t = ',
      .     iistack,irstack,isstack,iwrk,iewrk,iwwrk,itwrk
           deallocate(pr,pz,ro,ro_ch,up,vv,ww,k1,nu1,tau)
@@ -12364,20 +12365,20 @@ c     <delta wavelength in A> nspe
      .       'Faulty iy = ',istack(iistack),' chosen for iyref!'
             call pop_stack(stack_req)
           endif
-        case('sync')     ! handshake for GUI front ends
+        case('sync')     ! handshake for b2plot.py
           stack_req=(/1,0,0,0,0,0,0/)
           if(bad_args(stack_req)) return
           isync=ipop(istack,iistack)
           write(*,'(a,i12)') ' b2plot sync ',isync
           if(iwrk.gt.0) then
-            call gui_sync(isync,(/iistack,irstack,isstack,iwrk,iewrk,
+            call b2py_sync(isync,(/iistack,irstack,isstack,iwrk,iewrk,
      .       iwwrk,itwrk/),graphlabel(iwrk),ndim(2,iwrk))
           else
-            call gui_sync(isync,(/iistack,irstack,isstack,iwrk,iewrk,
+            call b2py_sync(isync,(/iistack,irstack,isstack,iwrk,iewrk,
      .       iwwrk,itwrk/),' ',0)
           endif
         case('help')     ! print the command catalogue
-          call gui_help_catalog
+          call b2py_help_catalog
         case('guigeom')  ! send grid and overlays to the GUI
           call gui_send_geometry
         case('guifield') ! send and drop the top matrix stack field
@@ -12397,14 +12398,14 @@ c     <delta wavelength in A> nspe
           iwrk=iwrk-2
         case('guimvinf') ! send the movie files and variables to the GUI
           call gui_send_movieinfo
-        case('guimovie') ! push a movie variable, frames k1 to k2
+        case('mvframe') ! push a movie variable, frames k1 to k2
           stack_req=(/3,0,1,0,0,0,0/)
           if(bad_args(stack_req)) return
           iend=ipop(istack,iistack)
           istart=ipop(istack,iistack)
           itmp=ipop(istack,iistack)
-          call gui_movie_push(itmp,spop(sstack,isstack),' ',istart,iend)
-        case('guimvvec') ! push both components of a movie vector
+          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend)
+        case('mvframev') ! push both components of a movie vector
           stack_req=(/3,0,2,0,0,0,0/)
           if(bad_args(stack_req)) return
           iend=ipop(istack,iistack)
@@ -12412,7 +12413,7 @@ c     <delta wavelength in A> nspe
           itmp=ipop(istack,iistack)
           stmp2=spop(sstack,isstack)
           stmp1=spop(sstack,isstack)
-          call gui_movie_push(itmp,stmp1,stmp2,istart,iend)
+          call mvf_push(itmp,stmp1,stmp2,istart,iend)
         case('guiclv')   ! send the custom contour levels to the GUI
           call gui_send_levels(1)
         case('guieclv')  ! send the custom Eirene levels to the GUI

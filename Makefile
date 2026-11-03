@@ -370,7 +370,7 @@ FPATH := ${VPATH}
 VPATH += :${SRCDIR}/test
 VPATH += :${SRCDIR}/ids
 VPATH += :${SRCDIR}/ids/archive
-VPATH += :${SRCDIR}/b2plot/gui
+VPATH += :${SRCDIR}/b2plot/py
 FFPATH += :${SRCDIR}/ids
 FFPATH += :${SRCDIR}/modules
 FFPATH += :${SRCDIR}/user
@@ -461,7 +461,7 @@ endif
 
 GEEXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_GE}}
 PYEXE = ${OBJDIR}/b2pl_py.exe
-PYOBJS = ${OBJDIR}/ncar_gui.o
+PYOBJS = ${OBJDIR}/ncar_py.o
 GREXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_GR}}
 XDEXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_XD}}
 MNEXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_MN}}
@@ -1143,7 +1143,7 @@ ${O9EXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
 ${GEEXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
 	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/$*.o ${OBJDIR}/libb2.a ${EIRLIBS} ${PLLIBES} ${GRLIBES} ${LDLIBES} ${LDOPTSend}
 
-${OBJDIR}/ncar_gui.o: ${OBJDIR}/b2mod_b2plot_gui.${MOD} ${OBJDIR}/b2mod_types.${MOD}
+${OBJDIR}/ncar_py.o: ${OBJDIR}/b2mod_b2plot_py.${MOD} ${OBJDIR}/b2mod_types.${MOD}
 
 ${PYEXE}: ${OBJDIR}/b2pl.o ${PYOBJS} ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
 	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/b2pl.o ${PYOBJS} ${OBJDIR}/libb2.a ${EIRLIBS} ${PLLIBES} ${LDLIBES} ${LDOPTSend}

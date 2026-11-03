@@ -7,7 +7,7 @@ c Grid, X-points, overlays and EIRENE mesh (GEOMETRY, OVERLAY, TRIMESH)
       use b2us_data
       use b2mod_b2plot
       use b2mod_graphics
-      use b2mod_b2plot_gui
+      use b2mod_b2plot_py
 #ifdef B25_EIRENE
       use eirmod_ctrig
 #endif
@@ -22,7 +22,7 @@ c Grid, X-points, overlays and EIRENE mesh (GEOMETRY, OVERLAY, TRIMESH)
       external gui_cell_polygon, pltvessel, pltsptrix, pltoutline,
      . gui_send_structure, gui_send_psimap
 
-      if (.not.gui_active) return
+      if (.not.b2py_active) return
       ncell = count(mpg%cvReg(1:mpg%nCv).ne.0)
       allocate(cells(ncell), cnv(ncell), creg(ncell), cix(ncell),
      . ciy(ncell))
@@ -47,44 +47,44 @@ c Grid, X-points, overlays and EIRENE mesh (GEOMETRY, OVERLAY, TRIMESH)
       psisep = 0.0_R8
       if (mpg%iFssep.gt.0) psisep = geo%fsPsi(mpg%iFssep)
 
-      call gui_begin(70)
-      call gui_put_i4(mpg%nCv)
-      call gui_put_i4(mpg%nVx)
-      call gui_put_i4(mpg%isClassicalGrid)
+      call b2py_begin(70)
+      call b2py_put_i4(mpg%nCv)
+      call b2py_put_i4(mpg%nVx)
+      call b2py_put_i4(mpg%isClassicalGrid)
       buf(1:mpg%nVx) = real(geo%vxX(1:mpg%nVx),R4)
-      call gui_put_r4v(mpg%nVx,buf)
+      call b2py_put_r4v(mpg%nVx,buf)
       buf(1:mpg%nVx) = real(geo%vxY(1:mpg%nVx),R4)
-      call gui_put_r4v(mpg%nVx,buf)
+      call b2py_put_r4v(mpg%nVx,buf)
 c Normalised poloidal flux as in the psi profiles of b2plot (fy.F)
-      call gui_put_i4(merge(1,0,psisep.ne.0.0_R8))
+      call b2py_put_i4(merge(1,0,psisep.ne.0.0_R8))
       buf(1:mpg%nVx) = 0.0_R4
       if (psisep.ne.0.0_R8) buf(1:mpg%nVx) =
      . real(geo%vxFpsi(1:mpg%nVx)/psisep,R4)
-      call gui_put_r4v(mpg%nVx,buf)
-      call gui_put_i4(ncell)
-      call gui_put_i4v(ncell,cells)
-      call gui_put_i4v(ncell,cnv)
-      call gui_put_i4(nlist)
-      call gui_put_i4v(nlist,vl)
+      call b2py_put_r4v(mpg%nVx,buf)
+      call b2py_put_i4(ncell)
+      call b2py_put_i4v(ncell,cells)
+      call b2py_put_i4v(ncell,cnv)
+      call b2py_put_i4(nlist)
+      call b2py_put_i4v(nlist,vl)
       buf(1:ncell) = real(geo%cvX(cells),R4)
-      call gui_put_r4v(ncell,buf)
+      call b2py_put_r4v(ncell,buf)
       buf(1:ncell) = real(geo%cvY(cells),R4)
-      call gui_put_r4v(ncell,buf)
-      call gui_put_i4v(ncell,creg)
-      call gui_put_i4v(ncell,cix)
-      call gui_put_i4v(ncell,ciy)
-      call gui_put_i4(mpg%nXpt)
+      call b2py_put_r4v(ncell,buf)
+      call b2py_put_i4v(ncell,creg)
+      call b2py_put_i4v(ncell,cix)
+      call b2py_put_i4v(ncell,ciy)
+      call b2py_put_i4(mpg%nXpt)
       do k = 1, mpg%nXpt
-        call gui_put_r4(real(geo%vxX(mpg%Xpt(k)),R4))
-        call gui_put_r4(real(geo%vxY(mpg%Xpt(k)),R4))
+        call b2py_put_r4(real(geo%vxX(mpg%Xpt(k)),R4))
+        call b2py_put_r4(real(geo%vxY(mpg%Xpt(k)),R4))
       end do
-      call gui_end
+      call b2py_end
 
 c Overlays drawn by the b2plot routines, without the window clipping
       gwin = (/ xlo, xhi, ylo, yhi /)
       ylog = logy
       ityp = typeofplot
-      drawn = gui_drawn
+      drawn = b2py_drawn
       xlo = -1.0e30_R4
       xhi = 1.0e30_R4
       ylo = -1.0e30_R4
@@ -107,25 +107,25 @@ c Overlays drawn by the b2plot routines, without the window clipping
       yhi = gwin(4)
       logy = ylog
       typeofplot = ityp
-      gui_drawn = drawn
+      b2py_drawn = drawn
 
       call gui_send_psimap
 #ifdef B25_EIRENE
       if (ntrii.gt.0.and.allocated(xtrian)) then
         deallocate(buf)
         allocate(buf(nrknot))
-        call gui_begin(73)
-        call gui_put_i4(nrknot)
+        call b2py_begin(73)
+        call b2py_put_i4(nrknot)
         buf(1:nrknot) = real(xtrian(1:nrknot),R4)
-        call gui_put_r4v(nrknot,buf)
+        call b2py_put_r4v(nrknot,buf)
         buf(1:nrknot) = real(ytrian(1:nrknot),R4)
-        call gui_put_r4v(nrknot,buf)
-        call gui_put_i4(ntrii)
-        call gui_put_i4v(3*ntrii,necke)
-        call gui_end
+        call b2py_put_r4v(nrknot,buf)
+        call b2py_put_i4(ntrii)
+        call b2py_put_i4v(3*ntrii,necke)
+        call b2py_end
       end if
 #endif
-      call gui_flush
+      call b2py_flush
       deallocate(cells, cnv, creg, cix, ciy, vl, buf)
       return
       end subroutine gui_send_geometry
@@ -178,38 +178,38 @@ c Top matrix stack field with its values at the vertices (FIELD)
       use b2mod_types
       use b2us_data
       use b2mod_b2plot
-      use b2mod_b2plot_gui
+      use b2mod_b2plot_py
       implicit none
       real (kind=R8), allocatable :: fvx(:)
       real (kind=R4), allocatable :: buf(:)
       integer :: iz, nz
       external intvertex
 
-      if (.not.gui_active.or.iwrk.lt.1) return
+      if (.not.b2py_active.or.iwrk.lt.1) return
       nz = ndim(2,iwrk)
       allocate(fvx(mpg%nVx), buf(max(mpg%nCv,mpg%nVx)))
-      call gui_begin(74)
-      call gui_put_str(graphlabel(iwrk))
-      call gui_put_i4(1)
-      call gui_put_i4(mpg%nCv)
-      call gui_put_i4(nz)
+      call b2py_begin(74)
+      call b2py_put_str(graphlabel(iwrk))
+      call b2py_put_i4(1)
+      call b2py_put_i4(mpg%nCv)
+      call b2py_put_i4(nz)
       do iz = 0, nz-1
-        call gui_put_str(textwk(iz,iwrk))
+        call b2py_put_str(textwk(iz,iwrk))
       end do
       do iz = 0, nz-1
         buf(1:mpg%nCv) = real(min(1.0e30_R8,max(-1.0e30_R8,
      .   work(1:mpg%nCv,iz,iwrk))),R4)
-        call gui_put_r4v(mpg%nCv,buf)
+        call b2py_put_r4v(mpg%nCv,buf)
       end do
-      call gui_put_i4(mpg%nVx)
+      call b2py_put_i4(mpg%nVx)
       do iz = 0, nz-1
         call intvertex(mpg%nCv,mpg%nVx,mpg,geo%vxVol,work(1,iz,iwrk),
      .   fvx)
         buf(1:mpg%nVx) = real(min(1.0e30_R8,max(-1.0e30_R8,fvx)),R4)
-        call gui_put_r4v(mpg%nVx,buf)
+        call b2py_put_r4v(mpg%nVx,buf)
       end do
-      call gui_end
-      call gui_flush
+      call b2py_end
+      call b2py_flush
       deallocate(fvx, buf)
       return
       end subroutine gui_send_field
@@ -218,32 +218,32 @@ c Top EIRENE stack field on the triangles (FIELD)
       subroutine gui_send_efield
       use b2mod_types
       use b2mod_b2plot
-      use b2mod_b2plot_gui
+      use b2mod_b2plot_py
       implicit none
 #ifdef B25_EIRENE
       real (kind=R4), allocatable :: buf(:)
       integer :: iz, n, nz
 
-      if (.not.gui_active.or.iewrk.lt.1) return
+      if (.not.b2py_active.or.iewrk.lt.1) return
       n = nedim(1,iewrk)
       nz = nedim(2,iewrk)
       allocate(buf(n))
-      call gui_begin(74)
-      call gui_put_str(eirene_label(iewrk))
-      call gui_put_i4(2)
-      call gui_put_i4(n)
-      call gui_put_i4(nz)
+      call b2py_begin(74)
+      call b2py_put_str(eirene_label(iewrk))
+      call b2py_put_i4(2)
+      call b2py_put_i4(n)
+      call b2py_put_i4(nz)
       do iz = 0, nz-1
-        call gui_put_str(textewk(iz,iewrk))
+        call b2py_put_str(textewk(iz,iewrk))
       end do
       do iz = 0, nz-1
         buf(1:n) = real(min(1.0e30_R8,max(-1.0e30_R8,
      .   eirene_stack(1:n,iz,iewrk))),R4)
-        call gui_put_r4v(n,buf)
+        call b2py_put_r4v(n,buf)
       end do
-      call gui_put_i4(0)
-      call gui_end
-      call gui_flush
+      call b2py_put_i4(0)
+      call b2py_end
+      call b2py_flush
       deallocate(buf)
 #endif
       return
@@ -255,14 +255,14 @@ c (R,Z) vector at the cell centres and at the vertices (VECTOR)
       use b2mod_types
       use b2us_data
       use b2mod_b2plot
-      use b2mod_b2plot_gui
+      use b2mod_b2plot_py
       implicit none
       real (kind=R8), allocatable :: vr(:,:), vz(:,:), fvx(:)
       real (kind=R4), allocatable :: buf(:)
       integer :: iCv, iz, nz, ip, ir
       external arrow_rz, intvertex
 
-      if (.not.gui_active.or.iwrk.lt.2) return
+      if (.not.b2py_active.or.iwrk.lt.2) return
       ip = iwrk-1
       ir = iwrk
       nz = min(ndim(2,ip),ndim(2,ir))
@@ -276,38 +276,38 @@ c (R,Z) vector at the cell centres and at the vertices (VECTOR)
      .     vr(iCv,iz),vz(iCv,iz))
         end do
       end do
-      call gui_begin(75)
-      call gui_put_str(graphlabel(ip))
-      call gui_put_str(graphlabel(ir))
-      call gui_put_i4(1)
-      call gui_put_i4(mpg%nCv)
-      call gui_put_i4(nz)
+      call b2py_begin(75)
+      call b2py_put_str(graphlabel(ip))
+      call b2py_put_str(graphlabel(ir))
+      call b2py_put_i4(1)
+      call b2py_put_i4(mpg%nCv)
+      call b2py_put_i4(nz)
       do iz = 0, nz-1
-        call gui_put_str(textwk(iz,ip))
+        call b2py_put_str(textwk(iz,ip))
       end do
       do iz = 0, nz-1
         buf(1:mpg%nCv) = real(min(1.0e30_R8,max(-1.0e30_R8,
      .   vr(:,iz))),R4)
-        call gui_put_r4v(mpg%nCv,buf)
+        call b2py_put_r4v(mpg%nCv,buf)
       end do
       do iz = 0, nz-1
         buf(1:mpg%nCv) = real(min(1.0e30_R8,max(-1.0e30_R8,
      .   vz(:,iz))),R4)
-        call gui_put_r4v(mpg%nCv,buf)
+        call b2py_put_r4v(mpg%nCv,buf)
       end do
-      call gui_put_i4(mpg%nVx)
+      call b2py_put_i4(mpg%nVx)
       do iz = 0, nz-1
         call intvertex(mpg%nCv,mpg%nVx,mpg,geo%vxVol,vr(1,iz),fvx)
         buf(1:mpg%nVx) = real(min(1.0e30_R8,max(-1.0e30_R8,fvx)),R4)
-        call gui_put_r4v(mpg%nVx,buf)
+        call b2py_put_r4v(mpg%nVx,buf)
       end do
       do iz = 0, nz-1
         call intvertex(mpg%nCv,mpg%nVx,mpg,geo%vxVol,vz(1,iz),fvx)
         buf(1:mpg%nVx) = real(min(1.0e30_R8,max(-1.0e30_R8,fvx)),R4)
-        call gui_put_r4v(mpg%nVx,buf)
+        call b2py_put_r4v(mpg%nVx,buf)
       end do
-      call gui_end
-      call gui_flush
+      call b2py_end
+      call b2py_flush
       deallocate(vr, vz, fvx, buf)
       return
       end subroutine gui_send_vector
@@ -317,40 +317,40 @@ c triangle centroids, as plot_trig_arrows draws them (VECTOR)
       subroutine gui_send_evector
       use b2mod_types
       use b2mod_b2plot
-      use b2mod_b2plot_gui
+      use b2mod_b2plot_py
       implicit none
 #ifdef B25_EIRENE
       real (kind=R4), allocatable :: buf(:)
       integer :: iz, n, nz, ip, ir
 
-      if (.not.gui_active.or.iewrk.lt.2) return
+      if (.not.b2py_active.or.iewrk.lt.2) return
       ip = iewrk-1
       ir = iewrk
       n = nedim(1,ip)
       nz = min(nedim(2,ip),nedim(2,ir))
       allocate(buf(n))
-      call gui_begin(75)
-      call gui_put_str(eirene_label(ip))
-      call gui_put_str(eirene_label(ir))
-      call gui_put_i4(2)
-      call gui_put_i4(n)
-      call gui_put_i4(nz)
+      call b2py_begin(75)
+      call b2py_put_str(eirene_label(ip))
+      call b2py_put_str(eirene_label(ir))
+      call b2py_put_i4(2)
+      call b2py_put_i4(n)
+      call b2py_put_i4(nz)
       do iz = 0, nz-1
-        call gui_put_str(textewk(iz,ip))
+        call b2py_put_str(textewk(iz,ip))
       end do
       do iz = 0, nz-1
         buf(1:n) = real(min(1.0e30_R8,max(-1.0e30_R8,
      .   eirene_stack(1:n,iz,ip))),R4)
-        call gui_put_r4v(n,buf)
+        call b2py_put_r4v(n,buf)
       end do
       do iz = 0, nz-1
         buf(1:n) = real(min(1.0e30_R8,max(-1.0e30_R8,
      .   eirene_stack(1:n,iz,ir))),R4)
-        call gui_put_r4v(n,buf)
+        call b2py_put_r4v(n,buf)
       end do
-      call gui_put_i4(0)
-      call gui_end
-      call gui_flush
+      call b2py_put_i4(0)
+      call b2py_end
+      call b2py_flush
       deallocate(buf)
 #endif
       return
@@ -405,7 +405,7 @@ c Device structure from structure.dat (one polyline per structure) as
 c the overlay of role 4; nothing if the file is absent
       subroutine gui_send_structure
       use b2mod_types
-      use b2mod_b2plot_gui
+      use b2mod_b2plot_py
       implicit none
       real (kind=R4), allocatable :: x(:), y(:)
       integer :: iu, ios, nstr, nel, n, i, k
@@ -417,7 +417,7 @@ c the overlay of role 4; nothing if the file is absent
       read(iu,*,iostat=ios) nstr
       if (ios.eq.0) call gui_skip_to(iu,'$structures',ios)
       if (ios.ne.0) then
-        call gui_message(2,'structure.dat: no $structures section')
+        call b2py_message(2,'structure.dat: no $structures section')
         close(iu)
         return
       end if
@@ -430,17 +430,17 @@ c the overlay of role 4; nothing if the file is absent
         allocate(x(n), y(n))
         read(iu,*,iostat=ios) (x(i),y(i),i=1,n)
         if (ios.eq.0.and.n.ge.2) then
-          call gui_begin(41)
-          call gui_put_i4(n)
-          call gui_put_r4v(n,x)
-          call gui_put_r4v(n,y)
-          call gui_end
+          call b2py_begin(41)
+          call b2py_put_i4(n)
+          call b2py_put_r4v(n,x)
+          call b2py_put_r4v(n,y)
+          call b2py_end
         end if
         deallocate(x, y)
         if (ios.ne.0) exit
       end do
       call gui_overlay_end
-      if (ios.ne.0) call gui_message(2,'structure.dat: read error')
+      if (ios.ne.0) call b2py_message(2,'structure.dat: read error')
       close(iu)
       return
       end subroutine gui_send_structure
@@ -452,7 +452,7 @@ c at the primary X-point (or a separatrix vertex without X-point)
       subroutine gui_send_psimap
       use b2mod_types
       use b2us_data
-      use b2mod_b2plot_gui
+      use b2mod_b2plot_py
       implicit none
       real (kind=R8), allocatable :: r(:), z(:), psi(:,:)
       real (kind=R4), allocatable :: buf(:)
@@ -466,7 +466,7 @@ c at the primary X-point (or a separatrix vertex without X-point)
       if (.not.ok) return
       read(iu,*,iostat=ios) nr, nz
       if (ios.ne.0.or.nr.lt.3.or.nz.lt.3) then
-        call gui_message(2,'rzpsi.dat: bad dimensions')
+        call b2py_message(2,'rzpsi.dat: bad dimensions')
         close(iu)
         return
       end if
@@ -479,7 +479,7 @@ c at the primary X-point (or a separatrix vertex without X-point)
       if (ios.eq.0) read(iu,*,iostat=ios) ((psi(i,j),i=1,nr),j=1,nz)
       close(iu)
       if (ios.ne.0) then
-        call gui_message(2,'rzpsi.dat: read error')
+        call b2py_message(2,'rzpsi.dat: read error')
         deallocate(r, z, psi)
         return
       end if
@@ -535,7 +535,7 @@ c O-point: positive Hessian determinant and smallest gradient
         end do
       end do
       if (ib.eq.0) then
-        call gui_message(2,'rzpsi.dat: no O-point found')
+        call b2py_message(2,'rzpsi.dat: no O-point found')
         deallocate(r, z, psi)
         return
       end if
@@ -571,20 +571,20 @@ c psi_S by bilinear interpolation at the separatrix point
         return
       end if
       allocate(buf(max(nr,nz,nr*nz)))
-      call gui_begin(77)
-      call gui_put_i4(nr)
-      call gui_put_i4(nz)
+      call b2py_begin(77)
+      call b2py_put_i4(nr)
+      call b2py_put_i4(nz)
       buf(1:nr) = real(r,R4)
-      call gui_put_r4v(nr,buf)
+      call b2py_put_r4v(nr,buf)
       buf(1:nz) = real(z,R4)
-      call gui_put_r4v(nz,buf)
+      call b2py_put_r4v(nz,buf)
       buf(1:nr*nz) = real(reshape((psi-po)/(ps-po),(/nr*nz/)),R4)
-      call gui_put_r4v(nr*nz,buf)
-      call gui_put_r4(real(ro,R4))
-      call gui_put_r4(real(zo,R4))
-      call gui_put_r4(real(rs,R4))
-      call gui_put_r4(real(zs,R4))
-      call gui_end
+      call b2py_put_r4v(nr*nz,buf)
+      call b2py_put_r4(real(ro,R4))
+      call b2py_put_r4(real(zo,R4))
+      call b2py_put_r4(real(rs,R4))
+      call b2py_put_r4(real(zs,R4))
+      call b2py_end
       deallocate(r, z, psi, buf)
       return
       end subroutine gui_send_psimap
@@ -614,20 +614,20 @@ c Eirene versions (kind 2), for the GUI (LEVELS)
       subroutine gui_send_levels(kind)
       use b2mod_types
       use b2mod_graphics
-      use b2mod_b2plot_gui
+      use b2mod_b2plot_py
       implicit none
       integer, intent(in) :: kind
 
-      if (.not.gui_active) return
-      call gui_begin(78)
-      call gui_put_i4(kind)
+      if (.not.b2py_active) return
+      call b2py_begin(78)
+      call b2py_put_i4(kind)
       if (kind.eq.1) then
-        call gui_put_i4(nofcls)
-        call gui_put_r4v(nofcls,clval)
+        call b2py_put_i4(nofcls)
+        call b2py_put_r4v(nofcls,clval)
       else
-        call gui_put_i4(nofecls)
-        call gui_put_r4v(nofecls,eclval)
+        call b2py_put_i4(nofecls)
+        call b2py_put_r4v(nofecls,eclval)
       end if
-      call gui_end
+      call b2py_end
       return
       end subroutine gui_send_levels
