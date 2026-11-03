@@ -241,7 +241,7 @@ c     conversion of constants to CGS units
          iFt=mpg%cvFt(iCv)
          if (iFt.gt.0.and.mpg%cvOnClosedSurface(iCv)) then
            nustar(iCv,is)=nua(iCv,is)*safetyfactor(iFt)*
-     &      rmaj_(iFt)*cm/(vtha(iFt,is)*(1.-fc_(iFt))**3)
+     &      rmaj_(iFt)*cm/(vtha(iCv,is)*(1.-fc_(iFt))**3)
          else
            nustar(iCv,is)=0.0_R8
          endif
