@@ -7,9 +7,11 @@ c named by B2PLOT_PY_FIFO (see the b2plot.py documentation in the
 c manual)
       integer, parameter :: b2py_i1 = selected_int_kind(2)
       integer, parameter :: b2py_i4 = selected_int_kind(9)
-      integer, parameter :: b2py_protocol_version = 6
+      integer, parameter :: b2py_protocol_version = 7
       integer, parameter :: b2py_magic = 1110593607
       logical, save :: b2py_active = .false., b2py_drawn = .false.
+c Channel opened by gopks of the NCAR replacement (closed by gclks)
+      logical, save :: b2py_by_gks = .false.
       integer, save :: b2py_unit = -1
       integer(kind=b2py_i1), allocatable, save :: gbuf(:)
       integer, save :: gnbuf = 0, gop = 0
@@ -39,8 +41,45 @@ c Open the FIFO and send HELLO and RUNINFO (inactive if not set)
      . nion,ntrii,nbnd,with_eirene,nsp
       real (kind=R8), intent(in) :: time
       character*(*), intent(in) :: label, species(*)
+      integer i
+
+      if (.not.b2py_active) call b2py_open('b2plot')
+      if (.not.b2py_active) return
+      b2py_by_gks = .false.
+c RUNINFO
+      call b2py_begin(2)
+      call b2py_put_i4(nCv)
+      call b2py_put_i4(nCi)
+      call b2py_put_i4(nFc)
+      call b2py_put_i4(nVx)
+      call b2py_put_i4(iscl)
+      call b2py_put_i4(nx)
+      call b2py_put_i4(ny)
+      call b2py_put_i4(ns)
+      call b2py_put_i4(natm)
+      call b2py_put_i4(nmol)
+      call b2py_put_i4(nion)
+      call b2py_put_i4(ntrii)
+      call b2py_put_i4(nbnd)
+      call b2py_put_i4(with_eirene)
+      call b2py_put_r8(time)
+      call b2py_put_str(label)
+      call b2py_put_i4(nsp)
+      do i = 1, nsp
+        call b2py_put_str(species(i))
+      end do
+      call b2py_end
+      call b2py_flush
+      return
+      end subroutine b2py_startup
+
+c Open the FIFO and send HELLO with the program name (inactive if not
+c set)
+      subroutine b2py_open(producer)
+      implicit none
+      character*(*), intent(in) :: producer
       character*512 fifo
-      integer ios, i
+      integer ios
 #ifndef NO_GETENV
       integer lenval, ierror
 #ifndef USE_PXFGETENV
@@ -73,8 +112,8 @@ c Open the FIFO and send HELLO and RUNINFO (inactive if not set)
      . form='unformatted', action='write', status='old', iostat=ios)
 #endif
       if (ios.ne.0) then
-        write(*,'(a)') 'b2plot: cannot open the b2plot.py FIFO '//
-     .    trim(fifo)
+        write(*,'(a)') trim(producer)//
+     .    ': cannot open the b2plot.py FIFO '//trim(fifo)
         return
       end if
       allocate(gbuf(65536))
@@ -84,34 +123,11 @@ c HELLO
       call b2py_begin(1)
       call b2py_put_i4(b2py_magic)
       call b2py_put_i4(b2py_protocol_version)
-      call b2py_put_str('b2plot')
-      call b2py_end
-c RUNINFO
-      call b2py_begin(2)
-      call b2py_put_i4(nCv)
-      call b2py_put_i4(nCi)
-      call b2py_put_i4(nFc)
-      call b2py_put_i4(nVx)
-      call b2py_put_i4(iscl)
-      call b2py_put_i4(nx)
-      call b2py_put_i4(ny)
-      call b2py_put_i4(ns)
-      call b2py_put_i4(natm)
-      call b2py_put_i4(nmol)
-      call b2py_put_i4(nion)
-      call b2py_put_i4(ntrii)
-      call b2py_put_i4(nbnd)
-      call b2py_put_i4(with_eirene)
-      call b2py_put_r8(time)
-      call b2py_put_str(label)
-      call b2py_put_i4(nsp)
-      do i = 1, nsp
-        call b2py_put_str(species(i))
-      end do
+      call b2py_put_str(producer)
       call b2py_end
       call b2py_flush
       return
-      end subroutine b2py_startup
+      end subroutine b2py_open
 
 c Send BYE and close the FIFO
       subroutine b2py_shutdown
@@ -124,6 +140,7 @@ c Send BYE and close the FIFO
       call b2py_flush
       if (b2py_active) close(b2py_unit)
       b2py_active = .false.
+      b2py_by_gks = .false.
       if (allocated(gbuf)) deallocate(gbuf)
       return
       end subroutine b2py_shutdown
