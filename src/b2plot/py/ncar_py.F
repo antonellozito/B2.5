@@ -1,6 +1,7 @@
-c NCAR Graphics replacement for b2pl_py.exe: each NCAR and GKS entry
-c point used by b2plot sends a message on the b2plot.py FIFO instead of
-c drawing (protocol in the b2plot.py documentation of the manual)
+c NCAR Graphics replacement for b2pl_py.exe and the B2 post-processors:
+c each NCAR and GKS entry point they use sends a message on the
+c b2plot.py FIFO instead of drawing (protocol in the b2plot.py
+c documentation of the manual)
 
       module ncar_py_state
       use b2mod_types
@@ -28,6 +29,8 @@ c Open workstations (GFLASH stores excluded)
       integer, save :: nwkopen = 0, iwkopen(16) = 0
 c Current polyline colour and stored LABMOD arguments
       integer, save :: cur_plci = 1
+c Log flag of the last SET (the GKS window is in log10 on log axes)
+      integer, save :: cur_lf = 1
       character*32, save :: lm_fmtx = ' ', lm_fmty = ' '
       integer, save :: lm_numx = 0, lm_numy = 0, lm_iszx = 0,
      . lm_iszy = 0, lm_ixdc = 0, lm_iydc = 0, lm_ixor = 0
@@ -162,6 +165,9 @@ c Store a Conpack or Conpackt parameter (kind 1 int, 2 real, 3 char)
         if (kind.eq.3) tcft(it) = cval
       case ('NEL','NET','NEU','NLS','NLZ','NOF','NSD')
 c numeric label format, not needed by b2plot.py
+      case ('HLS','LLS','SFS','CLD','LLT')
+c label sizes, scale factor, line dash patterns and label texts of the
+c B2 post-processors, drawn with the b2plot.py defaults
       case default
         call ncpy_unknown(key)
       end select
@@ -205,15 +211,16 @@ c Return a real-valued parameter of table it
       return
       end function ncpy_pget
 
-c Send CONTOUR_LINES or CONTOUR_INFO for table it
-      subroutine ncpy_contour_lines(it)
+c Send CONTOUR_LINES (op 54, or 57 without the area map) or
+c CONTOUR_INFO for table it
+      subroutine ncpy_contour_lines(it,op)
       use b2mod_b2plot_py
       implicit none
-      integer, intent(in) :: it
+      integer, intent(in) :: it, op
       integer n
       if (.not.b2py_active) return
       n = tncl(it)
-      call b2py_begin(54)
+      call b2py_begin(op)
       call b2py_put_i4(it)
       call b2py_put_i4(n)
       call b2py_put_r4v(n,tclv(1,it))
@@ -261,6 +268,41 @@ c Send a polyline or polygon of n points
       return
       end subroutine ncpy_points
 
+c User coordinates of points given in the GKS window of SET, which is
+c in log10 on log axes
+      subroutine ncpy_gks_xy(n,x,y,xo,yo)
+      implicit none
+      integer, intent(in) :: n
+      real (kind=R4), intent(in) :: x(*), y(*)
+      real (kind=R4), intent(out) :: xo(*), yo(*)
+      integer i
+      do i = 1, n
+        xo(i) = x(i)
+        yo(i) = y(i)
+        if (cur_lf.eq.3.or.cur_lf.eq.4)
+     .    xo(i) = 10.0_R4**min(max(x(i),-37.0_R4),38.0_R4)
+        if (cur_lf.eq.2.or.cur_lf.eq.4)
+     .    yo(i) = 10.0_R4**min(max(y(i),-37.0_R4),38.0_R4)
+      end do
+      return
+      end subroutine ncpy_gks_xy
+
+c Open the channel for programs that do not open it themselves (the
+c B2 post-processors), named as in prgini; closed again by gclks
+      subroutine ncpy_open_channel
+      use b2mod_b2plot_py
+      use b2mod_subsys, only : nchs, chstck
+      implicit none
+      if (b2py_active) return
+      if (nchs.gt.0) then
+        call b2py_open(trim(chstck(0)))
+      else
+        call b2py_open('unknown')
+      end if
+      b2py_by_gks = b2py_active
+      return
+      end subroutine ncpy_open_channel
+
       end module ncar_py_state
 
 c ===================== GKS control and workstations ===================
@@ -270,6 +312,7 @@ c ===================== GKS control and workstations ===================
       integer errfil, bufa
       if (.false.) idum = errfil+bufa
       nwkopen = 0
+      call ncpy_open_channel
       return
       end subroutine gopks
 
@@ -323,17 +366,23 @@ c ===================== GKS control and workstations ===================
       end subroutine gdawk
 
       subroutine gclks
+      use b2mod_b2plot_py
       implicit none
+      if (b2py_by_gks) call b2py_shutdown
       return
       end subroutine gclks
 
       subroutine opngks
+      use ncar_py_state
       implicit none
+      call ncpy_open_channel
       return
       end subroutine opngks
 
       subroutine clsgks
+      use b2mod_b2plot_py
       implicit none
+      if (b2py_by_gks) call b2py_shutdown
       return
       end subroutine clsgks
 
@@ -385,9 +434,11 @@ c One FRAME per page: end_page calls this once per workstation
 
       subroutine set(vl,vr,vb,vt,wl,wr,wb,wt,lf)
       use b2mod_b2plot_py
+      use ncar_py_state
       implicit none
       real (kind=R4) :: vl, vr, vb, vt, wl, wr, wb, wt
       integer lf
+      cur_lf = lf
       if (.not.b2py_active) return
       call b2py_begin(12)
       call b2py_put_r4(vl)
@@ -507,6 +558,64 @@ c While probing the fill callback only the colour is captured
       return
       end subroutine gsfais
 
+c Hatch pattern of fills with interior style 3
+      subroutine gsfasi(styli)
+      implicit none
+      integer styli
+      call ncpy_attr_i(36,styli)
+      return
+      end subroutine gsfasi
+
+c Colour of GKS text (gtx)
+      subroutine gstxci(coli)
+      implicit none
+      integer coli
+      call ncpy_attr_i(35,coli)
+      return
+      end subroutine gstxci
+
+c Bundle indices and aspect source flags: the callers set every
+c attribute individually, so nothing to do
+      subroutine gsasf(lasf)
+      use ncar_py_state
+      implicit none
+      integer lasf(13)
+      if (.false.) idum = lasf(1)
+      return
+      end subroutine gsasf
+
+      subroutine gspli(indx)
+      use ncar_py_state
+      implicit none
+      integer indx
+      if (.false.) idum = indx
+      return
+      end subroutine gspli
+
+      subroutine gspmi(indx)
+      use ncar_py_state
+      implicit none
+      integer indx
+      if (.false.) idum = indx
+      return
+      end subroutine gspmi
+
+      subroutine gstxi(indx)
+      use ncar_py_state
+      implicit none
+      integer indx
+      if (.false.) idum = indx
+      return
+      end subroutine gstxi
+
+      subroutine gsfai(indx)
+      use ncar_py_state
+      implicit none
+      integer indx
+      if (.false.) idum = indx
+      return
+      end subroutine gsfai
+
       subroutine gspmci(coli)
       implicit none
       integer coli
@@ -622,9 +731,11 @@ c Argument order (xa,ya,xb,yb) as used by b2plot
       implicit none
       integer n
       real (kind=R4) :: px(*), py(*)
+      real (kind=R4) :: xs(max(n,1)), ys(max(n,1))
       if (.not.b2py_active) return
+      call ncpy_gks_xy(n,px,py,xs,ys)
       call b2py_begin(41)
-      call ncpy_points(n,px,py)
+      call ncpy_points(n,xs,ys)
       call b2py_end
       return
       end subroutine gpl
@@ -649,9 +760,11 @@ c Argument order (xa,ya,xb,yb) as used by b2plot
       implicit none
       integer n
       real (kind=R4) :: px(*), py(*)
+      real (kind=R4) :: xs(max(n,1)), ys(max(n,1))
       if (.not.b2py_active) return
+      call ncpy_gks_xy(n,px,py,xs,ys)
       call b2py_begin(44)
-      call ncpy_points(n,px,py)
+      call ncpy_points(n,xs,ys)
       call b2py_end
       return
       end subroutine gpm
@@ -681,8 +794,10 @@ c FILL message with colour ci (-1 current) and the pending tag
       implicit none
       integer n
       real (kind=R4) :: px(*), py(*)
+      real (kind=R4) :: xs(max(n,1)), ys(max(n,1))
       if (probing) return
-      call ncpy_fill(n,px,py,-1)
+      call ncpy_gks_xy(n,px,py,xs,ys)
+      call ncpy_fill(n,xs,ys,-1)
       return
       end subroutine gfa
 
@@ -715,15 +830,18 @@ c FILL message with colour ci (-1 current) and the pending tag
       subroutine gca(xp1,yp1,xp2,yp2,nxclr,nyclr,ixclr,iyclr,nxdo,nydo,
      . clria)
       use b2mod_b2plot_py
+      use ncar_py_state
       implicit none
       real (kind=R4) :: xp1, yp1, xp2, yp2
       integer nxclr, nyclr, ixclr, iyclr, nxdo, nydo, clria(*)
+      real (kind=R4) :: xs(2), ys(2)
       if (.not.b2py_active) return
+      call ncpy_gks_xy(2,(/xp1,xp2/),(/yp1,yp2/),xs,ys)
       call b2py_begin(49)
-      call b2py_put_r4(xp1)
-      call b2py_put_r4(yp1)
-      call b2py_put_r4(xp2)
-      call b2py_put_r4(yp2)
+      call b2py_put_r4(xs(1))
+      call b2py_put_r4(ys(1))
+      call b2py_put_r4(xs(2))
+      call b2py_put_r4(ys(2))
       call b2py_put_i4(nxclr)
       call b2py_put_i4(nyclr)
       call b2py_put_i4(ixclr)
@@ -755,13 +873,16 @@ c ============================== Text ==================================
 
       subroutine gtx(px,py,chars)
       use b2mod_b2plot_py
+      use ncar_py_state
       implicit none
       real (kind=R4) :: px, py
       character*(*) chars
+      real (kind=R4) :: xs(1), ys(1)
       if (.not.b2py_active) return
+      call ncpy_gks_xy(1,(/px/),(/py/),xs,ys)
       call b2py_begin(46)
-      call b2py_put_r4(px)
-      call b2py_put_r4(py)
+      call b2py_put_r4(xs(1))
+      call b2py_put_r4(ys(1))
       call b2py_put_str(chars)
       call b2py_end
       return
@@ -877,6 +998,21 @@ c Formats are read up to their closing parenthesis, as in NCAR
       return
       end subroutine gridal
 
+c Major and minor tick lengths of the next gridal calls
+      subroutine tick4(lmjx,lmnx,lmjy,lmny)
+      use b2mod_b2plot_py
+      implicit none
+      integer lmjx, lmnx, lmjy, lmny
+      if (.not.b2py_active) return
+      call b2py_begin(37)
+      call b2py_put_i4(lmjx)
+      call b2py_put_i4(lmnx)
+      call b2py_put_i4(lmjy)
+      call b2py_put_i4(lmny)
+      call b2py_end
+      return
+      end subroutine tick4
+
       subroutine lblbar(ihov,xleb,xreb,ybeb,yteb,nbox,wsfb,hsfb,lfin,
      . iftp,llbs,nlbs,lbab)
       use b2mod_b2plot_py
@@ -907,6 +1043,43 @@ c Formats are read up to their closing parenthesis, as in NCAR
       end subroutine lblbar
 
 c ===================== Conpack and Conpackt ===========================
+c Conpack parameters back to their start-up values
+      subroutine cprset
+      use ncar_py_state
+      implicit none
+      integer it
+      it = ncpy_cp
+      tpai(it) = 1
+      tncl(it) = 0
+      tcls(it) = 0
+      tllp(it) = 0
+      tllo(it) = 0
+      tmap(it) = 0
+      tset(it) = 1
+      tpic(it) = 0
+      tgic(it) = 3
+      tgil(it) = 3
+      tgis(it) = 4
+      tnvs(it) = 1
+      tilp(it) = 0
+      tclu(:,it) = 0
+      taia(:,it) = 0
+      taib(:,it) = 0
+      tclv(:,it) = 0.0_R4
+      tcll(:,it) = 0.0_R4
+      tt2d(it) = 0.0_R4
+      tspv(it) = 0.0_R4
+      txc1(it) = 0.0_R4
+      txcm(it) = 0.0_R4
+      tyc1(it) = 0.0_R4
+      tycn(it) = 0.0_R4
+      tilx(it) = 0.0_R4
+      tily(it) = 0.0_R4
+      tilt(it) = ' '
+      tcft(it) = ' '
+      return
+      end subroutine cprset
+
       subroutine cpseti(pnam,ival)
       use ncar_py_state
       implicit none
@@ -1077,9 +1250,22 @@ c Contour lines and labels are drawn by Python from the tables
         rdum = zdat(1)+rwrk(1)
         call rtpl
       end if
-      call ncpy_contour_lines(ncpy_cp)
+      call ncpy_contour_lines(ncpy_cp,54)
       return
       end subroutine cpcldm
+
+      subroutine cpcldr(zdat,rwrk,iwrk)
+      use ncar_py_state
+      implicit none
+      real (kind=R4) :: zdat(*), rwrk(*)
+      integer iwrk(*)
+      if (.false.) then
+        idum = iwrk(1)
+        rdum = zdat(1)+rwrk(1)
+      end if
+      call ncpy_contour_lines(ncpy_cp,57)
+      return
+      end subroutine cpcldr
 
       subroutine ctcldm(rpnt,iedg,itri,rwrk,iwrk,iama,rtpl)
       use ncar_py_state
@@ -1092,7 +1278,7 @@ c Contour lines and labels are drawn by Python from the tables
         rdum = rpnt(1)+rwrk(1)
         call rtpl
       end if
-      call ncpy_contour_lines(ncpy_ct)
+      call ncpy_contour_lines(ncpy_ct,54)
       return
       end subroutine ctcldm
 

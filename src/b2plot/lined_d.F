@@ -59,9 +59,11 @@ c      write(*,*) 'lined: ',xas,yas,xbs,ybs
       yas=real(min(1e30_R8,max(-1e30_R8,ya)),R4)
       if((xas.lt.xlo).or.(xas.gt.xhi).or.
      3   (yas.lt.ylo).or.(yas.gt.yhi)) return
-      if(.not.logy.or.(yas.gt.0.0_R4)) then
-        call gsmk(is)
-        call gpm(1,xas,yas)
-      endif
+      if((logx.and.xas.le.0.0_R4).or.(logy.and.yas.le.0.0_R4)) return
+c GKS markers take log10 coordinates on log axes, as the SET window
+      if(logx) xas=log10(xas)
+      if(logy) yas=log10(yas)
+      call gsmk(is)
+      call gpm(1,xas,yas)
       return
       end subroutine grpts_d
