@@ -2,9 +2,9 @@
       use b2mod_types
       implicit none
 
-c Message channel of b2plot to b2plot.py: binary messages on the FIFO
-c named by B2PLOT_PY_FIFO (see the b2plot.py documentation in the
-c manual)
+c Message channel of b2plot to its Python graphics: binary messages on
+c the FIFO named by B2PLOT_PY_FIFO (see the Python graphics section of
+c the b2plot manual)
       integer, parameter :: b2py_i1 = selected_int_kind(2)
       integer, parameter :: b2py_i4 = selected_int_kind(9)
       integer, parameter :: b2py_protocol_version = 7
@@ -113,7 +113,7 @@ c set)
 #endif
       if (ios.ne.0) then
         write(*,'(a)') trim(producer)//
-     .    ': cannot open the b2plot.py FIFO '//trim(fifo)
+     .    ': cannot open the Python graphics FIFO '//trim(fifo)
         return
       end if
       allocate(gbuf(65536))
@@ -158,7 +158,7 @@ c Stop sending after a write error; b2plot goes on as a text tool
       subroutine b2py_lost
       implicit none
       integer ios
-      write(*,'(a)') 'b2plot: b2plot.py FIFO write failed, '//
+      write(*,'(a)') 'b2plot: Python graphics FIFO write failed, '//
      .  'output stopped'
       b2py_active = .false.
       close(b2py_unit, iostat=ios)
@@ -289,7 +289,7 @@ c Output primitives mark the current frame as drawn
       return
       end subroutine b2py_end
 
-c Informative (1) or warning (2) text for b2plot.py
+c Informative (1) or warning (2) text for the Python graphics
       subroutine b2py_message(level,text)
       implicit none
       integer, intent(in) :: level
@@ -384,7 +384,7 @@ c Page and panel description, sent by init_page
       return
       end subroutine b2py_page_meta
 
-c Print the b2plot catalogue and, for b2plot.py, send CATALOG
+c Print the b2plot catalogue and send CATALOG to the Python graphics
       subroutine b2py_help_catalog
       use b2mod_b2plot_help
       implicit none

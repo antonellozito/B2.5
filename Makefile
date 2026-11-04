@@ -460,7 +460,6 @@ ADEXTRA = ${DBGAD} ${STACKAD}
 endif
 
 GEEXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_GE}}
-PYEXE = ${OBJDIR}/b2pl_py.exe
 PYOBJS = ${OBJDIR}/ncar_py.o
 GREXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_GR}}
 XDEXE = ${patsubst %.exe, ${OBJDIR}/%.exe, ${PROG_XD}}
@@ -487,30 +486,34 @@ JSONAD = ${OBJDIR}/json.o
 STACKAD = ${OBJDIR}/adStack.o
 DBGAD = ${OBJDIR}/adDebug.o
 
-.PHONY: DEFAULT NOPLOT ALL VERSION TANGENT HESS_TGT ADJOINT DIFF_D DIFF_B DIFF_DD AM_FILES mods clean depend listobj tags echo local force test nc2text_simple nc2text ensure_adas b2pl_py
+.PHONY: DEFAULT NOPLOT ALL VERSION TANGENT HESS_TGT ADJOINT DIFF_D DIFF_B DIFF_DD AM_FILES mods clean depend listobj tags echo local force test nc2text_simple nc2text ensure_adas
 
 DEFAULT: VERSION AM_FILES ${MNEXE} ${AMEXE} ${OEEXE} ${COEXE} ${OTEXE} ${O9EXE}
 ALL: VERSION AM_FILES ${MNEXE} ${AMEXE} ${OEEXE} ${COEXE} ${OTEXE} ${O9EXE} ${XDEXE}
 NOPLOT: VERSION AM_FILES ${MNEXE} ${AMEXE} ${OEEXE} ${COEXE} ${OTEXE} ${O9EXE}
-# b2plot for b2plot.py (no NCAR needed)
-DEFAULT: ${PYEXE}
-ALL: ${PYEXE}
-NOPLOT: ${PYEXE}
-b2pl_py: ${PYEXE}
 DIFF_D: VERSION AM_FILES ${MNDEXE} ${OPTEXE}
 DIFF_B: VERSION AM_FILES ${MNBEXE} ${OPTEXE}
 DIFF_DD: VERSION AM_FILES ${MNHEXE}
 TANGENT: VERSION AM_FILES ${MNDEXE} ${OPTEXE}
 ADJOINT: VERSION AM_FILES ${MNBEXE} ${OPTEXE}
 HESS_TGT: VERSION AM_FILES ${MNHEXE}
-ifdef NCARG_ROOT
+ifdef USE_NCAR
+ifndef NCARG_ROOT
+$(error B2.5 graphical post-processing programs need NCARG_ROOT when USE_NCAR is defined)
+endif
 ifeq ($(strip ${GLI_HOME}),)
 $(warning B2.5 graphical post-processing programs may not work because GLI_HOME is not defined.)
 endif
+GRSTAMP = ${OBJDIR}/.graphics_ncar
 DEFAULT: ${GEEXE} ${GREXE}
 ALL: ${GEEXE} ${GREXE}
 else
-$(warning B2.5 graphical post-processing programs will not be compiled because NCARG_ROOT is not defined.)
+# Python graphics: the NCAR replacement instead of the NCAR libraries
+GROBJS = ${PYOBJS}
+GRLIBES =
+GRSTAMP = ${OBJDIR}/.graphics_python
+DEFAULT: ${GEEXE} ${GREXE}
+ALL: ${GEEXE} ${GREXE}
 endif
 ifdef MDSPLUS_DIR
 DEFAULT: ${MDEXE}
@@ -1130,16 +1133,16 @@ ${OTEXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MAKES}
 ${O9EXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
 	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/$*.o ${OBJDIR}/libb2.a ${EIRLIBS} ${LDLIBES}
 
-${GEEXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
-	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/$*.o ${OBJDIR}/libb2.a ${EIRLIBS} ${PLLIBES} ${GRLIBES} ${LDLIBES} ${LDOPTSend}
+${GEEXE} ${GREXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${GROBJS} ${GRSTAMP} ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
+	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/$*.o ${GROBJS} ${OBJDIR}/libb2.a ${EIRLIBS} ${PLLIBES} ${GRLIBES} ${LDLIBES} ${LDOPTSend}
 
-${OBJDIR}/ncar_py.o: ${OBJDIR}/b2mod_b2plot_py.${MOD} ${OBJDIR}/b2mod_types.${MOD}
+${OBJDIR}/ncar_py.o: ${OBJDIR}/b2mod_b2plot_py.${MOD} ${OBJDIR}/b2mod_subsys.${MOD} ${OBJDIR}/b2mod_types.${MOD}
 
-${PYEXE}: ${OBJDIR}/b2pl.o ${PYOBJS} ${OBJDIR}/libb2.a ${MNEXTRA} ${MAKES}
-	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/b2pl.o ${PYOBJS} ${OBJDIR}/libb2.a ${EIRLIBS} ${PLLIBES} ${LDLIBES} ${LDOPTSend}
-
-${GREXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MAKES}
-	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/$*.o ${OBJDIR}/libb2.a ${GRLIBES} ${LDLIBES} ${LDOPTSend}
+# The stamp file tells the run scripts which graphics were built; a change
+# of USE_NCAR relinks the graphical programs
+${GRSTAMP}:
+	rm -f ${OBJDIR}/.graphics_python ${OBJDIR}/.graphics_ncar ${GEEXE} ${GREXE}
+	touch $@
 
 ${XDEXE}: ${OBJDIR}/%.exe: ${OBJDIR}/%.o ${OBJDIR}/libb2.a ${MNEXTRA} ${OBJDIR}/libsolps4.a ${MAKES}
 	${LD} ${LDOPTS} ${LPOPTS} ${FFLAGSEXTRA} -o $@ ${OBJDIR}/$*.o ${OBJDIR}/libb2.a ${EIRLIBS} ${OBJDIR}/libsolps4.a ${LDLIBES} ${LDEXTRA} ${LDOPTSend}
