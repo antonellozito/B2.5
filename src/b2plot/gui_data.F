@@ -483,16 +483,13 @@ c at the primary X-point (or a separatrix vertex without X-point)
         deallocate(r, z, psi)
         return
       end if
-c Separatrix surface and its point used for psi_S
+c Separatrix surface and its point used for psi_S: the X-point on the
+c primary separatrix, else the first one
       if (mpg%nXpt.gt.0) then
         k = 1
-        if (allocated(mpg%isPrimaryXpt)) then
-          if (size(mpg%isPrimaryXpt).ge.mpg%nXpt) then
-            do i = mpg%nXpt, 1, -1
-              if (mpg%isPrimaryXpt(i).ne.0) k = i
-            end do
-          end if
-        end if
+        do i = mpg%nXpt, 1, -1
+          if (mpg%vxFs(mpg%Xpt(i)).eq.mpg%iFssep) k = i
+        end do
         iVx = mpg%Xpt(k)
         iFs = mpg%vxFs(iVx)
       else
