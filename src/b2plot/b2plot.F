@@ -12365,7 +12365,7 @@ c     <delta wavelength in A> nspe
      .       'Faulty iy = ',istack(iistack),' chosen for iyref!'
             call pop_stack(stack_req)
           endif
-        case('sync')     ! handshake for b2plot.py
+        case('sync')     ! handshake with the Python graphics
           stack_req=(/1,0,0,0,0,0,0/)
           if(bad_args(stack_req)) return
           isync=ipop(istack,iistack)

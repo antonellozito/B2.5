@@ -1,7 +1,7 @@
-c NCAR Graphics replacement for b2pl_py.exe and the B2 post-processors:
-c each NCAR and GKS entry point they use sends a message on the
-c b2plot.py FIFO instead of drawing (protocol in the b2plot.py
-c documentation of the manual)
+c NCAR Graphics replacement for b2pl.exe and the B2 post-processors:
+c each NCAR and GKS entry point they use sends a message on the FIFO
+c of the Python graphics instead of drawing (protocol in the Python
+c graphics section of the b2plot manual)
 
       module ncar_py_state
       use b2mod_types
@@ -37,7 +37,7 @@ c Log flag of the last SET (the GKS window is in log10 on log axes)
 c Unknown parameter names already reported
       integer, save :: nunknown = 0
       character*3, save :: unknown(64) = ' '
-c Sink for NCAR arguments b2plot.py does not need
+c Sink for NCAR arguments the Python graphics do not need
       integer, save :: idum = 0
       real (kind=R4), save :: rdum = 0.0_R4
 
@@ -164,10 +164,10 @@ c Store a Conpack or Conpackt parameter (kind 1 int, 2 real, 3 char)
       case ('CFT')
         if (kind.eq.3) tcft(it) = cval
       case ('NEL','NET','NEU','NLS','NLZ','NOF','NSD')
-c numeric label format, not needed by b2plot.py
+c numeric label format, not needed by the Python graphics
       case ('HLS','LLS','SFS','CLD','LLT')
 c label sizes, scale factor, line dash patterns and label texts of the
-c B2 post-processors, drawn with the b2plot.py defaults
+c B2 post-processors, drawn with the Python graphics defaults
       case default
         call ncpy_unknown(key)
       end select
