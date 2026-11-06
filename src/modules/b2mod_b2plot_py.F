@@ -7,28 +7,30 @@ c the FIFO named by B2PLOT_PY_FIFO (see the Python graphics section of
 c the b2plot manual)
       integer, parameter :: b2py_i1 = selected_int_kind(2)
       integer, parameter :: b2py_i4 = selected_int_kind(9)
-      integer, parameter :: b2py_protocol_version = 7
       integer, parameter :: b2py_magic = 1110593607
       logical, save :: b2py_active = .false., b2py_drawn = .false.
 c Channel opened by gopks of the NCAR replacement (closed by gclks)
       logical, save :: b2py_by_gks = .false.
+c Next trajectories (traj) drawn as an overlay of the GUI (guitraj)
+      logical, save :: b2py_traj = .false.
       integer, save :: b2py_unit = -1
       integer(kind=b2py_i1), allocatable, save :: gbuf(:)
       integer, save :: gnbuf = 0, gop = 0
       integer, save :: b2py_tag_kind = 0, b2py_tag_index = 0
       real (kind=R8), save :: b2py_tag_value = 0.0_R8
 c Movie files (movie_frames.F): netCDF ids, frame counts and
-c running sums of frame means, a full sum after mvf_maxupd updates
+c running sums of frames and of their squares, a full sum after
+c mvf_maxupd updates; file 3 is b2tallies.nc (volume regions)
       integer, parameter :: mvf_nslot = 4, mvf_maxupd = 200
       type mvf_slot
         character*64 :: name = ' '
         integer :: ifile = 0, lo = 1, hi = 0, nupd = 0, used = 0
-        real (kind=R8), allocatable :: s(:,:)
+        real (kind=R8), allocatable :: s(:,:), s2(:,:)
       end type mvf_slot
       logical, save :: mvf_opened = .false.
-      integer, save :: mvf_ncid(2) = -1, mvf_nt(2) = 0
+      integer, save :: mvf_ncid(3) = -1, mvf_nt(3) = 0
       integer, save :: mvf_clock = 0
-      character*256, save :: mvf_path(2) = ' '
+      character*256, save :: mvf_path(3) = ' '
       type (mvf_slot), save :: mvf_c(mvf_nslot)
 
       contains
@@ -122,7 +124,6 @@ c set)
 c HELLO
       call b2py_begin(1)
       call b2py_put_i4(b2py_magic)
-      call b2py_put_i4(b2py_protocol_version)
       call b2py_put_str(producer)
       call b2py_end
       call b2py_flush
@@ -472,6 +473,14 @@ c Number of non-blank names of catalogue category icat
       use b2mod_b2plot_help
       implicit none
       integer, intent(in) :: icat, i
+#ifndef WG_TODO
+c Commands compiled out of b2plot.F on these grids: not listed
+      character*8, parameter :: absent(19) = (/ 'bvis    ',
+     . 'niso    ', 'lix     ', 'liy     ', 'rix     ', 'riy     ',
+     . 'bix     ', 'biy     ', 'tix     ', 'tiy     ', 'crx     ',
+     . 'cry     ', 'saw     ', 'oson    ', 'uedgegrd', 'trgnorth',
+     . 'trgsouth', 'trgwest ', 'trgeast ' /)
+#endif
       select case (icat)
       case (1)
         b2py_help_name = labels(i)
@@ -492,6 +501,9 @@ c Number of non-blank names of catalogue category icat
       case default
         b2py_help_name = constant_name(i)
       end select
+#ifndef WG_TODO
+      if (any(absent.eq.b2py_help_name)) b2py_help_name = ' '
+#endif
       return
       end function b2py_help_name
 

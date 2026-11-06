@@ -4,8 +4,8 @@
 
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
-      parameter(nlabels=416,nfns=233,nsparameters=34,nelabels=36,
-     *     nconstants=10,nefns=48,nwfns=62,nwlabels=97,ntrgfns=89)
+      parameter(nlabels=429,nfns=238,nsparameters=34,nelabels=36,
+     *     nconstants=10,nefns=49,nwfns=62,nwlabels=97,ntrgfns=89)
 
       integer, save ::
      * dimensions(nlabels), wdimensions(nwlabels), edimensions(nelabels)
@@ -114,6 +114,10 @@
      2  'ifeq'    , 'iveq'    , 'ic'      , 'iimp'    , 'iomp'    ,
      3  'clbl'    , 'tlbl'    , 'bdcl'    , 'npcl'    , 'colle'   ,
      4  'colli'   /
+      data labels(417:429) /
+     1  'ro'      , 'wpe'     , 'wce'     , 'wci'     , 'vthe'    ,
+     2  'vthi'    , 'valfven' , 'fchxvspa', 'fchyvspa', 'fchxvspe',
+     3  'fchyvspe', 'fchxn'   , 'fchyn'   /
       data descriptions(1:10) /
      1    'Pitch',
      2    'b_{x} (T) (poloidal)',
@@ -572,6 +576,20 @@
      4    'Neutral pressure cells',
      5    'Electron collision number',
      6    'Main ion collision number'/
+      data descriptions(417:429) /
+     1    'Mass density (kg.m^{-3})',
+     2    '\Gx\R_{pe} (rad/s)',
+     3    '\Gx\R_{ce} (rad/s)',
+     4    '\Gx\R_{ci} (rad/s)',
+     5    'v_{th,e} (m/s)',
+     6    'v_{th,i} (m/s)',
+     7    'v_{Alfven} (m/s)',
+     8    'Pol comp of fchvispar (A)',
+     9    'Rad comp of fchvispar (A)',
+     *    'Pol comp of fchvisper (A)',
+     1    'Rad comp of fchvisper (A)',
+     2    'Pol comp of fchin (A)',
+     3    'Rad comp of fchin (A)'/
       data dimensions(1:50) /
      1    1,      1,      1,      1,      1,
      2    2,      2,      2,      2,      2,
@@ -665,6 +683,10 @@
      2    1,      1,      1,      1,      1,
      3    1,      1,      1,      1,      1,
      4    1/
+      data dimensions(417:429) /
+     1    2,      1,      1,      2,      1,
+     2    2,      2,      1,      1,      1,
+     3    1,      1,      1/
       data fns(1:50) /
      1 'sumx', 'sumy', 'f.x' , 'f.y' , 'intx',
      2 'inty', 'f.lx', 'f.ly', 'cont', 'surf',
@@ -709,14 +731,15 @@
      8 'sprt' , 'list' , 'acol' , 'dcol'   , 'wcol'  ,
      9 'tcol' , 'lfsz' , 'zwid' , 'psxperp', 'expl'  ,
      * 'exps' , 'mdims', 'itoe' , 'rtoe'   , 'stoe'  /
-      data fns(201:233) /
+      data fns(201:238) /
      1 'trigmesh', 'earox', 'earoy', 'earow', 'nice' ,
      2 'glsz' , 'mpsi' , 'fpsi' , 'rpsi'   , 'etal'  ,
      3 'fcol' , 'bold' , 'rmaj' , 'f.imp'  , 'f.omp' ,
      4 'f.t'  , 'sumft', 't_xy' , 'icse'   , 'fteq'  ,
      5 'sync' , 'help' , 'dflt' , 'guigeom', 'guifield',
      6 'guiefld', 'guivect', 'guievect', 'guiclv', 'guieclv',
-     7 'guimvinf', 'mvframe', 'mvframev' /
+     7 'guimvinf', 'mvframe', 'mvframev', 'mvfrstd', 'guiwfld',
+     8 'guitraj', 'samju', 'npec' /
       data wlabels /
      1 'wallarea', 'ei'      , 'wallflux', 'wallhflx', 'r1'      ,
      2 'r2'      , 'z1'      , 'z2'      , 'walltemp', 'plathick',
@@ -875,7 +898,7 @@
      7 'emge' , 'elog' , 'eln'  , 'esqrt', 'eexp' ,
      8 'ezrng', 'echs' , 'etos' , 'epos' , 'evac' ,
      9 'echor', 'echbx', 'echvl', 'echmp', 'ecam' ,
-     * 'eoutp', 'eprt' , 'eavg'/
+     * 'eoutp', 'eprt' , 'eavg', 'eamju'/
       data wfns /
      1 'wall' , 'wall_ank', 'logw' , 'linw' , 'logxw',
      2 'linxw', 'plwl'    , 'sumw' , 'intw' , 'intw*',

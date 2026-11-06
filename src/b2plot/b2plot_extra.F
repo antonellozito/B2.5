@@ -635,6 +635,7 @@ C
       FITFLAG='fit-flag '
       IFTFLG=0
       EARRH(IR) = 0.0_R8
+      CREAC(:,:,IR) = 0.0_R8
       RC1MN(IR) =-HUGE(1.0_R8)
       RC1MX(IR) = HUGE(1.0_R8)
       RC2MN(IR) =-HUGE(1.0_R8)
