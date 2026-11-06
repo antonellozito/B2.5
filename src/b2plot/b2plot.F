@@ -47,7 +47,7 @@ c 2002-09-11: logic revised
      & , only : dealloc_b2mod_frtf_nccorr
       use b2mod_b2plot_py
      & , only : b2py_startup, b2py_shutdown, b2py_sync,
-     &   b2py_help_catalog
+     &   b2py_help_catalog, b2py_active, b2py_traj
       use b2mod_ranges
       use b2us_plasma
       use b2us_data
@@ -1789,6 +1789,85 @@ c
       goto 10
 
       contains
+c AMJUEL-type fit (file, section, reaction, type as for amju) at the
+c fields on top of the matrix stack (estack false, cells) or of the Eirene
+c stack (true, triangles): the temperature (eV) on top for one-variable
+c fits; for two-variable fits the density (m^-3: H.4 H.7 H.10 H.12) or
+c the energy (eV: H.3 H.6 H.9) on top and the temperature below. The
+c fields used (first column) are replaced by the result (0 where the
+c temperature is not positive).
+      subroutine amju_on_stack(estack,filnam,h123,reac,crc)
+      use b2mod_types
+      use b2mod_constants
+      use b2mod_b2plot
+      use b2us_data
+#ifdef B25_EIRENE
+      use eirmod_ctrig
+#endif
+      implicit none
+      logical, intent(in) :: estack
+      character filnam*8, h123*4, reac*9, crc*3
+      real (kind=R8), allocatable :: t(:), x(:), r(:)
+      logical, allocatable :: hot(:)
+      character*256 :: label
+      character*32 :: blank(1) = ' '
+      logical :: two, energy
+      integer :: n, nf, it, iw
+      external get_amjuel_data, copy, eirene_copy
+
+      two = any(h123.eq.(/'H.3 ','H.4 ','H.6 ','H.7 ','H.9 ','H.10',
+     . 'H.12'/))
+      energy = any(h123.eq.(/'H.3 ','H.6 ','H.9 '/))
+      nf = merge(2,1,two)
+      if (estack) then
+#ifdef B25_EIRENE
+        n = ntrii
+        it = iewrk
+#else
+        write(*,*) 'eamju: b2plot is compiled without Eirene'
+        return
+#endif
+      else
+        n = mpg%nCv
+        it = iwrk
+      end if
+      if (it.lt.nf) then
+        write(*,*) 'amju_on_stack: ',nf,' fields needed on the stack'
+        return
+      end if
+      allocate(t(n), x(n), r(n), hot(n))
+      do iw = 1, nf
+        if (estack) then
+          x = eirene_stack(1:n,0,it-iw+1)
+        else
+          x = work(1:n,0,it-iw+1)
+        end if
+        if (iw.eq.nf) t = x*qe
+        if (iw.eq.1.and.two) r = x
+      end do
+      x = 1.0e19_R8
+      if (two) x = r
+      if (energy) x = x*1.0e14_R8
+      hot = t.gt.0.0_R8
+      where (.not.hot) t = qe
+      call get_amjuel_data(filnam,h123,reac,crc,n,x,t,r)
+      where (.not.hot) r = 0.0_R8
+      label = trim(filnam)//' '//trim(h123)//' '//trim(reac)//' '//crc
+      if (estack) then
+#ifdef B25_EIRENE
+        iewrk = iewrk-nf
+        call eirene_copy(r,1.0_R8,1,blank)
+        eirene_label(iewrk) = label
+#endif
+      else
+        iwrk = iwrk-nf
+        call copy(r,1.0_R8,1,blank)
+        graphlabel(iwrk) = label
+      end if
+      deallocate(t, x, r, hot)
+      return
+      end subroutine amju_on_stack
+
 
 c Start-up plot settings, also restored by the dflt command
       subroutine set_plot_defaults
@@ -7414,6 +7493,22 @@ cdpc still in testing phase
           ndim(2,iwrk)=nz
           graphlabel(iwrk)=
      1     trim(filnam)//' '//trim(h123)//' '//trim(reac)//' '//crc
+        case('samju')    ! amju at the temperature (and n or E) on the stack
+          stack_req=(/0,0,4,1,0,0,0/)
+          if(bad_args(stack_req)) return
+          stmp = spop(sstack,isstack)
+          call strip_spaces(stmp)
+          call strcopy(3,256,crc,stmp)
+          stmp = spop(sstack,isstack)
+          call strip_spaces(stmp)
+          call strcopy(9,256,reac,stmp)
+          stmp = spop(sstack,isstack)
+          call strip_spaces(stmp)
+          call strcopy(4,256,h123,stmp)
+          stmp = spop(sstack,isstack)
+          call strip_spaces(stmp)
+          call strcopy(8,256,filnam,stmp)
+          call amju_on_stack(.false.,filnam,h123,reac,crc)
         case('adas')     ! accesses ADAS atomic physics data
           stack_req=(/0,0,1,0,0,0,0/)
           if(bad_args(stack_req)) return
@@ -8696,6 +8791,22 @@ cdpc still in testing phase
             enddo
           enddo
           goto 4049
+        case('eamju')    ! samju at the Eirene fields on the stack
+          stack_req=(/0,0,4,0,1,0,0/)
+          if(bad_args(stack_req)) return
+          stmp = spop(sstack,isstack)
+          call strip_spaces(stmp)
+          call strcopy(3,256,crc,stmp)
+          stmp = spop(sstack,isstack)
+          call strip_spaces(stmp)
+          call strcopy(9,256,reac,stmp)
+          stmp = spop(sstack,isstack)
+          call strip_spaces(stmp)
+          call strcopy(4,256,h123,stmp)
+          stmp = spop(sstack,isstack)
+          call strip_spaces(stmp)
+          call strcopy(8,256,filnam,stmp)
+          call amju_on_stack(.true.,filnam,h123,reac,crc)
         case('etal')     ! read Eirene tally output file onto the Eirene stack
           stack_req=(/0,0,1,0,0,0,0/)
           if(bad_args(stack_req)) return
@@ -12319,7 +12430,21 @@ c     Parameters on istack: <species number> <wavelength in A>
 c     <delta wavelength in A> nspe
           call CalculateEmissivity(istack(iistack-2),
      &     istack(iistack-1),
-     &     istack(iistack))
+     &     istack(iistack),0)
+          call pop_stack(stack_req)
+        case('npec')     ! photon emission coefficient of nspe lines
+c     Parameters on istack: <species number> <wavelength in A>
+c     <delta wavelength in A> <1 excitation or 2 recombination> npec
+          stack_req=(/4,0,0,0,0,0,0/)
+          if(bad_args(stack_req)) return
+          is1=istack(iistack-3)
+          if(0.gt.is1.or.is1.ge.ns.or.istack(iistack).lt.1.or.
+     &       istack(iistack).gt.2) then
+            write(*,*) 'Faulty parameters for npec!'
+            return
+          endif
+          call CalculateEmissivity(is1,istack(iistack-2),
+     &     istack(iistack-1),istack(iistack))
           call pop_stack(stack_req)
         case('spec')     ! old spectrometer
           call spect
@@ -12402,7 +12527,16 @@ c     <delta wavelength in A> nspe
           iend=ipop(istack,iistack)
           istart=ipop(istack,iistack)
           itmp=ipop(istack,iistack)
-          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend)
+          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend,
+     .     .false.)
+        case('mvfrstd') ! push the standard deviation over frames k1 to k2
+          stack_req=(/3,0,1,0,0,0,0/)
+          if(bad_args(stack_req)) return
+          iend=ipop(istack,iistack)
+          istart=ipop(istack,iistack)
+          itmp=ipop(istack,iistack)
+          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend,
+     .     .true.)
         case('mvframev') ! push both components of a movie vector
           stack_req=(/3,0,2,0,0,0,0/)
           if(bad_args(stack_req)) return
@@ -12411,7 +12545,14 @@ c     <delta wavelength in A> nspe
           itmp=ipop(istack,iistack)
           stmp2=spop(sstack,isstack)
           stmp1=spop(sstack,isstack)
-          call mvf_push(itmp,stmp1,stmp2,istart,iend)
+          call mvf_push(itmp,stmp1,stmp2,istart,iend,.false.)
+        case('guiwfld')  ! send and drop the top wall stack field
+          stack_req=(/0,0,0,0,0,1,0/)
+          if(bad_args(stack_req)) return
+          call gui_send_wfield
+          iwwrk=iwwrk-1
+        case('guitraj')  ! draw the next traj as an overlay of the GUI
+          b2py_traj=b2py_active
         case('guiclv')   ! send the custom contour levels to the GUI
           call gui_send_levels(1)
         case('guieclv')  ! send the custom Eirene levels to the GUI

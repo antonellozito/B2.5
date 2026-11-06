@@ -101,6 +101,8 @@ c Overlays drawn by the b2plot routines, without the window clipping
       call pltoutline(.true.)
       call gui_overlay_end
       call gui_send_structure
+      call gui_send_wall
+      call gui_send_chords
       xlo = gwin(1)
       xhi = gwin(2)
       ylo = gwin(3)
@@ -628,3 +630,96 @@ c Eirene versions (kind 2), for the GUI (LEVELS)
       call b2py_end
       return
       end subroutine gui_send_levels
+
+c Wall elements of b2plot (init_wall_elements), one LINE each in element
+c order, as OVERLAY role 5: the segments of the guiwfld values
+      subroutine gui_send_wall
+      use b2mod_types
+      use b2mod_wall, only : r1, r2, z1, z2, nbnd
+      use b2mod_b2plot_py
+      implicit none
+      integer :: i
+      if (.not.allocated(r1)) return
+      call gui_overlay_begin(5,'Wall elements')
+      do i = 1, min(nbnd,size(r1))
+        call b2py_begin(40)
+        call b2py_put_r4(real(r1(i),R4))
+        call b2py_put_r4(real(z1(i),R4))
+        call b2py_put_r4(real(r2(i),R4))
+        call b2py_put_r4(real(z2(i),R4))
+        call b2py_end
+      end do
+      call gui_overlay_end
+      return
+      end subroutine gui_send_wall
+
+c Top of the wall stack as FIELD at the wall elements (location 3)
+      subroutine gui_send_wfield
+      use b2mod_types
+      use b2mod_b2plot
+      use b2mod_b2plot_py
+      implicit none
+      real (kind=R4), allocatable :: buf(:)
+      integer :: is, n, nz
+      if (.not.b2py_active.or.iwwrk.lt.1) return
+      n = nwdim(1,iwwrk)
+      nz = nwdim(2,iwwrk)
+      allocate(buf(n))
+      call b2py_begin(74)
+      call b2py_put_str(wall_label(iwwrk))
+      call b2py_put_i4(3)
+      call b2py_put_i4(n)
+      call b2py_put_i4(nz)
+      do is = 0, nz-1
+        call b2py_put_str(textwwk(is,iwwrk))
+      end do
+      do is = 0, nz-1
+        buf = real(min(1.0e30_R8,max(-1.0e30_R8,
+     .   wall_stack(1:n,is,iwwrk))),R4)
+        call b2py_put_r4v(n,buf)
+      end do
+      call b2py_put_i4(0)
+      call b2py_end
+      call b2py_flush
+      deallocate(buf)
+      return
+      end subroutine gui_send_wfield
+
+c Chord sets of the run (*.chords, read as for b2chords.nc) as OVERLAY
+c role 6, one per set named by its label, each chord sampled in (R, Z)
+      subroutine gui_send_chords
+      use b2mod_types
+      use b2mod_chords, only : read_chord_files
+      use b2mod_b2plot_py
+      implicit none
+      integer, parameter :: np = 33
+      character*80, allocatable :: setname(:), setlabel(:)
+      integer, allocatable :: setnp(:), cset(:), cnum(:)
+      real (kind=R8), allocatable :: cxyz(:,:,:), cval(:)
+      real (kind=R8) :: p(3), t
+      real (kind=R4) :: r(np), z(np)
+      integer :: nset, nch, iset, k, i
+      call read_chord_files(nset, setname, setlabel, setnp, nch,
+     . cset, cnum, cxyz, cval)
+      do iset = 1, nset
+        call gui_overlay_begin(6,trim(setlabel(iset)))
+        do k = 1, nch
+          if (cset(k).ne.iset) cycle
+          do i = 1, np
+            t = real(i-1,R8)/real(np-1,R8)
+            p = cxyz(1:3,1,k)+t*(cxyz(1:3,2,k)-cxyz(1:3,1,k))
+            r(i) = real(sqrt(p(1)**2+p(2)**2),R4)
+            z(i) = real(p(3),R4)
+          end do
+          call b2py_begin(41)
+          call b2py_put_i4(np)
+          call b2py_put_r4v(np,r)
+          call b2py_put_r4v(np,z)
+          call b2py_end
+        end do
+        call gui_overlay_end
+      end do
+      if (allocated(setname)) deallocate(setname, setlabel, setnp)
+      if (allocated(cset)) deallocate(cset, cnum, cxyz, cval)
+      return
+      end subroutine gui_send_chords

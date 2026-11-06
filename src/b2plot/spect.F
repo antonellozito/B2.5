@@ -3040,7 +3040,10 @@ C-----------------------------------------------------------------------
       RETURN
       END FUNCTION I4EIZ0
 
-      subroutine CalculateEmissivity(is,iwl,idwl)
+c Emissivity of the lines of species is within idwl of iwl (A); mode 1
+c gives the excitation, mode 2 the recombination photon emission
+c coefficient (PEC, m^3/s) of these lines instead
+      subroutine CalculateEmissivity(is,iwl,idwl,mode)
       use b2mod_types
       use b2mod_elements
       use b2mod_constants
@@ -3052,7 +3055,7 @@ C-----------------------------------------------------------------------
       real (kind=R8) ::
      *   wl,dwl
       integer iCv,is
-      integer ic,nc,nz,iwl,idwl
+      integer ic,nc,nz,iwl,idwl,mode
       integer, allocatable, save :: iae(:),iar(:),iac(:)
       real (kind=R8) ::
      *   lNe(1),lNi(1),lNi1(1),lNH(1),lTe(1),e(1),p(1)
@@ -3098,22 +3101,33 @@ c  a standard database file may be present
           lNi1(1)=state%pl%na(iCv,is+1)/1.0e6_R8
           lNH(1)=NH(iCv)/1.0e6_R8
           lTe(1)=state%pl%te(iCv)/eV
+          if (mode.gt.0) then
+            lNi(1)=merge(1.0_R8,0.0_R8,mode.eq.1)
+            lNi1(1)=merge(1.0_R8,0.0_R8,mode.eq.2)
+            lNH(1)=0.0_R8
+          end if
           call GetEmissivity(nz,iae,iar,iac,
      &     lNe(1),lNi(1),lNi1(1),lNH(1),lTe(1),1,e(1),p(1))
-          ea(iCv)=e(1)/(4.0_R8*PI)*1.0e6_R8
+          if (mode.gt.0) then
+            ea(iCv)=e(1)/lNe(1)*1.0e-6_R8
+          else
+            ea(iCv)=e(1)/(4.0_R8*PI)*1.0e6_R8
+          end if
         enddo
       endif
       call copy(ea,1.0_R8,1,textbl)
       write(hlp_frm,'(a,i2,a,i2,a)')
      & '(a,i',len_of_digits(iwl),',a,i',len_of_digits(idwl),',a)'
       write(textwvl,hlp_frm) '(',iwl,'\mS\d',idwl,' A)'
-      if(is.lt.state%ns) then
-        stmp='Emissivity '//trim(textwvl)//
-     &       ' in photons/(m^{3} sr s)'//textpl(is)
+      if (mode.eq.1) then
+        stmp='Excitation PEC '//trim(textwvl)//' in m^{3}/s'
+      else if (mode.eq.2) then
+        stmp='Recombination PEC '//trim(textwvl)//' in m^{3}/s'
       else
         stmp='Emissivity '//trim(textwvl)//
      &       ' in photons/(m^{3} sr s)'
-      endif
+      end if
+      if(is.lt.state%ns) stmp=trim(stmp)//textpl(is)
       call customise_label(stmp,graphlabel(iwrk))
       deallocate(iae,iar,iac)
       return

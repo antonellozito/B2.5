@@ -72,6 +72,7 @@ c     -------------------------------------------------------------------------
       use b2mod_cdf
 #endif
       use b2mod_dimensions
+      use b2mod_b2plot_py
       implicit none
 
 c     INPUT
@@ -275,6 +276,8 @@ c     initialise graphics
       endif
       call GFLAS2                              ! sv 27.02.01
       call GFLAS3(1)
+c     GUI (guitraj): the tracks below, with their colours, as an overlay
+      if (b2py_traj) call gui_overlay_begin(7,'Trajectories')
 
 C Now we start.:) All particles are calculated and plotted until they
 C reach the wall or their total time runs out (particle life). Each particle
@@ -471,6 +474,10 @@ c     TRAJECTORIES:
 
 c     close Plot-Screen
 
+      if (b2py_traj) then
+        call gui_overlay_end
+        b2py_traj = .false.
+      end if
       call end_page
       call GCLWK(9)          !closing GFLASH
       call lastd
