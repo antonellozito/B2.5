@@ -40,6 +40,7 @@ c     log10 of rate coefficient (in cm3/s)
       integer, save :: extrap_mode = 1, ncall = 0
       CHARACTER*2 ELNAME
       CHARACTER*200 DSN
+      CHARACTER*32 year,tail
 *..   procedures
       logical, external :: open_file, streql
       external lower_case, xxdata_11, xerrab
@@ -54,7 +55,12 @@ c     log10 of rate coefficient (in cm3/s)
         ELNAME = is_codes(is)
         call lower_case(ELNAME)
         if (trim(ELNAME).eq.'d'.or.trim(ELNAME).eq.'t') ELNAME = 'h'
-        DSN = trim(REAC)//'/'//trim(REAC)//'_'//trim(ELNAME)//'.dat'
+        year = ' '
+        tail = ' '
+        if (scan(REAC,'0123456789').eq.0)
+     .   call adas_year(REAC,ELNAME,year,tail)
+        DSN = trim(REAC)//trim(year)//'/'//trim(REAC)//trim(year)//
+     .   '_'//trim(ELNAME)//trim(tail)//'.dat'
         if(open_file(29,DSN,
      .   'data.local/adas/adf11|modules/adas/adf11')) then
 c     reading in data
@@ -172,6 +178,218 @@ c     filling array and computing rate
       call subend ()
       return
       end subroutine get_adas_data
+
+      subroutine adas_year(reac,elname,year,tail)
+      use b2mod_types
+      IMPLICIT NONE
+*..   input parameters (unchanged on exit)
+      CHARACTER*(*) reac,elname
+*..   output data: year of the ADAS file of type reac for the element
+*..   in ratadas.filelist, as the run takes it, and the bundle suffix
+      CHARACTER*(*) year,tail
+*..   local variables
+      integer ic,ios,iyear
+      logical found
+      CHARACTER*256 line
+      CHARACTER*16 cols(7),es,bdescr
+*..   procedures
+      logical, external :: open_file, streql
+
+      year = 'none'
+      tail = ' '
+      ic = (index('acd scd ccd prb plt zcd ecd ycd',reac(1:3))+3)/4
+      if (ic.eq.8) ic = 6
+      if (ic.eq.0) return
+      if (.not.open_file(28,'ratadas.filelist',
+     .   'data.local|modules/B2.5/Database')) return
+      read(28,'(a)') line
+      read(28,'(a)') line
+      found = .false.
+      ios = 0
+      do while (ios.eq.0 .and. .not.found)
+        read(28,'(a)',iostat=ios) line
+        if (ios.eq.0) then
+          read(line,*,iostat=ios) cols,es
+          found = ios.eq.0 .and. streql(es,elname)
+        end if
+      end do
+      close(28)
+      if (.not.found) return
+      year = cols(ic)
+      read(year,*,iostat=ios) iyear
+      if (ios.eq.0 .and. iyear.gt.100) then
+        write(year,'(i2.2)') iyear/100
+        write(tail,'(a1,i2.2)') '_',mod(iyear,100)
+        read(line,*,iostat=ios) cols,es,bdescr
+        if (ios.eq.0) tail = trim(tail)//'_'//trim(bdescr)
+      end if
+      return
+      end subroutine adas_year
+
+      logical function open_eirene_data(lu,handle,fname)
+      use b2mod_types
+      use b2mod_solpstop
+      IMPLICIT NONE
+*..   input parameters (unchanged on exit)
+      integer lu
+      CHARACTER*(*) handle,fname
+*..   opens on unit lu the database file of an EIRENE handle (AMJUEL,
+*..   METHAN, HYDHEL, AMMONX) where EIRENE takes it: the path of its
+*..   CFILE card in the EIRENE input, as given, under
+*..   SOLPSTOP/modules/Eirene or under SOLPSTOP; without a CFILE card
+*..   the file fname of the run, data.local or the EIRENE database
+*..   local variables
+      integer ios
+      logical ex
+      CHARACTER*420 path
+      CHARACTER*700 try
+*..   procedures
+      logical, external :: open_file
+
+      call cfile_path(lu,handle,path)
+      if (path.ne.' ') then
+        try = path
+        inquire(file=trim(try),exist=ex)
+        if (.not.ex .and. path(1:1).ne.'/') then
+          try = trim(solpstop())//'/modules/Eirene/'//trim(path)
+          inquire(file=trim(try),exist=ex)
+        end if
+        if (.not.ex .and. path(1:1).ne.'/') then
+          try = trim(solpstop())//'/'//trim(path)
+          inquire(file=trim(try),exist=ex)
+        end if
+        if (ex) then
+          close(lu)
+          open(lu,file=trim(try),status='old',iostat=ios)
+          if (ios.eq.0) then
+            write(*,'(4a)') 'Opening ',trim(try),' (CFILE ',
+     .       trim(handle)//')'
+            open_eirene_data = .true.
+            return
+          end if
+        end if
+        write(*,'(4a)') 'CFILE path of ',trim(handle),' not found: ',
+     .   trim(path)
+      end if
+      open_eirene_data = open_file(lu,fname,
+     . 'data.local|modules/Eirene/Database')
+      return
+      end function open_eirene_data
+
+      subroutine cfile_path(lu,handle,path)
+      use b2mod_types
+      IMPLICIT NONE
+*..   input parameters (unchanged on exit)
+      integer lu
+      CHARACTER*(*) handle
+*..   output data: path of the last CFILE card of the handle in the
+*..   EIRENE input (fort.1, else input.dat; for a JSON input
+*..   eirene.input.json, else that file), blank if none
+      CHARACTER*(*) path
+*..   local variables
+      integer ios,i,j,k,l
+      logical ex
+      CHARACTER*1000 line
+      CHARACTER*4000 block
+      CHARACTER*420 token
+      CHARACTER*32 input
+      CHARACTER*6 hnd,word
+
+      path = ' '
+      hnd = handle
+      input = 'fort.1'
+      inquire(file=trim(input),exist=ex)
+      if (.not.ex) then
+        input = 'input.dat'
+        inquire(file=trim(input),exist=ex)
+      end if
+      if (.not.ex) return
+      close(lu)
+      open(lu,file=trim(input),status='old',action='read',iostat=ios)
+      if (ios.ne.0) return
+      read(lu,'(a)',iostat=ios) line
+      if (ios.eq.0 .and. line(1:1).eq.'{') then
+        close(lu)
+        inquire(file='eirene.input.json',exist=ex)
+        if (ex) input = 'eirene.input.json'
+        open(lu,file=trim(input),status='old',action='read',
+     .   iostat=ios)
+        block = ' '
+        l = 0
+        do while (ios.eq.0 .and. index(block(1:max(l,1)),']').eq.0)
+          read(lu,'(a)',iostat=ios) line
+          if (ios.eq.0 .and. l.eq.0) then
+            i = index(line,'"CFILE"')
+            if (i.gt.0) block = line(i:)
+            l = len_trim(block)
+          else if (ios.eq.0 .and.
+     .             l+len_trim(adjustl(line)).lt.len(block)) then
+            block(l+1:) = adjustl(line)
+            l = len_trim(block)
+          end if
+        end do
+        i = index(block,'{')
+        j = index(block,']')
+        do while (i.gt.0 .and. i.lt.j)
+          k = index(block(i:),'}')
+          if (k.gt.0) then
+            k = i+k-1
+            call json_text(block(i:k),'"FILE"',token)
+            if (token.ne.' ' .and. index(hnd,trim(token)).gt.0)
+     .       call json_text(block(i:k),'"PATH"',path)
+            l = index(block(k:),'{')
+            i = 0
+            if (l.gt.0) i = k+l-1
+          else
+            i = 0
+          end if
+        end do
+      else
+        do while (ios.eq.0 .and. line(1:5).ne.'*** 2')
+          i = index(line,'CFILE')
+          if (line(1:1).ne.'*' .and. i.gt.0) then
+            i = i+4+verify(line(i+5:),' ')
+            j = i+scan(line(i:),' ')-2
+            word = line(i:min(j,i+5))
+            k = verify(line(j+1:),' ')
+            if (index(hnd,word).gt.0 .and. k.gt.0) then
+              k = j+k
+              l = k+scan(line(k:),' ')-2
+              path = line(k:l)
+            end if
+          end if
+          read(lu,'(a)',iostat=ios) line
+        end do
+      end if
+      close(lu)
+      return
+      end subroutine cfile_path
+
+      subroutine json_text(text,key,val)
+      use b2mod_types
+      IMPLICIT NONE
+*..   input parameters (unchanged on exit)
+      CHARACTER*(*) text,key
+*..   output data: the string value of key in the JSON object text,
+*..   blank if none
+      CHARACTER*(*) val
+*..   local variables
+      integer i,j
+
+      val = ' '
+      i = index(text,key)
+      if (i.eq.0) return
+      i = i+len(key)
+      j = index(text(i:),':')
+      if (j.eq.0) return
+      i = i+j
+      j = index(text(i:),'"')
+      if (j.eq.0) return
+      i = i+j
+      j = index(text(i:),'"')
+      if (j.gt.1) val = text(i:i+j-2)
+      return
+      end subroutine json_text
 
       subroutine get_amjuel_data(filnam,h123,reac,crc,
      1 nCv,ne,te,mach)
@@ -616,8 +834,8 @@ C
       CHARACTER*7 C1L, C1R, C2L, C2R
       LOGICAL LCONST
       LOGICAL :: LGC1MIN,LGC1MAX,LGC2MIN,LGC2MAX
-      logical open_file
-      external open_file, xerrab, xertst
+      logical open_eirene_data
+      external open_eirene_data, xerrab, xertst
 C
       call subini('slreac_b2plot')
       call xertst(ir.le.nreac, 'SLREAC_b2plot: IR > NREAC')
@@ -661,20 +879,20 @@ C
 C
       IF (INDEX(FILNAM,'AMJUEL').NE.0) THEN
         LCONST=.FALSE.
-        call xertst(open_file(29,'AMJUEL',
-     1   'data.local|modules/Eirene/Database'), 'No AMJUEL found')
+        call xertst(open_eirene_data(29,'AMJUEL','AMJUEL'),
+     1   'No AMJUEL found')
       ELSEIF (INDEX(FILNAM,'METHAN').NE.0) THEN
         LCONST=.FALSE.
-        call xertst(open_file(29,'METHANE',
-     1   'data.local|modules/Eirene/Database'), 'No METHANE found')
+        call xertst(open_eirene_data(29,'METHAN','METHANE'),
+     1   'No METHANE found')
       ELSEIF (INDEX(FILNAM,'HYDHEL').NE.0) THEN
         LCONST=.FALSE.
-        call xertst(open_file(29,'HYDHEL',
-     1   'data.local|modules/Eirene/Database'), 'No HYDHEL found')
+        call xertst(open_eirene_data(29,'HYDHEL','HYDHEL'),
+     1   'No HYDHEL found')
       ELSEIF (INDEX(FILNAM,'AMMONX').NE.0) THEN
         LCONST=.FALSE.
-        call xertst(open_file(29,'AMMONX',
-     1   'data.local|modules/Eirene/Database'), 'No AMMONX found')
+        call xertst(open_eirene_data(29,'AMMONX','AMMONX'),
+     1   'No AMMONX found')
       ELSE
         LCONST=.TRUE.
         READ (REAC(1:9),'(E9.2)') CONST

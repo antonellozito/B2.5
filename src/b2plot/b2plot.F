@@ -8724,9 +8724,9 @@ cdpc still in testing phase
             end if
           end do
           call extend(work(1,0,iwrk),mpg,ndim(2,iwrk))
-          values(9)=minval(work(-1:ndim(1,iwrk),
+          values(9)=minval(work(1:ndim(1,iwrk),
      1         0:ndim(2,iwrk)-1,iwrk))
-          values(10)=maxval(work(-1:ndim(1,iwrk),
+          values(10)=maxval(work(1:ndim(1,iwrk),
      1         0:ndim(2,iwrk)-1,iwrk))
           textwk(0:ndim(2,iwrk)-1,iwrk)=textewk(0:ndim(2,iwrk)-1,iewrk)
           graphlabel(iwrk)=eirene_label(iewrk)
