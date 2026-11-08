@@ -71,8 +71,6 @@ C          (I*4)  IREAD     = INPUT STREAM FOR OPEN STATEMENT
 C          (I*4)  IZ0SV     = LAST IZ0 USED IN THIS ROUTINE
 C          (I*4)  ICLSV     = LAST ICLASS USED IN THIS ROUTINE
 C          (I*4)  INDXZ1    = LOCATION OF IZ1 IN ZDATA()
-C          (I*4)  LCK       = MUST BE GREATER THAN 'ITMAXD' & 'IDMAXD'
-C                             & 'ITMAX' - ARRAY SIZE FOR SPLINE CALCS.
 C          (R*8)  A()       = GENERAL ARRAY
 C          (R*8)  DRCOF0(,) = INTERPOLATION OF DRCOFD(,,) W.R.T DTEV()
 C          (L*8)  LEXIST    = TRUE --- FILE TO OPEN EXISTS ELSE FALSE
@@ -130,10 +128,10 @@ C                                          SET IOPT=4 FOR IONBAL
 C
 C-----------------------------------------------------------------------
 C
-      INTEGER   L1, IREAD, LCK, IDMAXD_LOC
+      INTEGER   L1, IREAD, IDMAXD_LOC
 C
       PARAMETER ( L1    =  1 )
-      PARAMETER ( IREAD = 12 , LCK = 5000 , IDMAXD_LOC = 40 )
+      PARAMETER ( IREAD = 12 , IDMAXD_LOC = 40 )
 C
       INTEGER   IOPT
 C
@@ -148,7 +146,7 @@ c
 C
       real (kind=R8) :: A(IDMAXD_LOC)
       real (kind=R8) :: DY(IDMAXD_LOC)
-      real (kind=R8) :: DRCOF0(LCK,IDMAXD_LOC)
+      real (kind=R8), allocatable :: DRCOF0(:,:)
 C
       CHARACTER YEAR*2  , YEARSV*2  , TITLF*80  , EVCUT*6
       CHARACTER SEQUA*2 , DSNAME*256, STRING*80 , BLANKS*40
@@ -281,16 +279,6 @@ C
         IFAIL=2
         GOTO 9999
       ENDIF
-      IF (LCK.LT.MAX(IDMAXD,ITMAXD,ITMAX)) THEN
-        WRITE(6,1020) 'LOCALS ARRAYS TOO SMALL'
-        WRITE(6,1020)
-     .   'LCK MUST BE LARGER THAN ITMAXD, IDMAXD AND ITMAX'
-        WRITE(6,1110) LCK,ITMAXD,IDMAXD,ITMAX
- 1110   FORMAT('LCK = ',I4,' ITMAXD = ',I4,' IDMAXD = ',I4,
-     .   ' ITMAX = ',I4)
-        IFAIL=2
-        GOTO 9999
-      ENDIF
       IF (IDMAXD.GT.ITDIMD .OR. ITMAXD.GT.ITDIMD) THEN
         if(IDMAXD.GT.ITDIMD)
      1   write(*,*) 'IDMAXD,ITDIMD ',IDMAXD,ITDIMD
@@ -352,6 +340,7 @@ C>>>>>>INTERPOLATE DRCOFD(,,,) W.R.T TEMPERATURE
 C
       LSETX = .TRUE.
       IOPT  = 4
+      allocate(DRCOF0(max(ITMAX,1),IDMAXD))
 C
       DO ID = 1 , IDMAXD
 C
@@ -383,6 +372,7 @@ C
      &               DY )
 C
       END DO
+      deallocate(DRCOF0)
 C
 C-----------------------------------------------------------------------
 C

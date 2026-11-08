@@ -67,7 +67,7 @@ C
             zmin=min(zmin,drcofi(iCv))
             zmax=max(zmax,drcofi(iCv))
             dspec(iCv,is)=state%dv%ne(iCv)*state%pl%na(iCv,is)*
-     1         1.0e-6_R8*10.0_R8**drcofi(itmax)/4.0_R8/pi
+     1         1.0e-6_R8*10.0_R8**drcofi(iCv)/4.0_R8/pi
           enddo
           write(*,*) 'is,zmin,zmax ',is,zmin,zmax
           if (iz1.eq.iz0) write(*,'()')

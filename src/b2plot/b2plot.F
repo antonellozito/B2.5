@@ -7026,6 +7026,17 @@ c
         case('chmp')     ! plots a contour plot of the chord contribution to the mesh element
           if(bad_args(stack_req)) return
           call map_chords(spop(sstack,isstack))
+        case('chmf')     ! contribution of a chord to the cells
+          stack_req=(/2,0,0,0,0,0,0/)
+          if(bad_args(stack_req)) return
+          call chord_weights(istack(iistack-1),istack(iistack),.false.,
+     .     mpg%nCv,mach(:,0))
+          nz=1
+          call copy(mach,1.0_R8,nz,textbl)
+          write(graphlabel(iwrk),'(a,i0,a,i0)')
+     .     'Contribution of chord ',istack(iistack),' of set ',
+     .     istack(iistack-1)
+          call pop_stack(stack_req)
         case('cam')      ! camera plot
           if(bad_args(stack_req)) return
           call process_camera(spop(sstack,isstack))
@@ -8873,6 +8884,19 @@ cdpc still in testing phase
           stack_req=(/0,0,1,0,1,0,0/)
           if(bad_args(stack_req)) return
           call map_eirene_chords(spop(sstack,isstack))
+        case('echmf')    ! contribution of a chord to the triangles
+          stack_req=(/2,0,0,0,0,0,0/)
+          if(bad_args(stack_req)) return
+#ifdef B25_EIRENE
+          call chord_weights(istack(iistack-1),istack(iistack),.true.,
+     .     ntrii,emach(1,1:ntrii))
+          nz=1
+          call eirene_copy(emach(1:nz,1:ntrii),1.0_R8,nz,textbl)
+          write(eirene_label(iewrk),'(a,i0,a,i0)')
+     .     'Contribution of chord ',istack(iistack),' of set ',
+     .     istack(iistack-1)
+#endif
+          call pop_stack(stack_req)
         case('ecam')     ! camera plot of Eirene stack data
           stack_req=(/0,0,1,0,1,0,0/)
           if(bad_args(stack_req)) return

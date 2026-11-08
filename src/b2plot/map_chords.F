@@ -65,3 +65,55 @@ c
       close(90)
       return
       end subroutine map_chords
+
+c Contribution of chord ich of set iset (the *.chords files read as for
+c b2chords.nc) to each cell (tria false, w(nCv)) or Eirene triangle
+c (tria true, w(ntrii)), sampled as chmp and echmp draw it
+      subroutine chord_weights(iset,ich,tria,n,w)
+      use b2mod_types
+      use b2us_data
+      use b2mod_chords, only : read_chord_files
+#ifdef B25_EIRENE
+      use eirmod_ctrig
+#endif
+      implicit none
+      integer iset,ich,n
+      logical tria
+      real (kind=R8) :: w(n)
+      character*80, allocatable :: setname(:), setlabel(:)
+      integer, allocatable :: setnp(:), cset(:), cnum(:)
+      real (kind=R8), allocatable :: cxyz(:,:,:), cval(:)
+      real (kind=R8) :: p(3), q(3), m(3)
+      integer :: nset, nch, k, i, np, ic
+      logical :: found
+
+      w = 0.0_R8
+      call read_chord_files(nset, setname, setlabel, setnp, nch,
+     . cset, cnum, cxyz, cval)
+      do k = 1, nch
+        if (cset(k).ne.iset .or. cnum(k).ne.ich) cycle
+        np = max(abs(setnp(iset)),1)
+        p = cxyz(1:3,1,k)
+        do i = 1, np
+          q = cxyz(1:3,1,k)+real(i,R8)/real(np,R8)*
+     .     (cxyz(1:3,2,k)-cxyz(1:3,1,k))
+          m = 0.5_R8*(p+q)
+          found = .false.
+          ic = 0
+          if (tria) then
+#ifdef B25_EIRENE
+            call chord_tria_find(ntrii,nrknot,necke,xtrian,ytrian,
+     .       m(1),m(2),m(3),found,ic)
+#endif
+          else
+            call chord_find(mpg,geo,m(1),m(2),m(3),found,ic)
+          end if
+          if (found.and.ic.ge.1.and.ic.le.n) w(ic) = w(ic)+
+     .     1.0_R8/real(np,R8)
+          p = q
+        end do
+      end do
+      if (allocated(setname)) deallocate(setname, setlabel, setnp)
+      if (allocated(cset)) deallocate(cset, cnum, cxyz, cval)
+      return
+      end subroutine chord_weights
