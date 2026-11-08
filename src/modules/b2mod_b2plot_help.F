@@ -4,8 +4,8 @@
 
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
-      parameter(nlabels=429,nfns=238,nsparameters=34,nelabels=36,
-     *     nconstants=10,nefns=49,nwfns=62,nwlabels=97,ntrgfns=89)
+      parameter(nlabels=429,nfns=239,nsparameters=34,nelabels=36,
+     *     nconstants=10,nefns=50,nwfns=62,nwlabels=97,ntrgfns=89)
 
       integer, save ::
      * dimensions(nlabels), wdimensions(nwlabels), edimensions(nelabels)
@@ -731,7 +731,7 @@
      8 'sprt' , 'list' , 'acol' , 'dcol'   , 'wcol'  ,
      9 'tcol' , 'lfsz' , 'zwid' , 'psxperp', 'expl'  ,
      * 'exps' , 'mdims', 'itoe' , 'rtoe'   , 'stoe'  /
-      data fns(201:238) /
+      data fns(201:239) /
      1 'trigmesh', 'earox', 'earoy', 'earow', 'nice' ,
      2 'glsz' , 'mpsi' , 'fpsi' , 'rpsi'   , 'etal'  ,
      3 'fcol' , 'bold' , 'rmaj' , 'f.imp'  , 'f.omp' ,
@@ -739,7 +739,7 @@
      5 'sync' , 'help' , 'dflt' , 'guigeom', 'guifield',
      6 'guiefld', 'guivect', 'guievect', 'guiclv', 'guieclv',
      7 'guimvinf', 'mvframe', 'mvframev', 'mvfrstd', 'guiwfld',
-     8 'guitraj', 'samju', 'npec' /
+     8 'guitraj', 'samju', 'npec', 'chmf' /
       data wlabels /
      1 'wallarea', 'ei'      , 'wallflux', 'wallhflx', 'r1'      ,
      2 'r2'      , 'z1'      , 'z2'      , 'walltemp', 'plathick',
@@ -898,7 +898,7 @@
      7 'emge' , 'elog' , 'eln'  , 'esqrt', 'eexp' ,
      8 'ezrng', 'echs' , 'etos' , 'epos' , 'evac' ,
      9 'echor', 'echbx', 'echvl', 'echmp', 'ecam' ,
-     * 'eoutp', 'eprt' , 'eavg', 'eamju'/
+     * 'eoutp', 'eprt' , 'eavg', 'eamju', 'echmf'/
       data wfns /
      1 'wall' , 'wall_ank', 'logw' , 'linw' , 'logxw',
      2 'linxw', 'plwl'    , 'sumw' , 'intw' , 'intw*',
