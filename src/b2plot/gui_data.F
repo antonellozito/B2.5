@@ -103,6 +103,7 @@ c Overlays drawn by the b2plot routines, without the window clipping
       call gui_send_structure
       call gui_send_wall
       call gui_send_chords
+      call gui_send_targets
       xlo = gwin(1)
       xhi = gwin(2)
       ylo = gwin(3)
@@ -723,3 +724,34 @@ c role 6, one per set named by its label, each chord sampled in (R, Z)
       if (allocated(cset)) deallocate(cset, cnum, cxyz, cval)
       return
       end subroutine gui_send_chords
+
+c Divertor targets of the grid map as OVERLAY role 8, one per target
+c named by its number (one line per face); targets counted as by the
+c other b2plot routines, maxval of strDiv
+      subroutine gui_send_targets
+      use b2mod_types
+      use b2us_data
+      use b2mod_b2plot_py
+      implicit none
+      character*8 :: name
+      integer :: id, i, iFc
+      if (.not.(allocated(mpg%strDiv).and.allocated(mpg%divFcP).and.
+     .    allocated(mpg%divFc))) return
+      if (size(mpg%strDiv).eq.0) return
+      do id = 1, min(maxval(mpg%strDiv),size(mpg%divFcP,1))
+        if (mpg%divFcP(id,2).le.0) cycle
+        write(name,'(i0)') id
+        call gui_overlay_begin(8,trim(name))
+        do i = 1, mpg%divFcP(id,2)
+          iFc = mpg%divFc(mpg%divFcP(id,1)+i-1)
+          call b2py_begin(40)
+          call b2py_put_r4(real(geo%vxX(mpg%fcVx(iFc,1)),R4))
+          call b2py_put_r4(real(geo%vxY(mpg%fcVx(iFc,1)),R4))
+          call b2py_put_r4(real(geo%vxX(mpg%fcVx(iFc,2)),R4))
+          call b2py_put_r4(real(geo%vxY(mpg%fcVx(iFc,2)),R4))
+          call b2py_end
+        end do
+        call gui_overlay_end
+      end do
+      return
+      end subroutine gui_send_targets
