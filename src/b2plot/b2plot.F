@@ -947,6 +947,24 @@ cxpb  Bring in wall data and compute oft-needed wall quantities
      *   trg_tmp(1:nwall,1:ndepth_nml))
       call alloc_b2mod_b2plot_wall(nsd_local,natmi,nmoli,nioni,
      *   nwall,ndepth_nml,wklng)
+#else
+      write(*,*) 'Calling alloc_b2mod_sputter'
+      if (mpg%isClassicalGrid.eq.1.and.mpg%nx.le.DEF_NXD.and.
+     .    mpg%ny.le.DEF_NYD) then
+        call alloc_b2mod_sputter(mpg%nx,mpg%ny,ns)
+        call alloc_b2mod_layer(mpg%nx,mpg%ny,DEF_NCUT,DEF_NLIM,DEF_NSTS)
+      else
+        call alloc_b2mod_sputter(0,0,ns)
+        call alloc_b2mod_layer(0,0,DEF_NCUT,DEF_NLIM,DEF_NSTS)
+      endif
+      call alloc_b2mod_wall(ns)
+      call alloc_b2mod_wall_elements(nwall)
+      call init_wall_elements(mpg,geo)
+      call read_b2mod_wall_namelist(99,'    ',found)
+      allocate(wall_tmp(1:nwall,0:nsd_local-1+natmi+nmoli+nioni),
+     *   trg_tmp(1:nwall,1:ndepth_nml))
+      call alloc_b2mod_b2plot_wall(nsd_local,natmi,nmoli,nioni,
+     *   nwall,ndepth_nml,wklng)
 #endif
       call build_reverse_mapping(mpg)
       call alloc_b2mod_b2plot_ank(nwall)
@@ -1026,6 +1044,46 @@ cxpb  Western boundary
      &         gs(ixf,iyf,idir)*
      &         ((0.5_R8*mp*am_ext(is)*ua_ext(ix,iy,is)**2+
      &           ta_ext(ix,iy,is))*(1.0_R8-switch%BoRiS) + pxf*ev)
+        enddo
+      enddo
+#else
+      call get_wall_data(mpg,geo,state%dv,state_ext,ns,switch%BoRiS,
+     .  found)
+      wall_flux=0.0_R8
+      incident_energy=0.0_R8
+      do ibnd = 1, nbnd
+        iFc = imapfc(ibnd)
+        iCv = max(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+        isign = merge(1,-1,mpg%fcCv(iFc,2).eq.iCv)
+        Phi_app = get_phi_applied(boundary_namelist,mpg,iFc)
+        wall_heatflux(ibnd)=max(0.0_R8,
+     .    isign*(state%dv%fht(iFc,0)+state%dv%fht(iFc,1)+
+     .           state_ext%fhi(iFc,0)+state_ext%fhi(iFc,1)))/
+     .                                 geo%fcS(iFc)
+*    ..compute cell-faced quantities
+        do is = 0, ns-1
+          zaf(is) = (state%rt%rza(mpg%fcCv(iFc,1),is)*geo%fcHc(iFc,2)+
+     .               state%rt%rza(mpg%fcCv(iFc,2),is)*geo%fcHc(iFc,1))/
+     .              (geo%fcHc(iFc,1)+geo%fcHc(iFc,2))
+        enddo
+        tif = (state%pl%ti(mpg%fcCv(iFc,1))*geo%fcHc(iFc,2)+
+     .         state%pl%ti(mpg%fcCv(iFc,2))*geo%fcHc(iFc,1))/
+     .        (geo%fcHc(iFc,1)+geo%fcHc(iFc,2))
+        do is = 0, ns-1
+          incident_energy(ibnd,is)=
+     .     max(0.0_R8,tif/ev+(state%pl%po(iCv)-Phi_app)*zaf(is))
+          wall_flux(ibnd,is)=max(0.0_R8,
+     .     isign*(state%dv%fna(iFc,0,is)+state%dv%fna(iFc,1,is)))
+        enddo
+        do is = 0, state_ext%ns-1
+          pxf = (state_ext%pt(mpg%fcCv(iFc,1),is)*geo%fcHc(iFc,2)+
+     &           state_ext%pt(mpg%fcCv(iFc,2),is)*geo%fcHc(iFc,1))/
+     &          (geo%fcHc(iFc,1)+geo%fcHc(iFc,2))
+          wall_heatflux(ibnd)=wall_heatflux(ibnd)+
+     &     max(0.0_R8,isign*(state_ext%fa(iFc,0,is)+
+     &                       state_ext%fa(iFc,1,is)))/geo%fcS(iFc)*
+     &         ((0.5_R8*mp*state_ext%am(is)*state_ext%ua(iCv,is)**2+
+     &           state_ext%ta(iCv,is))*(1.0_R8-switch%BoRiS) + pxf*ev)
         enddo
       enddo
 #endif
@@ -8699,7 +8757,8 @@ c
       end subroutine select_eirene_command
 
       subroutine select_wall_stack
-      integer i, ibnd, itrack
+      integer i
+      integer ibnd, itrack
 
       cflag=.true.
       WVALUE: select case(cval)
