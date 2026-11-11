@@ -23,6 +23,11 @@
      &          b2stbr_first_flight_sna0to1,
      &          b2stbr_first_flight_she0to3,b2stbr_first_flight_shi0to3,
 #endif
+     &          eirene_mc_papl_sna0to1, eirene_mc_pmpl_sna0to1,
+     &          eirene_mc_pipl_sna0to1, eirene_mc_pppl_sna0to1,
+     &          eirene_mc_core_sna0to1, eirene_aver_sna0to1,
+     &          eirene_aver_smo0to3, eirene_aver_she0to3,
+     &          eirene_aver_shi0to3, b2stbr_sch0to3,
      &          balance_netcdf
 #endif
       use b2mod_subsys
@@ -670,6 +675,21 @@ cxpb This formula is meant for tungsten when l_ion < 5 * rho_i
      &                (.not.mpg%cvOnClosedSurface(iCv))) then
                 sna0_eir(iCv,0,is) = sna0_eir(iCv,0,is)*t(k)
                 sna0_eir(iCv,1,is) = sna0_eir(iCv,1,is)*t(k)
+#ifndef FIXED_POINT
+*   ..the parts of the EIRENE source in balance.nc: rescaled as well
+                if (allocated(eirene_mc_papl_sna0to1)) then
+                  eirene_mc_papl_sna0to1(iCv,:,is,:) =
+     &             eirene_mc_papl_sna0to1(iCv,:,is,:)*t(k)
+                  eirene_mc_pmpl_sna0to1(iCv,:,is,:) =
+     &             eirene_mc_pmpl_sna0to1(iCv,:,is,:)*t(k)
+                  eirene_mc_pipl_sna0to1(iCv,:,is,:) =
+     &             eirene_mc_pipl_sna0to1(iCv,:,is,:)*t(k)
+                  eirene_mc_pppl_sna0to1(iCv,:,is,:) =
+     &             eirene_mc_pppl_sna0to1(iCv,:,is,:)*t(k)
+                  eirene_mc_core_sna0to1(iCv,:,is) =
+     &             eirene_mc_core_sna0to1(iCv,:,is)*t(k)
+                endif
+#endif
               end if
               sna_eir(k) = sna_eir(k) +
      &           sna0_eir(iCv,0,is) +
@@ -723,6 +743,18 @@ cwdk       down in this routine
 
 cwdk if ird_aver > 0, all sources computed by Eirene are overwritten (!!!),
 cwdk i.e. fully replaced by the averaged values from b2faveri
+#ifndef FIXED_POINT
+*   ..balance.nc: the change of the sources by the averaging, the
+*     instantaneous sources are in the eirene_mc arrays
+          if (balance_netcdf.ne.0) then
+            eirene_aver_sna0to1 = -sna0_eir
+            eirene_aver_smo0to3 = -smo0_eir
+            eirene_aver_she0to3 = -she0_eir
+            eirene_aver_shi0to3 = -shi0_eir
+            if (switch%tn_style.eq.0)
+     &       eirene_aver_shi0to3 = eirene_aver_shi0to3 - shn0_eir
+          endif
+#endif
           sna0_eir = 0.0_R8
           smo0_eir = 0.0_R8
           smr0_eir = 0.0_R8
@@ -749,6 +781,16 @@ cwdk these are now put back into the constant part of the sources (0-component)
           she0_eir(:,0) = st%srw%she0_eir_tot
           shi0_eir(:,0) = st%srw%shi0_eir_tot
           shn0_eir(:,0) = st%srw%shn0_eir_tot
+#ifndef FIXED_POINT
+          if (balance_netcdf.ne.0) then
+            eirene_aver_sna0to1 = eirene_aver_sna0to1 + sna0_eir
+            eirene_aver_smo0to3 = eirene_aver_smo0to3 + smo0_eir
+            eirene_aver_she0to3 = eirene_aver_she0to3 + she0_eir
+            eirene_aver_shi0to3 = eirene_aver_shi0to3 + shi0_eir
+            if (switch%tn_style.eq.0)
+     &       eirene_aver_shi0to3 = eirene_aver_shi0to3 + shn0_eir
+          endif
+#endif
         endif
 
         st%srw%sna0 = st%srw%sna0 + sna0_eir
@@ -847,6 +889,9 @@ cwdk remove this if-test, to allow runs without Eirene if code is compiled with 
      2 st%srw%sch0(:,1)*st%pl%po(:)+
      3 st%srw%sch0(:,2)*st%dv%ne(:)+
      4 st%srw%sch0(:,3)*st%dv%ne(:)*st%pl%po(:)
+#ifndef FIXED_POINT
+      if (balance_netcdf.ne.0) b2stbr_sch0to3 = st%srw%sch0
+#endif
       st%srw%b2stbr_skt(:)=
      1 st%srw%skt0(:,0)+
      2 st%srw%skt0(:,1)*st%pl%kt(:)+

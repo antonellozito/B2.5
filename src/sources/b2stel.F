@@ -309,6 +309,11 @@
       srw%rrahi=0.0_R8
       srw%rramo=0.0_R8
       srw%rqahe=0.0_R8
+#ifndef FIXED_POINT
+*   ..electron energy of each species for balance.nc: the energy given
+*     back on recombination (fix_recomb, below) and the cooling
+      if (balance_netcdf.ne.0) b2stel_she0to3 = 0.0_R8
+#endif
 
       do is = 1, ns-1
        if (lnext(is-1,is)) then
@@ -380,6 +385,15 @@ c accounted for)
      &        t0*rt%rpi(iCv,is)*ev*pl%na(iCv,is)
              srw%she0(iCv,3) = srw%she0(iCv,3)-rf0*
      &        t0*rt%rpi(iCv,is)*ev*pl%na(iCv,is)/(dv%ne(iCv)*pl%te(iCv))
+#ifndef FIXED_POINT
+             if (balance_netcdf.ne.0) then
+               b2stel_she0to3(iCv,0,is) = b2stel_she0to3(iCv,0,is)+
+     &          (1.0_R8+rf0)*t0*rt%rpi(iCv,is)*ev*pl%na(iCv,is)
+               b2stel_she0to3(iCv,3,is) = b2stel_she0to3(iCv,3,is)-
+     &          rf0*t0*rt%rpi(iCv,is)*ev*pl%na(iCv,is)/
+     &          (dv%ne(iCv)*pl%te(iCv))
+             endif
+#endif
              srw%rqahe(iCv,is) = srw%rqahe(iCv,is) -
      &        t0*rt%rpi(iCv,is)*ev*pl%na(iCv,is)
              rqahereg(mpg%cvReg(iCv),is) =
@@ -442,9 +456,10 @@ c accounted for)
      &     (1.0_R8+rf0)*t0/(dv%ne(iCv)*pl%te(iCv))
 #ifndef FIXED_POINT
           if (balance_netcdf.ne.0) then
-            b2stel_she0to3(iCv,0,is) = rf0*t0
-            b2stel_she0to3(iCv,3,is) =
-     &           -(1.0_R8+rf0)*t0/(dv%ne(iCv)*pl%te(iCv))
+            b2stel_she0to3(iCv,0,is) = b2stel_she0to3(iCv,0,is)+
+     &           rf0*t0
+            b2stel_she0to3(iCv,3,is) = b2stel_she0to3(iCv,3,is)-
+     &           (1.0_R8+rf0)*t0/(dv%ne(iCv)*pl%te(iCv))
           endif
 #endif
           srw%rqahe(iCv,is) = srw%rqahe(iCv,is) + t0

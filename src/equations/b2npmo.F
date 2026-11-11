@@ -13,7 +13,10 @@
       use b2mod_balance !djm Jan2017
      1 , only : update_balance_sources_momentum,
      2          update_balance_eirene_sources_momentum,
-     3          balance_netcdf, fmo_b2nxfv, tot_smo0to3, fmo_tot
+     3          balance_netcdf, fmo_b2nxfv, tot_smo0to3, fmo_tot,
+     4          b2smdt_smo0to3, b2siav_smovh0to3, b2siav_smovv0to3,
+     5          b2siav_smovi0to3, resmo_bal, b2mndt_smo_bal,
+     6          fmo_wrk, fkb_wrk, cvsb_wrk
 #endif
       use b2mod_numerics_namelist
       use b2mod_transport_fun                                          !srv 13.01.17
@@ -356,6 +359,9 @@ c time-dependent treatment
 #ifndef FIXED_POINT
 !$omp& shared(balance_netcdf, fmo_b2nxfv)
 !$omp& shared(fmo_tot, tot_smo0to3)
+!$omp& shared(b2smdt_smo0to3, b2siav_smovh0to3, b2siav_smovv0to3)
+!$omp& shared(b2siav_smovi0to3, resmo_bal, b2mndt_smo_bal)
+!$omp& shared(fmo_wrk, fkb_wrk, cvsb_wrk)
 !$omp& private(robf, ubf)
 #endif
 !$omp& shared(is_neutral)
@@ -516,21 +522,6 @@ c time-dependent treatment
        call b2saxpy (nCv*4, 1.0_R8, smbcf,  1, smb, 1)                  !srv 03.07.08 }
        call b2saxpy (nCv*4, 1.0_R8, smban,  1, smb, 1)                  !srv 25.09.17
        call b2nxdv (nCv,is,switch,mpg,rob,sr%smq(:,:,is),smqdu,smb)     !srv
-#ifndef FIXED_POINT
-cdjm Jan2017 update momentum source components for balance
-       if (balance_netcdf.ne.0) then
-         tot_smo0to3(:,:,is)=smb !djm Mar2019
-        call intface(nCv,nFc,mpg%fcCv,geo%fcVol,pl%ua(:,is),ubf)
-        call intface(nCv,nFc,mpg%fcCv,geo%fcVol,rob,robf)
-        call update_balance_sources_momentum(nCv,nFc,is,pl%ua(:,is),rob,
-     &    ubf,robf)
-       endif
-       if (balance_netcdf.ne.0 .or.
-     &    switch%write_eirene_sources.ne.0) then
-        call update_balance_eirene_sources_momentum(
-     &   nCv,is,pl%ua(1,is),rob)
-       endif
-#endif
 
 *    ..time-dependent treatment
 *    ..compute residual without time-stepping sources (needed at next time-step for ckn scheme)
@@ -558,6 +549,28 @@ cdjm Jan2017 update momentum source components for balance
          sr%smodt(:,0,is) = sr%smodt(:,0,is)-ts_factor*wrk3(:,is)
          smb = smb + sr%smodt(:,:,is)
        endif
+#ifndef FIXED_POINT
+cdjm Jan2017 update momentum source components for balance
+       if (balance_netcdf.ne.0) then
+*    ..the viscosity terms as added to smb above, and the time
+*      derivative of b2mndt_style 2
+         b2siav_smovh0to3(:,:,is)=smbvh
+         b2siav_smovv0to3(:,:,is)=smbvv
+         b2siav_smovi0to3(:,:,is)=smbvi
+         if (switch%b2mndt_style.eq.2)
+     &    b2smdt_smo0to3(:,:,is)=sr%smodt(:,:,is)
+         tot_smo0to3(:,:,is)=smb !djm Mar2019
+        call intface(nCv,nFc,mpg%fcCv,geo%fcVol,pl%ua(:,is),ubf)
+        call intface(nCv,nFc,mpg%fcCv,geo%fcVol,rob,robf)
+        call update_balance_sources_momentum(nCv,nFc,is,pl%ua(:,is),rob,
+     &    ubf,robf)
+       endif
+       if (balance_netcdf.ne.0 .or.
+     &    switch%write_eirene_sources.ne.0) then
+        call update_balance_eirene_sources_momentum(
+     &   nCv,is,pl%ua(1,is),rob)
+       endif
+#endif
 
 *    ..compute residual
       if((solving.and.any(solvemo(is,0:mpg%nnreg(0))))
@@ -585,6 +598,31 @@ cdjm Jan2017 update momentum source components for balance
 cdjm Mar2019 output the total momentum flux and source for balance
       if (balance_netcdf.ne.0) then
         fmo_tot(:,:,is)=dv%fmo(:,:,is)
+      endif
+#endif
+#ifndef FIXED_POINT
+*   ..residual for balance.nc, before the solver sets it to zero in some
+*     cells; computed here also where it is not computed above
+      if (balance_netcdf.ne.0) then
+*   ..what the time integration scheme adds to the residual
+        b2mndt_smo_bal(:,is) = 0.0_R8
+        if (switch%b2mndt_ckn.eq.2) then
+          b2mndt_smo_bal(1:mpg%nCi,is) = psnl%resmo0(1:mpg%nCi,is)
+        elseif (switch%b2mndt_bdf.eq.2) then
+          b2mndt_smo_bal(1:mpg%nCi,is) =
+     &      0.5_R8*psnl%dmodt(1:mpg%nCi,is)
+        endif
+        if((solving.and.any(solvemo(is,0:mpg%nnreg(0))))
+     &      .or.switch%get_residuals.eq.1) then
+          resmo_bal(:,is) = dv%resmo(:,is)
+        else
+          call b2urmo (nCv, nFc, nVx, switch, geo, mpg, is,
+     &      pl%ua(:,is), rob, smb, flub, co%cvsahz(:,:,is),
+     &      resmo_bal(:,is), fmo_wrk(:,:,is), fkb_wrk(:,:,is),
+     &      cvsb_wrk(:,:,is))
+          resmo_bal(:,is) = resmo_bal(:,is) + b2mndt_smo_bal(:,is)
+          fmo_tot(:,:,is) = fmo_wrk(:,:,is)
+        endif
       endif
 #endif
 

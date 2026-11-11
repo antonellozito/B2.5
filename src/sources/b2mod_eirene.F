@@ -3055,6 +3055,15 @@ c     *             recyctmp*flux_scale(istrai)
                     call xerrab ('Error in value of eirene_dpc_fix!')
                   else if(dpc_fix.eq.0) then
                                                   ! original wrong code
+#ifndef FIXED_POINT
+                    if (balance_netcdf.ne.0 .or.
+     *                  switch%write_eirene_sources.ne.0) then
+                      t0_a = sni_av_papl(ic,ifl,istrai)*gs_prod_4
+                      t0_m = sni_av_pmpl(ic,ifl,istrai)*gs_prod_4
+                      t0_i = sni_av_pipl(ic,ifl,istrai)*gs_prod_4
+                      t0_p = sni_av_pppl(ic,ifl,istrai)*gs_prod_4
+                    endif
+#endif
                   else if(dpc_fix.eq.1) then
                     t0=t00                        ! dpc fix!
 #ifndef FIXED_POINT
@@ -3094,6 +3103,25 @@ c     *             recyctmp*flux_scale(istrai)
                     endif
 #endif
                   endif
+#ifndef FIXED_POINT
+*   ..with dpc_fix 0, t0 of recombination strata is not computed from
+*     the parts above: the parts are made to add up to it
+                  if (dpc_fix.eq.0 .and. crcstra(istrai).eq.'V' .and.
+     &                t00.le.0.0_R8 .and. (balance_netcdf.ne.0 .or.
+     &                switch%write_eirene_sources.ne.0)) then
+                    if (t00.ne.0.0_R8) then
+                      t0_a = t0_a*t0/t00
+                      t0_m = t0_m*t0/t00
+                      t0_i = t0_i*t0/t00
+                      t0_p = t0_p*t0/t00
+                    else
+                      t0_a = t0
+                      t0_m = 0.0_R8
+                      t0_i = 0.0_R8
+                      t0_p = 0.0_R8
+                    endif
+                  endif
+#endif
 
 c                  if (t0.lt.0.0_R8.and.main_call.and.
 c     &                crcstra(istrai).ne.'V'.and.output_style.ge.1) then !{
@@ -3825,9 +3853,10 @@ c     *               recyctmp*flux_scale(istrai)
 
 csw 26mar2013 (for TESTING)
                     if(iscltst .eq. 0) then
-                      if(crcstra(istrai).ne.'V' .or. t3.gt.0.0_R8)
-     -                 t3=t3*sclalph(j,istrai)
+                      if(crcstra(istrai).ne.'V' .or. t3.gt.0.0_R8) then
+                       t3=t3*sclalph(j,istrai)
 #ifndef FIXED_POINT
+*   ..the parts for balance.nc are scaled in the same cases
                        if (balance_netcdf.ne.0 .or.
      *                     switch%write_eirene_sources.ne.0) then
                          t3_apl=t3_apl*sclalph(j,istrai) !djm Jan2017
@@ -3836,10 +3865,12 @@ csw 26mar2013 (for TESTING)
                          t3_ppl=t3_ppl*sclalph(j,istrai)
                        endif
 #endif
+                      endif
                     else
-                      if(crcstra(istrai).ne.'V' .or. t3.gt.0.0_R8)
-     -                 t3=t3*sclstra(j,istrai)
+                      if(crcstra(istrai).ne.'V' .or. t3.gt.0.0_R8) then
+                       t3=t3*sclstra(j,istrai)
 #ifndef FIXED_POINT
+*   ..the parts for balance.nc are scaled in the same cases
                        if (balance_netcdf.ne.0 .or.
      *                     switch%write_eirene_sources.ne.0) then
                          t3_apl=t3_apl*sclstra(j,istrai) !djm Jan2017
@@ -3848,6 +3879,7 @@ csw 26mar2013 (for TESTING)
                          t3_ppl=t3_ppl*sclstra(j,istrai)
                        endif
 #endif
+                      endif
                     endif
 
 csw 06mar2012 total correction

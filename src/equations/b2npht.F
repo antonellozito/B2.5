@@ -17,7 +17,10 @@
 #ifndef FIXED_POINT
       use b2mod_balance !djm Jan2017
      & , only : b2npht_shei_bal, update_balance_sources_heat,
-     &          balance_netcdf, update_balance_eirene_sources_heat
+     &          balance_netcdf, update_balance_eirene_sources_heat,
+     &          b2shdt_she0to3, b2shdt_shi0to3, b2sikt_she0to3,
+     &          b2sikt_shi0to3, reshe_bal, reshi_bal, b2mndt_she_bal,
+     &          b2mndt_shi_bal
 #endif
       use b2mod_ad
      & , only : ncall_b2npht, rxg_npht
@@ -248,17 +251,6 @@ c make sure fhn is zero when not solving a separate neutral energy equation
         call b2saxpy (nCv, 1.0_R8, skt_diss, 1, sr%skt_diss, 1)
       endif
 
-#ifndef FIXED_POINT
-cdjm Jan2017 update particle source components for balance
-      if (balance_netcdf.ne.0) then
-        call update_balance_sources_heat(nCv,dv%ne,dv%ni,pl%te,pl%ti,ns)
-      endif
-      if (balance_netcdf.ne.0 .or.
-     &    switch%write_eirene_sources.ne.0) then
-        call update_balance_eirene_sources_heat
-     .   (nCv,dv%ne,dv%ni,pl%te,pl%ti)
-      endif
-#endif
 !fc This is the new positioning of time-dependent treatment
 !fc It had to be moved here to allow for the use of Crank-Nicolson
 *    ..compute residual without time-stepping sources (needed at next time-step for ckn scheme)
@@ -367,6 +359,27 @@ cc while the second contribution corresponds to T dn/dt
           szt0 = szt0 + sr%sztdt
         endif
       endif                                                              !srv 207.07.21 }
+#ifndef FIXED_POINT
+cdjm Jan2017 update particle source components for balance
+      if (balance_netcdf.ne.0) then
+*   ..the sources of the k-epsilon model and the time derivative of
+*     b2mndt_style 2, as added to she0 and shi0 above
+        if (switch%solve_keps.gt.0) then
+          b2sikt_she0to3 = shekt
+          b2sikt_shi0to3 = shikt
+        endif
+        if (switch%b2mndt_style.eq.2) then
+          b2shdt_she0to3 = sr%shedt
+          b2shdt_shi0to3 = sr%shidt
+        endif
+        call update_balance_sources_heat(nCv,dv%ne,dv%ni,pl%te,pl%ti,ns)
+      endif
+      if (balance_netcdf.ne.0 .or.
+     &    switch%write_eirene_sources.ne.0) then
+        call update_balance_eirene_sources_heat
+     .   (nCv,dv%ne,dv%ni,pl%te,pl%ti)
+      endif
+#endif
 
 *   ..compute provisional reshe, reshi
 *     (first ignore equipartition)
@@ -390,6 +403,27 @@ cc while the second contribution corresponds to T dn/dt
      &     dv%fhi_mdf, dv%reshi)
         endif
       endif                                                              !srv 22.05.18
+#ifndef FIXED_POINT
+*   ..residuals for balance.nc, from the terms written there: also where
+*     they are not computed above, or are set to zero later by the
+*     solver (equipartition and time integration terms added below)
+      if (balance_netcdf.ne.0) then
+        if (switch%mdf_fhe.eq.0) then
+          call b2ursd (nCv, nFc, mpg, dv%ne, pl%te, she0, dv%fhe,
+     &     reshe_bal)
+        else
+          call b2ursd (nCv, nFc, mpg, dv%ne, pl%te, she0,
+     &     dv%fhe_mdf, reshe_bal)
+        endif
+        if (switch%mdf_fhi.eq.0) then
+          call b2ursd (nCv, nFc, mpg, dv%ni(:,0), pl%ti, shi0,
+     &     dv%fhi, reshi_bal)
+        else
+          call b2ursd (nCv, nFc, mpg, dv%ni(:,0), pl%ti, shi0,
+     &     dv%fhi_mdf, reshi_bal)
+        endif
+      endif
+#endif
       if ((switch%solve_keps.gt.0.and.any(solvkreg(0:mpg%nnreg(0)))).or.
      &     switch%get_residuals.eq.1) then
         call b2ursd (nCv, nFc, mpg, dv%ni(:,1), pl%kt, skt0,
@@ -524,6 +558,24 @@ c residuals for separate neutral energy equation
      &                          0.5_R8*psnl%dztdt(1:mpg%nCi)
         endif
       endif
+
+#ifndef FIXED_POINT
+*   ..balance.nc: equipartition, and what the time integration scheme
+*     adds to the residuals
+      if (balance_netcdf.ne.0) then
+        b2mndt_she_bal = 0.0_R8
+        b2mndt_shi_bal = 0.0_R8
+        if (switch%b2mndt_ckn.eq.2) then
+          b2mndt_she_bal(1:mpg%nCi) = psnl%reshe0(1:mpg%nCi)
+          b2mndt_shi_bal(1:mpg%nCi) = psnl%reshi0(1:mpg%nCi)
+        elseif (switch%b2mndt_bdf.eq.2) then
+          b2mndt_she_bal(1:mpg%nCi) = 0.5_R8*psnl%dhedt(1:mpg%nCi)
+          b2mndt_shi_bal(1:mpg%nCi) = 0.5_R8*psnl%dhidt(1:mpg%nCi)
+        endif
+        reshe_bal = reshe_bal - shei + b2mndt_she_bal
+        reshi_bal = reshi_bal + shei + b2mndt_shi_bal
+      endif
+#endif
 
       if(switch%b2npht_iout .eq. 1 .or. switch%iout_b2wdat .eq. 4) then  !srv 17.07.05 01.11.10 {
         call my_out_us(70,nCv,0,shei,'b2npht_shei')
