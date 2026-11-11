@@ -544,7 +544,8 @@ cxpb  This treatment added as a fix to get the ExB runs going
 
 #ifndef FIXED_POINT
 cdjm Store the total change in linearised sources for balance
-      if (balance_netcdf.ne.0) then
+*   ..not in the call for output only (lout), whose sources are not used
+      if (balance_netcdf.ne.0 .and. .not.lout) then
         b2srdt_sna0to1 = sr%snadt
         b2srdt_smo0to3 = sr%smodt
         b2srdt_she0to3 = sr%shedt

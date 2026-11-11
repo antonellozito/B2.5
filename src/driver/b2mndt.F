@@ -24,6 +24,11 @@
      & , only : batch_av_all
       use b2mod_switches
       use b2mod_facdrift_ExB
+#ifndef FIXED_POINT
+      use b2mod_balance
+     & , only : art_sna0to1, art_smo0to3, art_she0to3, art_shi0to3,
+     &          art_sch0to3, balance_netcdf
+#endif
 #ifndef NAGFOR
 ! csc The following are not necessary for computation but are needed
 !     for adjoint AD to avoid side-effect variables
@@ -419,6 +424,21 @@ ctmp.dpc
               st%sr%sch(iCv,0:3) = st%sr%sch(iCv,0:3)+
      &          geo%cvVol(iCv)*art_sch(iCv,0:3)
             enddo
+#ifndef FIXED_POINT
+*     ..balance.nc: the artificial sources, until b2sral builds the
+*       sources anew
+            if (balance_netcdf.ne.0) then
+              do iCv = 1,mpg%nCi
+                art_sna0to1(iCv,0:1,0:ns-1) =
+     &            geo%cvVol(iCv)*art_sna(iCv,0:1,0:ns-1)
+                art_smo0to3(iCv,0:3,0:ns-1) = geo%cvVol(iCv)*
+     &            geo%cvHz(iCv)*art_smo(iCv,0:3,0:ns-1)
+                art_she0to3(iCv,0:3) = geo%cvVol(iCv)*art_she(iCv,0:3)
+                art_shi0to3(iCv,0:3) = geo%cvVol(iCv)*art_shi(iCv,0:3)
+                art_sch0to3(iCv,0:3) = geo%cvVol(iCv)*art_sch(iCv,0:3)
+              enddo
+            endif
+#endif
           endif                                                          !srv 26.02.18 }
 *     ..stabilise the source coefficients
           if(switch%b2mndt_style.ne.2.and.use_b2srst.eq.1)
