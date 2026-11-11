@@ -3727,10 +3727,15 @@ cxpb Copy the IDS to a temporary location with the new DD and then bring it back
 *   ..create NetCDF file containing everything for balance postprocessing routines !djm Jan2017
       if(balance_netcdf.ne.0) then
 #ifndef NO_CDF
-        if (balance_average .ne. 0) then
-          call update_average_balance(state,itim,-1) ! scale quantities by 1/itim if averaged
+*     ..without a time step the balance arrays are never filled
+        if (ntim.gt.0) then
+          if (balance_average .ne. 0) then
+            call update_average_balance(state,itim,-1) ! scale quantities by 1/itim if averaged
+          endif
+          call write_balance(nCv,nFc,nVx,ns,geo,mpg)
+        else
+          write(*,*) 'balance.nc not written: no time step (ntim = 0)'
         endif
-        call write_balance(nCv,nFc,nVx,ns,geo,mpg)
 #else
         write(*,*)
      >   'NO_CDF is set at compilation, cannot write balance.nc'

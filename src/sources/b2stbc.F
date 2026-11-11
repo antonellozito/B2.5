@@ -9,7 +9,7 @@
 #ifndef FIXED_POINT
       use b2mod_balance !djm Jan 2017
      1 , only : b2stbc_sna0to1,b2stbc_smo0to3,b2stbc_she0to3,
-     2          b2stbc_shi0to3,balance_netcdf
+     2          b2stbc_shi0to3,b2stbc_sch0to3,balance_netcdf
       use b2mod_openmp
 #endif
       use b2us_feedback
@@ -639,11 +639,25 @@ c      write(*,*) 'Copied s..0 to b2stbc_s..'
 
 #ifndef FIXED_POINT
 cdjm Jan2017 Keep linearised sources for balance
+*   ..only for the equations whose sources were recomputed here
       if (balance_netcdf.ne.0) then
-        b2stbc_sna0to1 = srw%sna0
-        b2stbc_smo0to3 = srw%smo0
-        b2stbc_she0to3 = srw%she0
-        b2stbc_shi0to3 = srw%shi0
+        select case (bc_for_equations)
+          case ('all')
+            b2stbc_sna0to1 = srw%sna0
+            b2stbc_smo0to3 = srw%smo0
+            b2stbc_she0to3 = srw%she0
+            b2stbc_shi0to3 = srw%shi0
+            b2stbc_sch0to3 = srw%sch0
+          case ('spc')
+            b2stbc_sna0to1 = srw%sna0
+            b2stbc_smo0to3 = srw%smo0
+          case ('ene')
+            b2stbc_she0to3 = srw%she0
+          case ('eni')
+            b2stbc_shi0to3 = srw%shi0
+          case ('pot')
+            b2stbc_sch0to3 = srw%sch0
+        end select
       endif
 #endif
 

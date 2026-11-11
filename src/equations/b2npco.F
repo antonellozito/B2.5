@@ -18,7 +18,8 @@
      & ,only : update_balance_sources_particles,
      &         update_balance_eirene_sources_particles,
      &         balance_netcdf,                                           !djm Jan2017
-     &         tot_sna0to1, fna_tot                                      !djm Mar2019
+     &         tot_sna0to1, fna_tot,                                     !djm Mar2019
+     &         b2scdt_sna0to1, resco_bal, b2mndt_sna_bal
 #endif
       use b2mod_ad
      & , only : ncall_b2npco, rxg_npco
@@ -161,19 +162,6 @@
        call b2xvsg (nCv, dv%pa(1,isb), 1, 'pb', '.gt.')
        call b2xvsg (nCv, pl%na(1,isb), 1, 'nb', '.gt.')
       endif
-#ifndef FIXED_POINT
-cdjm Jan2017 update particle source components for balance
-      if (balance_netcdf.ne.0) then
-        tot_sna0to1(:,:,isb)=sr%sna(:,:,isb)    !djm Mar2019
-        fna_tot(:,:,isb)=dv%fna(:,:,isb)        !djm Mar2019
-        call update_balance_sources_particles(nCv,isb,pl%na(:,isb))
-      endif
-      if (balance_netcdf.ne.0 .or.
-     &    switch%write_eirene_sources.ne.0) then
-        call update_balance_eirene_sources_particles
-     &   (nCv,isb,pl%na(:,isb))
-      endif
-#endif
 
       !Compute residual without time-stepping sources (needed at next time-step for ckn scheme)
       if (switch%b2mndt_ckn.eq.2) then
@@ -190,7 +178,27 @@ cdjm Jan2017 update particle source components for balance
      &   geo%cvVol, psnl%na(:,isb), switch, mpg, sr%snadt(1,0,isb))
 *  .. add contribution from time-dependent source
         sr%sna(:,:,isb) = sr%sna(:,:,isb) + sr%snadt(:,:,isb)
+#ifndef FIXED_POINT
+*  .. balance.nc: added to the sources in place, so summed up until
+*     b2sral builds the sources anew
+        if (balance_netcdf.ne.0) b2scdt_sna0to1(:,:,isb) =
+     &    b2scdt_sna0to1(:,:,isb) + sr%snadt(:,:,isb)
+#endif
       endif                                                              !srv 07.07.21 }
+
+#ifndef FIXED_POINT
+cdjm Jan2017 update particle source components for balance
+      if (balance_netcdf.ne.0) then
+        tot_sna0to1(:,:,isb)=sr%sna(:,:,isb)    !djm Mar2019
+        fna_tot(:,:,isb)=dv%fna(:,:,isb)        !djm Mar2019
+        call update_balance_sources_particles(nCv,isb,pl%na(:,isb))
+      endif
+      if (balance_netcdf.ne.0 .or.
+     &    switch%write_eirene_sources.ne.0) then
+        call update_balance_eirene_sources_particles
+     &   (nCv,isb,pl%na(:,isb))
+      endif
+#endif
 
 * ..particle balance
 *   ..compute residual
@@ -219,6 +227,29 @@ cdjm Jan2017 update particle source components for balance
      &      0.5_R8*psnl%dnadt(1:mpg%nCi,isb) ! +1/2*V*(dn_i/dt) (where i denotes the previous time-step)
         endif
       endif
+
+#ifndef FIXED_POINT
+*   ..residual for balance.nc, from the terms written there: also where
+*     it is not computed above, or is set to zero later by the solver
+      if (balance_netcdf.ne.0) then
+        if (switch%mdf_fnb.eq.0) then
+          call b2ursc (nCv, nFc, mpg, pl%na(:,isb), sr%sna(:,:,isb),
+     &      dv%fna(:,:,isb), resco_bal(:,isb))
+        else
+          call b2ursc (nCv, nFc, mpg, pl%na(:,isb), sr%sna(:,:,isb),
+     &      dv%fna_mdf(:,:,isb), resco_bal(:,isb))
+        endif
+*   ..what the time integration scheme adds to the residual
+        b2mndt_sna_bal(:,isb) = 0.0_R8
+        if (switch%b2mndt_ckn.eq.2) then
+          b2mndt_sna_bal(1:mpg%nCi,isb) = psnl%resco0(1:mpg%nCi,isb)
+        elseif (switch%b2mndt_bdf.eq.2) then
+          b2mndt_sna_bal(1:mpg%nCi,isb) =
+     &      0.5_R8*psnl%dnadt(1:mpg%nCi,isb)
+        endif
+        resco_bal(:,isb) = resco_bal(:,isb) + b2mndt_sna_bal(:,isb)
+      endif
+#endif
 
 *   ..compute correction
       write (chns,'(i3.3)') isb
