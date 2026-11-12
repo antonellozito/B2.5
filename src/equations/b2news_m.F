@@ -804,10 +804,9 @@ c   recompute particle fluxes
 *    ..compute partial pressure
           call b2xppb (nCv, st%rt%rza(:,is), st%pl%na(:,is), st%pl%te,
      &      st%pl%ti, st%pl%tn, is, st%dv%pa(:,is))
-*    ..compute particle flux (and its parts for balance.nc, which
-*      must be those of this second b2npco)
+*    ..compute particle flux
           call b2tfnb (nCv, nFc, nVx, is, ismain,
-     &      switch, geo, mpg, st%pl, st%dv, st%co, st%rt, .true.)
+     &      switch, geo, mpg, st%pl, st%dv, st%co, st%rt, .false.)
 *    ..perform iteration
           new_matrix = .false.
           solvedum(0:mpg%nnreg(0))=solveco(is,0:mpg%nnreg(0))

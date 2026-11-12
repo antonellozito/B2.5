@@ -639,25 +639,14 @@ c      write(*,*) 'Copied s..0 to b2stbc_s..'
 
 #ifndef FIXED_POINT
 cdjm Jan2017 Keep linearised sources for balance
-*   ..only for the equations whose sources were recomputed here
       if (balance_netcdf.ne.0) then
-        select case (bc_for_equations)
-          case ('all')
-            b2stbc_sna0to1 = srw%sna0
-            b2stbc_smo0to3 = srw%smo0
-            b2stbc_she0to3 = srw%she0
-            b2stbc_shi0to3 = srw%shi0
-            b2stbc_sch0to3 = srw%sch0
-          case ('spc')
-            b2stbc_sna0to1 = srw%sna0
-            b2stbc_smo0to3 = srw%smo0
-          case ('ene')
-            b2stbc_she0to3 = srw%she0
-          case ('eni')
-            b2stbc_shi0to3 = srw%shi0
-          case ('pot')
-            b2stbc_sch0to3 = srw%sch0
-        end select
+        b2stbc_sna0to1 = srw%sna0
+        b2stbc_smo0to3 = srw%smo0
+        b2stbc_she0to3 = srw%she0
+        b2stbc_shi0to3 = srw%shi0
+*   ..charge sources only where they were recomputed here
+        if (bc_for_equations.eq.'all' .or. bc_for_equations.eq.'pot')
+     &   b2stbc_sch0to3 = srw%sch0
       endif
 #endif
 

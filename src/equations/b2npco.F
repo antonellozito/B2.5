@@ -19,7 +19,7 @@
      &         update_balance_eirene_sources_particles,
      &         balance_netcdf,                                           !djm Jan2017
      &         tot_sna0to1, fna_tot,                                     !djm Mar2019
-     &         b2scdt_sna0to1, resco_bal, b2mndt_sna_bal
+     &         b2scdt_sna0to1
 #endif
       use b2mod_ad
      & , only : ncall_b2npco, rxg_npco
@@ -227,29 +227,6 @@ cdjm Jan2017 update particle source components for balance
      &      0.5_R8*psnl%dnadt(1:mpg%nCi,isb) ! +1/2*V*(dn_i/dt) (where i denotes the previous time-step)
         endif
       endif
-
-#ifndef FIXED_POINT
-*   ..residual for balance.nc, from the terms written there: also where
-*     it is not computed above, or is set to zero later by the solver
-      if (balance_netcdf.ne.0) then
-        if (switch%mdf_fnb.eq.0) then
-          call b2ursc (nCv, nFc, mpg, pl%na(:,isb), sr%sna(:,:,isb),
-     &      dv%fna(:,:,isb), resco_bal(:,isb))
-        else
-          call b2ursc (nCv, nFc, mpg, pl%na(:,isb), sr%sna(:,:,isb),
-     &      dv%fna_mdf(:,:,isb), resco_bal(:,isb))
-        endif
-*   ..what the time integration scheme adds to the residual
-        b2mndt_sna_bal(:,isb) = 0.0_R8
-        if (switch%b2mndt_ckn.eq.2) then
-          b2mndt_sna_bal(1:mpg%nCi,isb) = psnl%resco0(1:mpg%nCi,isb)
-        elseif (switch%b2mndt_bdf.eq.2) then
-          b2mndt_sna_bal(1:mpg%nCi,isb) =
-     &      0.5_R8*psnl%dnadt(1:mpg%nCi,isb)
-        endif
-        resco_bal(:,isb) = resco_bal(:,isb) + b2mndt_sna_bal(:,isb)
-      endif
-#endif
 
 *   ..compute correction
       write (chns,'(i3.3)') isb
