@@ -437,57 +437,21 @@
      *  pefluxa_av(:,:,:),
      *  pefluxm_av(:,:,:)
 
-*   ..Terms that complete the balances above in all cases, and the
-*     potential equation (see write_balance)
+*   ..Terms that complete the balances above, and the potential
+*     equation (see write_balance)
       real (kind=R8), allocatable, save ::
      *  b2scdt_sna0to1(:,:,:),
      *  b2scdt_sna_bal(:,:),
      *  b2scdt_sna_bal_av(:,:),
-     *  art_sna0to1(:,:,:),
-     *  art_sna_bal(:,:),
-     *  art_sna_bal_av(:,:),
-     *  eirene_aver_sna0to1(:,:,:),
-     *  eirene_aver_sna_bal(:,:),
-     *  eirene_aver_sna_bal_av(:,:),
-     *  b2sral_sna0to1(:,:,:),
-     *  b2sral_sna_bal(:,:),
-     *  b2sral_sna_bal_av(:,:),
      *  b2smdt_smo0to3(:,:,:),
      *  b2smdt_smo_bal(:,:),
      *  b2smdt_smo_bal_av(:,:),
-     *  art_smo0to3(:,:,:),
-     *  art_smo_bal(:,:),
-     *  art_smo_bal_av(:,:),
-     *  eirene_aver_smo0to3(:,:,:),
-     *  eirene_aver_smo_bal(:,:),
-     *  eirene_aver_smo_bal_av(:,:),
-     *  b2sral_smo0to3(:,:,:),
-     *  b2sral_smo_bal(:,:),
-     *  b2sral_smo_bal_av(:,:),
      *  b2shdt_she0to3(:,:),
      *  b2shdt_she_bal(:),
      *  b2shdt_she_bal_av(:),
-     *  art_she0to3(:,:),
-     *  art_she_bal(:),
-     *  art_she_bal_av(:),
-     *  b2sikt_she0to3(:,:),
-     *  b2sikt_she_bal(:),
-     *  b2sikt_she_bal_av(:),
-     *  eirene_aver_she0to3(:,:),
-     *  eirene_aver_she_bal(:),
-     *  eirene_aver_she_bal_av(:),
      *  b2shdt_shi0to3(:,:),
      *  b2shdt_shi_bal(:),
      *  b2shdt_shi_bal_av(:),
-     *  art_shi0to3(:,:),
-     *  art_shi_bal(:),
-     *  art_shi_bal_av(:),
-     *  b2sikt_shi0to3(:,:),
-     *  b2sikt_shi_bal(:),
-     *  b2sikt_shi_bal_av(:),
-     *  eirene_aver_shi0to3(:,:),
-     *  eirene_aver_shi_bal(:),
-     *  eirene_aver_shi_bal_av(:),
      *  b2stbc_sch0to3(:,:),
      *  b2stbc_sch_bal(:),
      *  b2stbc_sch_bal_av(:),
@@ -500,9 +464,6 @@
      *  ext_sch0to3(:,:),
      *  ext_sch_bal(:),
      *  ext_sch_bal_av(:),
-     *  art_sch0to3(:,:),
-     *  art_sch_bal(:),
-     *  art_sch_bal_av(:),
      *  b2srst_sch0to3(:,:),
      *  b2srst_sch_bal(:),
      *  b2srst_sch_bal_av(:),
@@ -526,23 +487,8 @@
      *  fch_viskt_av(:,:),
      *  fch_tot(:,:),
      *  fch_tot_av(:,:),
-     *  b2mndt_sna_bal(:,:),
-     *  b2mndt_sna_bal_av(:,:),
-     *  b2mndt_smo_bal(:,:),
-     *  b2mndt_smo_bal_av(:,:),
-     *  b2mndt_she_bal(:),
-     *  b2mndt_she_bal_av(:),
-     *  b2mndt_shi_bal(:),
-     *  b2mndt_shi_bal_av(:),
-     *  resco_bal(:,:),
-     *  resmo_bal(:,:),
-     *  reshe_bal(:),
-     *  reshi_bal(:),
      *  respo_bal(:),
-     *  respo_av(:),
-     *  fmo_wrk(:,:,:),
-     *  fkb_wrk(:,:,:),
-     *  cvsb_wrk(:,:,:)
+     *  respo_av(:)
 
 *   ..balance_netcdf decides whether to initialise, track, and write balance arrays.
 *     Default: do not create balance arrays (balance_netcdf.eq.0)
@@ -1041,51 +987,15 @@
       allocate(b2scdt_sna0to1(nCv,0:1,0:nsd-1))
       allocate(b2scdt_sna_bal(nCv,0:nsd-1))
       allocate(b2scdt_sna_bal_av(nCv,0:nsd-1))
-      allocate(art_sna0to1(nCv,0:1,0:nsd-1))
-      allocate(art_sna_bal(nCv,0:nsd-1))
-      allocate(art_sna_bal_av(nCv,0:nsd-1))
-      allocate(eirene_aver_sna0to1(nCv,0:1,0:nsd-1))
-      allocate(eirene_aver_sna_bal(nCv,0:nsd-1))
-      allocate(eirene_aver_sna_bal_av(nCv,0:nsd-1))
-      allocate(b2sral_sna0to1(nCv,0:1,0:nsd-1))
-      allocate(b2sral_sna_bal(nCv,0:nsd-1))
-      allocate(b2sral_sna_bal_av(nCv,0:nsd-1))
       allocate(b2smdt_smo0to3(nCv,0:3,0:nsd-1))
       allocate(b2smdt_smo_bal(nCv,0:nsd-1))
       allocate(b2smdt_smo_bal_av(nCv,0:nsd-1))
-      allocate(art_smo0to3(nCv,0:3,0:nsd-1))
-      allocate(art_smo_bal(nCv,0:nsd-1))
-      allocate(art_smo_bal_av(nCv,0:nsd-1))
-      allocate(eirene_aver_smo0to3(nCv,0:3,0:nsd-1))
-      allocate(eirene_aver_smo_bal(nCv,0:nsd-1))
-      allocate(eirene_aver_smo_bal_av(nCv,0:nsd-1))
-      allocate(b2sral_smo0to3(nCv,0:3,0:nsd-1))
-      allocate(b2sral_smo_bal(nCv,0:nsd-1))
-      allocate(b2sral_smo_bal_av(nCv,0:nsd-1))
       allocate(b2shdt_she0to3(nCv,0:3))
       allocate(b2shdt_she_bal(nCv))
       allocate(b2shdt_she_bal_av(nCv))
-      allocate(art_she0to3(nCv,0:3))
-      allocate(art_she_bal(nCv))
-      allocate(art_she_bal_av(nCv))
-      allocate(b2sikt_she0to3(nCv,0:3))
-      allocate(b2sikt_she_bal(nCv))
-      allocate(b2sikt_she_bal_av(nCv))
-      allocate(eirene_aver_she0to3(nCv,0:3))
-      allocate(eirene_aver_she_bal(nCv))
-      allocate(eirene_aver_she_bal_av(nCv))
       allocate(b2shdt_shi0to3(nCv,0:3))
       allocate(b2shdt_shi_bal(nCv))
       allocate(b2shdt_shi_bal_av(nCv))
-      allocate(art_shi0to3(nCv,0:3))
-      allocate(art_shi_bal(nCv))
-      allocate(art_shi_bal_av(nCv))
-      allocate(b2sikt_shi0to3(nCv,0:3))
-      allocate(b2sikt_shi_bal(nCv))
-      allocate(b2sikt_shi_bal_av(nCv))
-      allocate(eirene_aver_shi0to3(nCv,0:3))
-      allocate(eirene_aver_shi_bal(nCv))
-      allocate(eirene_aver_shi_bal_av(nCv))
       allocate(b2stbc_sch0to3(nCv,0:3))
       allocate(b2stbc_sch_bal(nCv))
       allocate(b2stbc_sch_bal_av(nCv))
@@ -1098,9 +1008,6 @@
       allocate(ext_sch0to3(nCv,0:3))
       allocate(ext_sch_bal(nCv))
       allocate(ext_sch_bal_av(nCv))
-      allocate(art_sch0to3(nCv,0:3))
-      allocate(art_sch_bal(nCv))
-      allocate(art_sch_bal_av(nCv))
       allocate(b2srst_sch0to3(nCv,0:3))
       allocate(b2srst_sch_bal(nCv))
       allocate(b2srst_sch_bal_av(nCv))
@@ -1124,71 +1031,20 @@
       allocate(fch_viskt_av(nFc,0:1))
       allocate(fch_tot(nFc,0:1))
       allocate(fch_tot_av(nFc,0:1))
-      allocate(b2mndt_sna_bal(nCv,0:nsd-1))
-      allocate(b2mndt_sna_bal_av(nCv,0:nsd-1))
-      allocate(b2mndt_smo_bal(nCv,0:nsd-1))
-      allocate(b2mndt_smo_bal_av(nCv,0:nsd-1))
-      allocate(b2mndt_she_bal(nCv))
-      allocate(b2mndt_she_bal_av(nCv))
-      allocate(b2mndt_shi_bal(nCv))
-      allocate(b2mndt_shi_bal_av(nCv))
-      allocate(resco_bal(nCv,0:nsd-1))
-      allocate(resmo_bal(nCv,0:nsd-1))
-      allocate(reshe_bal(nCv))
-      allocate(reshi_bal(nCv))
       allocate(respo_bal(nCv))
       allocate(respo_av(nCv))
-      allocate(fmo_wrk(nFc,0:1,0:nsd-1))
-      allocate(fkb_wrk(nFc,0:1,0:nsd-1))
-      allocate(cvsb_wrk(nFc,0:1,0:nsd-1))
       b2scdt_sna0to1=0.0_R8
       b2scdt_sna_bal=0.0_R8
       b2scdt_sna_bal_av=0.0_R8
-      art_sna0to1=0.0_R8
-      art_sna_bal=0.0_R8
-      art_sna_bal_av=0.0_R8
-      eirene_aver_sna0to1=0.0_R8
-      eirene_aver_sna_bal=0.0_R8
-      eirene_aver_sna_bal_av=0.0_R8
-      b2sral_sna0to1=0.0_R8
-      b2sral_sna_bal=0.0_R8
-      b2sral_sna_bal_av=0.0_R8
       b2smdt_smo0to3=0.0_R8
       b2smdt_smo_bal=0.0_R8
       b2smdt_smo_bal_av=0.0_R8
-      art_smo0to3=0.0_R8
-      art_smo_bal=0.0_R8
-      art_smo_bal_av=0.0_R8
-      eirene_aver_smo0to3=0.0_R8
-      eirene_aver_smo_bal=0.0_R8
-      eirene_aver_smo_bal_av=0.0_R8
-      b2sral_smo0to3=0.0_R8
-      b2sral_smo_bal=0.0_R8
-      b2sral_smo_bal_av=0.0_R8
       b2shdt_she0to3=0.0_R8
       b2shdt_she_bal=0.0_R8
       b2shdt_she_bal_av=0.0_R8
-      art_she0to3=0.0_R8
-      art_she_bal=0.0_R8
-      art_she_bal_av=0.0_R8
-      b2sikt_she0to3=0.0_R8
-      b2sikt_she_bal=0.0_R8
-      b2sikt_she_bal_av=0.0_R8
-      eirene_aver_she0to3=0.0_R8
-      eirene_aver_she_bal=0.0_R8
-      eirene_aver_she_bal_av=0.0_R8
       b2shdt_shi0to3=0.0_R8
       b2shdt_shi_bal=0.0_R8
       b2shdt_shi_bal_av=0.0_R8
-      art_shi0to3=0.0_R8
-      art_shi_bal=0.0_R8
-      art_shi_bal_av=0.0_R8
-      b2sikt_shi0to3=0.0_R8
-      b2sikt_shi_bal=0.0_R8
-      b2sikt_shi_bal_av=0.0_R8
-      eirene_aver_shi0to3=0.0_R8
-      eirene_aver_shi_bal=0.0_R8
-      eirene_aver_shi_bal_av=0.0_R8
       b2stbc_sch0to3=0.0_R8
       b2stbc_sch_bal=0.0_R8
       b2stbc_sch_bal_av=0.0_R8
@@ -1201,9 +1057,6 @@
       ext_sch0to3=0.0_R8
       ext_sch_bal=0.0_R8
       ext_sch_bal_av=0.0_R8
-      art_sch0to3=0.0_R8
-      art_sch_bal=0.0_R8
-      art_sch_bal_av=0.0_R8
       b2srst_sch0to3=0.0_R8
       b2srst_sch_bal=0.0_R8
       b2srst_sch_bal_av=0.0_R8
@@ -1227,23 +1080,8 @@
       fch_viskt_av=0.0_R8
       fch_tot=0.0_R8
       fch_tot_av=0.0_R8
-      b2mndt_sna_bal=0.0_R8
-      b2mndt_sna_bal_av=0.0_R8
-      b2mndt_smo_bal=0.0_R8
-      b2mndt_smo_bal_av=0.0_R8
-      b2mndt_she_bal=0.0_R8
-      b2mndt_she_bal_av=0.0_R8
-      b2mndt_shi_bal=0.0_R8
-      b2mndt_shi_bal_av=0.0_R8
-      resco_bal=0.0_R8
-      resmo_bal=0.0_R8
-      reshe_bal=0.0_R8
-      reshi_bal=0.0_R8
       respo_bal=0.0_R8
       respo_av=0.0_R8
-      fmo_wrk=0.0_R8
-      fkb_wrk=0.0_R8
-      cvsb_wrk=0.0_R8
       fhi_kevis=0.0_R8
 
       return
@@ -1582,51 +1420,15 @@ cdjm Jan2017 Flux arrays:
       deallocate(b2scdt_sna0to1)
       deallocate(b2scdt_sna_bal)
       deallocate(b2scdt_sna_bal_av)
-      deallocate(art_sna0to1)
-      deallocate(art_sna_bal)
-      deallocate(art_sna_bal_av)
-      deallocate(eirene_aver_sna0to1)
-      deallocate(eirene_aver_sna_bal)
-      deallocate(eirene_aver_sna_bal_av)
-      deallocate(b2sral_sna0to1)
-      deallocate(b2sral_sna_bal)
-      deallocate(b2sral_sna_bal_av)
       deallocate(b2smdt_smo0to3)
       deallocate(b2smdt_smo_bal)
       deallocate(b2smdt_smo_bal_av)
-      deallocate(art_smo0to3)
-      deallocate(art_smo_bal)
-      deallocate(art_smo_bal_av)
-      deallocate(eirene_aver_smo0to3)
-      deallocate(eirene_aver_smo_bal)
-      deallocate(eirene_aver_smo_bal_av)
-      deallocate(b2sral_smo0to3)
-      deallocate(b2sral_smo_bal)
-      deallocate(b2sral_smo_bal_av)
       deallocate(b2shdt_she0to3)
       deallocate(b2shdt_she_bal)
       deallocate(b2shdt_she_bal_av)
-      deallocate(art_she0to3)
-      deallocate(art_she_bal)
-      deallocate(art_she_bal_av)
-      deallocate(b2sikt_she0to3)
-      deallocate(b2sikt_she_bal)
-      deallocate(b2sikt_she_bal_av)
-      deallocate(eirene_aver_she0to3)
-      deallocate(eirene_aver_she_bal)
-      deallocate(eirene_aver_she_bal_av)
       deallocate(b2shdt_shi0to3)
       deallocate(b2shdt_shi_bal)
       deallocate(b2shdt_shi_bal_av)
-      deallocate(art_shi0to3)
-      deallocate(art_shi_bal)
-      deallocate(art_shi_bal_av)
-      deallocate(b2sikt_shi0to3)
-      deallocate(b2sikt_shi_bal)
-      deallocate(b2sikt_shi_bal_av)
-      deallocate(eirene_aver_shi0to3)
-      deallocate(eirene_aver_shi_bal)
-      deallocate(eirene_aver_shi_bal_av)
       deallocate(b2stbc_sch0to3)
       deallocate(b2stbc_sch_bal)
       deallocate(b2stbc_sch_bal_av)
@@ -1639,9 +1441,6 @@ cdjm Jan2017 Flux arrays:
       deallocate(ext_sch0to3)
       deallocate(ext_sch_bal)
       deallocate(ext_sch_bal_av)
-      deallocate(art_sch0to3)
-      deallocate(art_sch_bal)
-      deallocate(art_sch_bal_av)
       deallocate(b2srst_sch0to3)
       deallocate(b2srst_sch_bal)
       deallocate(b2srst_sch_bal_av)
@@ -1665,23 +1464,8 @@ cdjm Jan2017 Flux arrays:
       deallocate(fch_viskt_av)
       deallocate(fch_tot)
       deallocate(fch_tot_av)
-      deallocate(b2mndt_sna_bal)
-      deallocate(b2mndt_sna_bal_av)
-      deallocate(b2mndt_smo_bal)
-      deallocate(b2mndt_smo_bal_av)
-      deallocate(b2mndt_she_bal)
-      deallocate(b2mndt_she_bal_av)
-      deallocate(b2mndt_shi_bal)
-      deallocate(b2mndt_shi_bal_av)
-      deallocate(resco_bal)
-      deallocate(resmo_bal)
-      deallocate(reshe_bal)
-      deallocate(reshi_bal)
       deallocate(respo_bal)
       deallocate(respo_av)
-      deallocate(fmo_wrk)
-      deallocate(fkb_wrk)
-      deallocate(cvsb_wrk)
 
       return
       end subroutine dealloc_b2mod_balance
@@ -2064,12 +1848,6 @@ cdjm Jen2017 Time-averaged arrays for fluxes and densities:
      &                b2srst_sna0to1(iCv,1,isb)*nb(iCv)
         b2scdt_sna_bal(iCv,isb)=b2scdt_sna0to1(iCv,0,isb)+
      &                b2scdt_sna0to1(iCv,1,isb)*nb(iCv)
-        art_sna_bal(iCv,isb)=art_sna0to1(iCv,0,isb)+
-     &                art_sna0to1(iCv,1,isb)*nb(iCv)
-        eirene_aver_sna_bal(iCv,isb)=eirene_aver_sna0to1(iCv,0,isb)+
-     &                eirene_aver_sna0to1(iCv,1,isb)*nb(iCv)
-        b2sral_sna_bal(iCv,isb)=b2sral_sna0to1(iCv,0,isb)+
-     &                b2sral_sna0to1(iCv,1,isb)*nb(iCv)
         tot_sna_bal(iCv,isb)=tot_sna0to1(iCv,0,isb)+
      &                tot_sna0to1(iCv,1,isb)*nb(iCv)
       enddo
@@ -2246,18 +2024,6 @@ cdjm Jen2017 Time-averaged arrays for fluxes and densities:
      &            b2smdt_smo0to3(iCv,1,isb)*ub(iCv)+
      &            b2smdt_smo0to3(iCv,2,isb)*rob(iCv)+
      &            b2smdt_smo0to3(iCv,3,isb)*rob(iCv)*ub(iCv)
-        art_smo_bal(iCv,isb)=art_smo0to3(iCv,0,isb)+
-     &            art_smo0to3(iCv,1,isb)*ub(iCv)+
-     &            art_smo0to3(iCv,2,isb)*rob(iCv)+
-     &            art_smo0to3(iCv,3,isb)*rob(iCv)*ub(iCv)
-        eirene_aver_smo_bal(iCv,isb)=eirene_aver_smo0to3(iCv,0,isb)+
-     &            eirene_aver_smo0to3(iCv,1,isb)*ub(iCv)+
-     &            eirene_aver_smo0to3(iCv,2,isb)*rob(iCv)+
-     &            eirene_aver_smo0to3(iCv,3,isb)*rob(iCv)*ub(iCv)
-        b2sral_smo_bal(iCv,isb)=b2sral_smo0to3(iCv,0,isb)+
-     &            b2sral_smo0to3(iCv,1,isb)*ub(iCv)+
-     &            b2sral_smo0to3(iCv,2,isb)*rob(iCv)+
-     &            b2sral_smo0to3(iCv,3,isb)*rob(iCv)*ub(iCv)
         tot_smo_bal(iCv,isb)=tot_smo0to3(iCv,0,isb)+
      &            tot_smo0to3(iCv,1,isb)*ub(iCv)+
      &            tot_smo0to3(iCv,2,isb)*rob(iCv)+
@@ -2374,21 +2140,6 @@ cxpb We also treat the electron particle sources
      &     b2shdt_she0to3(iCv,1)*te(iCv)+
      &     b2shdt_she0to3(iCv,2)*ne(iCv)+
      &     b2shdt_she0to3(iCv,3)*ne(iCv)*te(iCv)
-        art_she_bal(iCv)=
-     &     art_she0to3(iCv,0)+
-     &     art_she0to3(iCv,1)*te(iCv)+
-     &     art_she0to3(iCv,2)*ne(iCv)+
-     &     art_she0to3(iCv,3)*ne(iCv)*te(iCv)
-        b2sikt_she_bal(iCv)=
-     &     b2sikt_she0to3(iCv,0)+
-     &     b2sikt_she0to3(iCv,1)*te(iCv)+
-     &     b2sikt_she0to3(iCv,2)*ne(iCv)+
-     &     b2sikt_she0to3(iCv,3)*ne(iCv)*te(iCv)
-        eirene_aver_she_bal(iCv)=
-     &     eirene_aver_she0to3(iCv,0)+
-     &     eirene_aver_she0to3(iCv,1)*te(iCv)+
-     &     eirene_aver_she0to3(iCv,2)*ne(iCv)+
-     &     eirene_aver_she0to3(iCv,3)*ne(iCv)*te(iCv)
         b2srsm_she_bal(iCv)=
      &     b2srsm_she0to3(iCv,0)+
      &     b2srsm_she0to3(iCv,1)*te(iCv)+
@@ -2482,21 +2233,6 @@ cdjm Update ion heat sources
      &     b2shdt_shi0to3(iCv,1)*ti(iCv)+
      &     b2shdt_shi0to3(iCv,2)*ni(iCv)+
      &     b2shdt_shi0to3(iCv,3)*ni(iCv)*ti(iCv)
-        art_shi_bal(iCv)=
-     &     art_shi0to3(iCv,0)+
-     &     art_shi0to3(iCv,1)*ti(iCv)+
-     &     art_shi0to3(iCv,2)*ni(iCv)+
-     &     art_shi0to3(iCv,3)*ni(iCv)*ti(iCv)
-        b2sikt_shi_bal(iCv)=
-     &     b2sikt_shi0to3(iCv,0)+
-     &     b2sikt_shi0to3(iCv,1)*ti(iCv)+
-     &     b2sikt_shi0to3(iCv,2)*ni(iCv)+
-     &     b2sikt_shi0to3(iCv,3)*ni(iCv)*ti(iCv)
-        eirene_aver_shi_bal(iCv)=
-     &     eirene_aver_shi0to3(iCv,0)+
-     &     eirene_aver_shi0to3(iCv,1)*ti(iCv)+
-     &     eirene_aver_shi0to3(iCv,2)*ni(iCv)+
-     &     eirene_aver_shi0to3(iCv,3)*ni(iCv)*ti(iCv)
         b2srsm_shi_bal(iCv)=
      &     b2srsm_shi0to3(iCv,0)+
      &     b2srsm_shi0to3(iCv,1)*ti(iCv)+
@@ -2663,11 +2399,6 @@ cdjm Update ion heat sources
      &     ext_sch0to3(iCv,1)*po(iCv)+
      &     ext_sch0to3(iCv,2)*ne(iCv)+
      &     ext_sch0to3(iCv,3)*ne(iCv)*po(iCv)
-        art_sch_bal(iCv)=
-     &     art_sch0to3(iCv,0)+
-     &     art_sch0to3(iCv,1)*po(iCv)+
-     &     art_sch0to3(iCv,2)*ne(iCv)+
-     &     art_sch0to3(iCv,3)*ne(iCv)*po(iCv)
         b2srst_sch_bal(iCv)=
      &     b2srst_sch0to3(iCv,0)+
      &     b2srst_sch0to3(iCv,1)*po(iCv)+
@@ -2697,7 +2428,6 @@ cdjm Update ion heat sources
       b2stbr_sch0to3=0.0_R8
       b2stbm_sch0to3=0.0_R8
       ext_sch0to3=0.0_R8
-      art_sch0to3=0.0_R8
       b2srst_sch0to3=0.0_R8
       return
       end subroutine reset_balance_sources_charge
@@ -2882,26 +2612,13 @@ cdjm Update ion heat sources
         reshi_av=0.0_R8
 *     ..Terms that complete the balances, and the potential equation
         b2scdt_sna_bal_av=0.0_R8
-        art_sna_bal_av=0.0_R8
-        eirene_aver_sna_bal_av=0.0_R8
-        b2sral_sna_bal_av=0.0_R8
         b2smdt_smo_bal_av=0.0_R8
-        art_smo_bal_av=0.0_R8
-        eirene_aver_smo_bal_av=0.0_R8
-        b2sral_smo_bal_av=0.0_R8
         b2shdt_she_bal_av=0.0_R8
-        art_she_bal_av=0.0_R8
-        b2sikt_she_bal_av=0.0_R8
-        eirene_aver_she_bal_av=0.0_R8
         b2shdt_shi_bal_av=0.0_R8
-        art_shi_bal_av=0.0_R8
-        b2sikt_shi_bal_av=0.0_R8
-        eirene_aver_shi_bal_av=0.0_R8
         b2stbc_sch_bal_av=0.0_R8
         b2stbr_sch_bal_av=0.0_R8
         b2stbm_sch_bal_av=0.0_R8
         ext_sch_bal_av=0.0_R8
-        art_sch_bal_av=0.0_R8
         b2srst_sch_bal_av=0.0_R8
         fch_p_av=0.0_R8
         fch_in_av=0.0_R8
@@ -2913,10 +2630,6 @@ cdjm Update ion heat sources
         fch_anml_av=0.0_R8
         fch_viskt_av=0.0_R8
         fch_tot_av=0.0_R8
-        b2mndt_sna_bal_av=0.0_R8
-        b2mndt_smo_bal_av=0.0_R8
-        b2mndt_she_bal_av=0.0_R8
-        b2mndt_shi_bal_av=0.0_R8
         respo_av=0.0_R8
 *     ..Additional averaged quantities
         ne_av=0.0_R8
@@ -3038,7 +2751,7 @@ cdjm Update ion heat sources
       tot_sna_bal_av = avmlt*tot_sna_bal_av +
      &                    curmlt*tot_sna_bal
       resco_av = avmlt*resco_av +
-     &           curmlt*resco_bal
+     &           curmlt*state%dv%resco
 *   ..Arrays for momentum balance:
       fmo_flua_av = avmlt*fmo_flua_av +
      &              curmlt*fmo_flua
@@ -3125,7 +2838,7 @@ cdjm Update ion heat sources
       tot_smo_bal_av = avmlt*tot_smo_bal_av +
      &                 curmlt*tot_smo_bal
       resmo_av = avmlt*resmo_av +
-     &           curmlt*resmo_bal
+     &           curmlt*state%dv%resmo
 *   ..Arrays for electron heat balance:
       fhe_32_av = avmlt*fhe_32_av +
      &            curmlt*fhe_32
@@ -3183,7 +2896,7 @@ cdjm Update ion heat sources
       b2npht_shei_bal_av = avmlt*b2npht_shei_bal_av +
      &                     curmlt*b2npht_shei_bal
       reshe_av = avmlt*reshe_av +
-     &           curmlt*reshe_bal
+     &           curmlt*state%dv%reshe
 *   ..Arrays for ion heat balance:
       fhi_32_av = avmlt*fhi_32_av +
      &            curmlt*fhi_32
@@ -3261,40 +2974,16 @@ cdjm Update ion heat sources
       b2sihs_fraa_bal_av = avmlt*b2sihs_fraa_bal_av +
      &                     curmlt*b2sihs_fraa_bal
       reshi_av = avmlt*reshi_av +
-     &           curmlt*reshi_bal
+     &           curmlt*state%dv%reshi
 *   ..Terms that complete the balances, and the potential equation
       b2scdt_sna_bal_av = avmlt*b2scdt_sna_bal_av +
      &          curmlt*b2scdt_sna_bal
-      art_sna_bal_av = avmlt*art_sna_bal_av +
-     &          curmlt*art_sna_bal
-      eirene_aver_sna_bal_av = avmlt*eirene_aver_sna_bal_av +
-     &          curmlt*eirene_aver_sna_bal
-      b2sral_sna_bal_av = avmlt*b2sral_sna_bal_av +
-     &          curmlt*b2sral_sna_bal
       b2smdt_smo_bal_av = avmlt*b2smdt_smo_bal_av +
      &          curmlt*b2smdt_smo_bal
-      art_smo_bal_av = avmlt*art_smo_bal_av +
-     &          curmlt*art_smo_bal
-      eirene_aver_smo_bal_av = avmlt*eirene_aver_smo_bal_av +
-     &          curmlt*eirene_aver_smo_bal
-      b2sral_smo_bal_av = avmlt*b2sral_smo_bal_av +
-     &          curmlt*b2sral_smo_bal
       b2shdt_she_bal_av = avmlt*b2shdt_she_bal_av +
      &          curmlt*b2shdt_she_bal
-      art_she_bal_av = avmlt*art_she_bal_av +
-     &          curmlt*art_she_bal
-      b2sikt_she_bal_av = avmlt*b2sikt_she_bal_av +
-     &          curmlt*b2sikt_she_bal
-      eirene_aver_she_bal_av = avmlt*eirene_aver_she_bal_av +
-     &          curmlt*eirene_aver_she_bal
       b2shdt_shi_bal_av = avmlt*b2shdt_shi_bal_av +
      &          curmlt*b2shdt_shi_bal
-      art_shi_bal_av = avmlt*art_shi_bal_av +
-     &          curmlt*art_shi_bal
-      b2sikt_shi_bal_av = avmlt*b2sikt_shi_bal_av +
-     &          curmlt*b2sikt_shi_bal
-      eirene_aver_shi_bal_av = avmlt*eirene_aver_shi_bal_av +
-     &          curmlt*eirene_aver_shi_bal
       b2stbc_sch_bal_av = avmlt*b2stbc_sch_bal_av +
      &          curmlt*b2stbc_sch_bal
       b2stbr_sch_bal_av = avmlt*b2stbr_sch_bal_av +
@@ -3303,8 +2992,6 @@ cdjm Update ion heat sources
      &          curmlt*b2stbm_sch_bal
       ext_sch_bal_av = avmlt*ext_sch_bal_av +
      &          curmlt*ext_sch_bal
-      art_sch_bal_av = avmlt*art_sch_bal_av +
-     &          curmlt*art_sch_bal
       b2srst_sch_bal_av = avmlt*b2srst_sch_bal_av +
      &          curmlt*b2srst_sch_bal
       fch_p_av = avmlt*fch_p_av +
@@ -3327,14 +3014,6 @@ cdjm Update ion heat sources
      &          curmlt*fch_viskt
       fch_tot_av = avmlt*fch_tot_av +
      &          curmlt*fch_tot
-      b2mndt_sna_bal_av = avmlt*b2mndt_sna_bal_av +
-     &          curmlt*b2mndt_sna_bal
-      b2mndt_smo_bal_av = avmlt*b2mndt_smo_bal_av +
-     &          curmlt*b2mndt_smo_bal
-      b2mndt_she_bal_av = avmlt*b2mndt_she_bal_av +
-     &          curmlt*b2mndt_she_bal
-      b2mndt_shi_bal_av = avmlt*b2mndt_shi_bal_av +
-     &          curmlt*b2mndt_shi_bal
       respo_av = avmlt*respo_av +
      &           curmlt*respo_bal
 *   ..Additional averaged quantities
@@ -3602,14 +3281,6 @@ cdjm Update ion heat sources
      &                   tot_sna_bal_av,vdims,2)
       call write_cdf_double(ncid,'b2scdt_sna_bal',
      &                   b2scdt_sna_bal_av,vdims,2)
-      call write_cdf_double(ncid,'art_sna_bal',
-     &                   art_sna_bal_av,vdims,2)
-      call write_cdf_double(ncid,'eirene_aver_sna_bal',
-     &                   eirene_aver_sna_bal_av,vdims,2)
-      call write_cdf_double(ncid,'b2sral_sna_bal',
-     &                   b2sral_sna_bal_av,vdims,2)
-      call write_cdf_double(ncid,'b2mndt_sna_bal',
-     &                   b2mndt_sna_bal_av,vdims,2)
 *     Residual
       call write_cdf_double(ncid,'resco',resco_av,vdims,2)
 *   ..Arrays for momentum balance:
@@ -3693,14 +3364,6 @@ cdjm Update ion heat sources
      &                   tot_smo_bal_av,vdims,2)
       call write_cdf_double(ncid,'b2smdt_smo_bal',
      &                   b2smdt_smo_bal_av,vdims,2)
-      call write_cdf_double(ncid,'art_smo_bal',
-     &                   art_smo_bal_av,vdims,2)
-      call write_cdf_double(ncid,'eirene_aver_smo_bal',
-     &                   eirene_aver_smo_bal_av,vdims,2)
-      call write_cdf_double(ncid,'b2sral_smo_bal',
-     &                   b2sral_smo_bal_av,vdims,2)
-      call write_cdf_double(ncid,'b2mndt_smo_bal',
-     &                   b2mndt_smo_bal_av,vdims,2)
 *     Residual
       call write_cdf_double(ncid,'resmo',resmo_av,vdims,2)
 *   ..Arrays for electron heat balance:
@@ -3756,14 +3419,6 @@ cdjm Update ion heat sources
      &                   b2npht_shei_bal_av,vdims,1)
       call write_cdf_double(ncid,'b2shdt_she_bal',
      &                   b2shdt_she_bal_av,vdims,1)
-      call write_cdf_double(ncid,'art_she_bal',
-     &                   art_she_bal_av,vdims,1)
-      call write_cdf_double(ncid,'b2sikt_she_bal',
-     &                   b2sikt_she_bal_av,vdims,1)
-      call write_cdf_double(ncid,'eirene_aver_she_bal',
-     &                   eirene_aver_she_bal_av,vdims,1)
-      call write_cdf_double(ncid,'b2mndt_she_bal',
-     &                   b2mndt_she_bal_av,vdims,1)
 *     Residual
       call write_cdf_double(ncid,'reshe',reshe_av,vdims,1)
 *   ..Arrays for ion heat balance:
@@ -3838,14 +3493,6 @@ cdjm Update ion heat sources
      &                      b2sihs_fraa_bal_av,vdims,1)
       call write_cdf_double(ncid,'b2shdt_shi_bal',
      &                   b2shdt_shi_bal_av,vdims,1)
-      call write_cdf_double(ncid,'art_shi_bal',
-     &                   art_shi_bal_av,vdims,1)
-      call write_cdf_double(ncid,'b2sikt_shi_bal',
-     &                   b2sikt_shi_bal_av,vdims,1)
-      call write_cdf_double(ncid,'eirene_aver_shi_bal',
-     &                   eirene_aver_shi_bal_av,vdims,1)
-      call write_cdf_double(ncid,'b2mndt_shi_bal',
-     &                   b2mndt_shi_bal_av,vdims,1)
 *     Residual
       call write_cdf_double(ncid,'reshi',reshi_av,vdims,1)
 *   ..Arrays for potential (charge) balance:
@@ -3882,8 +3529,6 @@ cdjm Update ion heat sources
      &                   b2stbm_sch_bal_av,vdims,1)
       call write_cdf_double(ncid,'ext_sch_bal',
      &                   ext_sch_bal_av,vdims,1)
-      call write_cdf_double(ncid,'art_sch_bal',
-     &                   art_sch_bal_av,vdims,1)
       call write_cdf_double(ncid,'b2srst_sch_bal',
      &                   b2srst_sch_bal_av,vdims,1)
 *     Residual

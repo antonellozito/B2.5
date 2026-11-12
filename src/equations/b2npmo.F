@@ -14,8 +14,7 @@
      2          update_balance_eirene_sources_momentum,
      3          balance_netcdf, fmo_b2nxfv, tot_smo0to3, fmo_tot,
      4          b2smdt_smo0to3, b2siav_smovh0to3, b2siav_smovv0to3,
-     5          b2siav_smovi0to3, resmo_bal, b2mndt_smo_bal,
-     6          fmo_wrk, fkb_wrk, cvsb_wrk
+     5          b2siav_smovi0to3
 #endif
       use b2mod_numerics_namelist
       use b2mod_transport_fun                                          !srv 13.01.17
@@ -358,8 +357,7 @@ c time-dependent treatment
 !$omp& shared(balance_netcdf, fmo_b2nxfv)
 !$omp& shared(fmo_tot, tot_smo0to3)
 !$omp& shared(b2smdt_smo0to3, b2siav_smovh0to3, b2siav_smovv0to3)
-!$omp& shared(b2siav_smovi0to3, resmo_bal, b2mndt_smo_bal)
-!$omp& shared(fmo_wrk, fkb_wrk, cvsb_wrk)
+!$omp& shared(b2siav_smovi0to3)
 !$omp& private(robf, ubf)
 #endif
 !$omp& shared(is_neutral)
@@ -598,31 +596,6 @@ cdjm Jan2017 update momentum source components for balance
 cdjm Mar2019 output the total momentum flux and source for balance
       if (balance_netcdf.ne.0) then
         fmo_tot(:,:,is)=dv%fmo(:,:,is)
-      endif
-#endif
-#ifndef FIXED_POINT
-*   ..residual for balance.nc, before the solver sets it to zero in some
-*     cells; computed here also where it is not computed above
-      if (balance_netcdf.ne.0) then
-*   ..what the time integration scheme adds to the residual
-        b2mndt_smo_bal(:,is) = 0.0_R8
-        if (switch%b2mndt_ckn.eq.2) then
-          b2mndt_smo_bal(1:mpg%nCi,is) = psnl%resmo0(1:mpg%nCi,is)
-        elseif (switch%b2mndt_bdf.eq.2) then
-          b2mndt_smo_bal(1:mpg%nCi,is) =
-     &      0.5_R8*psnl%dmodt(1:mpg%nCi,is)
-        endif
-        if((solving.and.any(solvemo(is,0:mpg%nnreg(0))))
-     &      .or.switch%get_residuals.eq.1) then
-          resmo_bal(:,is) = dv%resmo(:,is)
-        else
-          call b2urmo (nCv, nFc, nVx, switch, geo, mpg, is,
-     &      pl%ua(:,is), rob, smb, flub, co%cvsahz(:,:,is),
-     &      resmo_bal(:,is), fmo_wrk(:,:,is), fkb_wrk(:,:,is),
-     &      cvsb_wrk(:,:,is))
-          resmo_bal(:,is) = resmo_bal(:,is) + b2mndt_smo_bal(:,is)
-          fmo_tot(:,:,is) = fmo_wrk(:,:,is)
-        endif
       endif
 #endif
 
