@@ -25,8 +25,7 @@
 #endif
      &          eirene_mc_papl_sna0to1, eirene_mc_pmpl_sna0to1,
      &          eirene_mc_pipl_sna0to1, eirene_mc_pppl_sna0to1,
-     &          eirene_mc_core_sna0to1, b2stbr_sch0to3,
-     &          balance_netcdf
+     &          eirene_mc_core_sna0to1, balance_netcdf
 #endif
       use b2mod_subsys
 #ifdef B25_EIRENE
@@ -865,9 +864,6 @@ cwdk remove this if-test, to allow runs without Eirene if code is compiled with 
      2 st%srw%sch0(:,1)*st%pl%po(:)+
      3 st%srw%sch0(:,2)*st%dv%ne(:)+
      4 st%srw%sch0(:,3)*st%dv%ne(:)*st%pl%po(:)
-#ifndef FIXED_POINT
-      if (balance_netcdf.ne.0) b2stbr_sch0to3 = st%srw%sch0
-#endif
       st%srw%b2stbr_skt(:)=
      1 st%srw%skt0(:,0)+
      2 st%srw%skt0(:,1)*st%pl%kt(:)+
