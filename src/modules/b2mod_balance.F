@@ -455,15 +455,15 @@
      *  b2stbc_sch0to3(:,:),
      *  b2stbc_sch_bal(:),
      *  b2stbc_sch_bal_av(:),
-     *  b2stbr_sch0to3(:,:),
-     *  b2stbr_sch_bal(:),
-     *  b2stbr_sch_bal_av(:),
      *  b2stbm_sch0to3(:,:),
      *  b2stbm_sch_bal(:),
      *  b2stbm_sch_bal_av(:),
      *  ext_sch0to3(:,:),
      *  ext_sch_bal(:),
      *  ext_sch_bal_av(:),
+     *  b2srdt_sch0to3(:,:),
+     *  b2srdt_sch_bal(:),
+     *  b2srdt_sch_bal_av(:),
      *  b2srst_sch0to3(:,:),
      *  b2srst_sch_bal(:),
      *  b2srst_sch_bal_av(:),
@@ -485,8 +485,6 @@
      *  fch_anml_av(:,:),
      *  fch_viskt(:,:),
      *  fch_viskt_av(:,:),
-     *  fch_tot(:,:),
-     *  fch_tot_av(:,:),
      *  respo_bal(:),
      *  respo_av(:)
 
@@ -999,15 +997,15 @@
       allocate(b2stbc_sch0to3(nCv,0:3))
       allocate(b2stbc_sch_bal(nCv))
       allocate(b2stbc_sch_bal_av(nCv))
-      allocate(b2stbr_sch0to3(nCv,0:3))
-      allocate(b2stbr_sch_bal(nCv))
-      allocate(b2stbr_sch_bal_av(nCv))
       allocate(b2stbm_sch0to3(nCv,0:3))
       allocate(b2stbm_sch_bal(nCv))
       allocate(b2stbm_sch_bal_av(nCv))
       allocate(ext_sch0to3(nCv,0:3))
       allocate(ext_sch_bal(nCv))
       allocate(ext_sch_bal_av(nCv))
+      allocate(b2srdt_sch0to3(nCv,0:3))
+      allocate(b2srdt_sch_bal(nCv))
+      allocate(b2srdt_sch_bal_av(nCv))
       allocate(b2srst_sch0to3(nCv,0:3))
       allocate(b2srst_sch_bal(nCv))
       allocate(b2srst_sch_bal_av(nCv))
@@ -1029,8 +1027,6 @@
       allocate(fch_anml_av(nFc,0:1))
       allocate(fch_viskt(nFc,0:1))
       allocate(fch_viskt_av(nFc,0:1))
-      allocate(fch_tot(nFc,0:1))
-      allocate(fch_tot_av(nFc,0:1))
       allocate(respo_bal(nCv))
       allocate(respo_av(nCv))
       b2scdt_sna0to1=0.0_R8
@@ -1048,15 +1044,15 @@
       b2stbc_sch0to3=0.0_R8
       b2stbc_sch_bal=0.0_R8
       b2stbc_sch_bal_av=0.0_R8
-      b2stbr_sch0to3=0.0_R8
-      b2stbr_sch_bal=0.0_R8
-      b2stbr_sch_bal_av=0.0_R8
       b2stbm_sch0to3=0.0_R8
       b2stbm_sch_bal=0.0_R8
       b2stbm_sch_bal_av=0.0_R8
       ext_sch0to3=0.0_R8
       ext_sch_bal=0.0_R8
       ext_sch_bal_av=0.0_R8
+      b2srdt_sch0to3=0.0_R8
+      b2srdt_sch_bal=0.0_R8
+      b2srdt_sch_bal_av=0.0_R8
       b2srst_sch0to3=0.0_R8
       b2srst_sch_bal=0.0_R8
       b2srst_sch_bal_av=0.0_R8
@@ -1078,8 +1074,6 @@
       fch_anml_av=0.0_R8
       fch_viskt=0.0_R8
       fch_viskt_av=0.0_R8
-      fch_tot=0.0_R8
-      fch_tot_av=0.0_R8
       respo_bal=0.0_R8
       respo_av=0.0_R8
       fhi_kevis=0.0_R8
@@ -1432,15 +1426,15 @@ cdjm Jan2017 Flux arrays:
       deallocate(b2stbc_sch0to3)
       deallocate(b2stbc_sch_bal)
       deallocate(b2stbc_sch_bal_av)
-      deallocate(b2stbr_sch0to3)
-      deallocate(b2stbr_sch_bal)
-      deallocate(b2stbr_sch_bal_av)
       deallocate(b2stbm_sch0to3)
       deallocate(b2stbm_sch_bal)
       deallocate(b2stbm_sch_bal_av)
       deallocate(ext_sch0to3)
       deallocate(ext_sch_bal)
       deallocate(ext_sch_bal_av)
+      deallocate(b2srdt_sch0to3)
+      deallocate(b2srdt_sch_bal)
+      deallocate(b2srdt_sch_bal_av)
       deallocate(b2srst_sch0to3)
       deallocate(b2srst_sch_bal)
       deallocate(b2srst_sch_bal_av)
@@ -1462,8 +1456,6 @@ cdjm Jan2017 Flux arrays:
       deallocate(fch_anml_av)
       deallocate(fch_viskt)
       deallocate(fch_viskt_av)
-      deallocate(fch_tot)
-      deallocate(fch_tot_av)
       deallocate(respo_bal)
       deallocate(respo_av)
 
@@ -2384,11 +2376,6 @@ cdjm Update ion heat sources
      &     b2stbc_sch0to3(iCv,1)*po(iCv)+
      &     b2stbc_sch0to3(iCv,2)*ne(iCv)+
      &     b2stbc_sch0to3(iCv,3)*ne(iCv)*po(iCv)
-        b2stbr_sch_bal(iCv)=
-     &     b2stbr_sch0to3(iCv,0)+
-     &     b2stbr_sch0to3(iCv,1)*po(iCv)+
-     &     b2stbr_sch0to3(iCv,2)*ne(iCv)+
-     &     b2stbr_sch0to3(iCv,3)*ne(iCv)*po(iCv)
         b2stbm_sch_bal(iCv)=
      &     b2stbm_sch0to3(iCv,0)+
      &     b2stbm_sch0to3(iCv,1)*po(iCv)+
@@ -2399,13 +2386,18 @@ cdjm Update ion heat sources
      &     ext_sch0to3(iCv,1)*po(iCv)+
      &     ext_sch0to3(iCv,2)*ne(iCv)+
      &     ext_sch0to3(iCv,3)*ne(iCv)*po(iCv)
+        b2srdt_sch_bal(iCv)=
+     &     b2srdt_sch0to3(iCv,0)+
+     &     b2srdt_sch0to3(iCv,1)*po(iCv)+
+     &     b2srdt_sch0to3(iCv,2)*ne(iCv)+
+     &     b2srdt_sch0to3(iCv,3)*ne(iCv)*po(iCv)
         b2srst_sch_bal(iCv)=
      &     b2srst_sch0to3(iCv,0)+
      &     b2srst_sch0to3(iCv,1)*po(iCv)+
      &     b2srst_sch0to3(iCv,2)*ne(iCv)+
      &     b2srst_sch0to3(iCv,3)*ne(iCv)*po(iCv)
       enddo
-*   ..currents: the total is the sum of the parts (b2tfch_)
+*   ..currents, by part (their sum is dv%fch, see b2tfch_)
       fch_p=dv%fch_p
       fch_in=dv%fchin
       fch_dia=dv%fchdia
@@ -2415,7 +2407,6 @@ cdjm Update ion heat sources
       fch_inert=dv%fchinert
       fch_anml=dv%fchanml
       fch_viskt=dv%fchviskt
-      fch_tot=dv%fch
 *   ..residual from these sources and currents
       call b2ursd (nCv, nFc, mpg, ne, po, sch, dv%fch, respo_bal)
       return
@@ -2425,9 +2416,9 @@ cdjm Update ion heat sources
       implicit none
 *   ..the charge sources are replaced by those from the boundary
 *     conditions alone (potential iterations in b2news)
-      b2stbr_sch0to3=0.0_R8
       b2stbm_sch0to3=0.0_R8
       ext_sch0to3=0.0_R8
+      b2srdt_sch0to3=0.0_R8
       b2srst_sch0to3=0.0_R8
       return
       end subroutine reset_balance_sources_charge
@@ -2616,9 +2607,9 @@ cdjm Update ion heat sources
         b2shdt_she_bal_av=0.0_R8
         b2shdt_shi_bal_av=0.0_R8
         b2stbc_sch_bal_av=0.0_R8
-        b2stbr_sch_bal_av=0.0_R8
         b2stbm_sch_bal_av=0.0_R8
         ext_sch_bal_av=0.0_R8
+        b2srdt_sch_bal_av=0.0_R8
         b2srst_sch_bal_av=0.0_R8
         fch_p_av=0.0_R8
         fch_in_av=0.0_R8
@@ -2629,7 +2620,6 @@ cdjm Update ion heat sources
         fch_inert_av=0.0_R8
         fch_anml_av=0.0_R8
         fch_viskt_av=0.0_R8
-        fch_tot_av=0.0_R8
         respo_av=0.0_R8
 *     ..Additional averaged quantities
         ne_av=0.0_R8
@@ -2986,12 +2976,12 @@ cdjm Update ion heat sources
      &          curmlt*b2shdt_shi_bal
       b2stbc_sch_bal_av = avmlt*b2stbc_sch_bal_av +
      &          curmlt*b2stbc_sch_bal
-      b2stbr_sch_bal_av = avmlt*b2stbr_sch_bal_av +
-     &          curmlt*b2stbr_sch_bal
       b2stbm_sch_bal_av = avmlt*b2stbm_sch_bal_av +
      &          curmlt*b2stbm_sch_bal
       ext_sch_bal_av = avmlt*ext_sch_bal_av +
      &          curmlt*ext_sch_bal
+      b2srdt_sch_bal_av = avmlt*b2srdt_sch_bal_av +
+     &          curmlt*b2srdt_sch_bal
       b2srst_sch_bal_av = avmlt*b2srst_sch_bal_av +
      &          curmlt*b2srst_sch_bal
       fch_p_av = avmlt*fch_p_av +
@@ -3012,8 +3002,6 @@ cdjm Update ion heat sources
      &          curmlt*fch_anml
       fch_viskt_av = avmlt*fch_viskt_av +
      &          curmlt*fch_viskt
-      fch_tot_av = avmlt*fch_tot_av +
-     &          curmlt*fch_tot
       respo_av = avmlt*respo_av +
      &           curmlt*respo_bal
 *   ..Additional averaged quantities
@@ -3517,18 +3505,16 @@ cdjm Update ion heat sources
      &                   fch_anml_av,vdims,2)
       call write_cdf_double(ncid,'fch_viskt',
      &                   fch_viskt_av,vdims,2)
-      call write_cdf_double(ncid,'fch_tot',
-     &                   fch_tot_av,vdims,2)
 *     Sources
       vdims(1)=nCvpid
       call write_cdf_double(ncid,'b2stbc_sch_bal',
      &                   b2stbc_sch_bal_av,vdims,1)
-      call write_cdf_double(ncid,'b2stbr_sch_bal',
-     &                   b2stbr_sch_bal_av,vdims,1)
       call write_cdf_double(ncid,'b2stbm_sch_bal',
      &                   b2stbm_sch_bal_av,vdims,1)
       call write_cdf_double(ncid,'ext_sch_bal',
      &                   ext_sch_bal_av,vdims,1)
+      call write_cdf_double(ncid,'b2srdt_sch_bal',
+     &                   b2srdt_sch_bal_av,vdims,1)
       call write_cdf_double(ncid,'b2srst_sch_bal',
      &                   b2srst_sch_bal_av,vdims,1)
 *     Residual
