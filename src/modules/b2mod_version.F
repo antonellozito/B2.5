@@ -1,5 +1,5 @@
       module b2mod_version
-      character*10, save :: newversion ='03.002.001'
+      character*10, save :: newversion ='03.002.002'
       character*10, parameter :: default_version = '00.000.000'
 
       character*10, save ::
@@ -354,4 +354,7 @@ c    Version 03.002.001  25.06.25 Added Qalfmin/max variables to b2fgmtry
 c                                 Added srw arrays to b2fplasma
 c                                 Added multi-species netCDF tally output
 c                                 Open-source release
+c    Version 03.002.002  12.11.26 Added to b2fplasma the components of fna, fmo,
+c                                 fhe and fhi, the Eirene sources by process
+c                                 and the electron-ion equipartition
 c

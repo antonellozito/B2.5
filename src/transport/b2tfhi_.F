@@ -15,7 +15,7 @@
       use b2mod_balance                                                 !djm Jan2017
      & , only : fhi_32, fhi_52, fhi_cond, fhi_dia, fhi_ecrb,
      &          fhi_strange, fhi_pschused, fhi_inert, fhi_vispar,
-     &          fhi_visper, fhi_visq, fhi_anml, fhi_vzh,
+     &          fhi_visper, fhi_visq, fhi_anml, fhi_vzh, fhi_kevis,
      &          balance_netcdf
 #endif
       use b2mod_ad
@@ -323,70 +323,97 @@ cwdk    related to (fluctuations in diamagnetic current) * (fluctuations in pote
       endif
 
 #ifndef FIXED_POINT
-*   ..fluxes for balance.nc file                  !nh  Jan2024
-      if (balance.and.(balance_netcdf.ne.0)) then !djm Jan2017
+*   ..components of fhi, each with the sign of the total convective
+*     velocity in calcflow, so that they add up to fhi when mdf_fhi = 0
+*     and to fhi_mdf + fhiPSch otherwise
         dumm1 = 0.0_R8
         dumm2 = 0.0_R8
         dumm3 = 0.0_R8
         dumm4 = 0.0_R8
         wrkf = sign(1.5_R8*dv%fni_he,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_32,dumm4)
-        fhi_32 = sign(fhi_32,dv%fni_he)
-        fhi_52 = 0.0_R8
+     &    wrkf,dumm1,dumm2,dv%fhi_conv,dumm4)
+        dv%fhi_conv = sign(dv%fhi_conv,dv%fni_he)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,floi0_mdf,
-     &    co%chci,dumm1,dumm2,fhi_cond)
+     &    co%chci,dumm1,dumm2,dv%fhi_cond)
         if (switch%mdf_fhi.eq.0) then
-          fhi_dia(:,0) = flidia(:,0)*tif
-          fhi_dia(:,1) = flidia(:,1)*tif
-          fhi_pschused = 0.0_R8
+          dv%fhi_dia(:,0) = flidia(:,0)*tif
+          dv%fhi_dia(:,1) = flidia(:,1)*tif
         else
-          fhi_dia = 0.0_R8
-          fhi_pschused = -dv%fhiPSch
+          dv%fhi_dia = 0.0_R8
         endif
-        fhi_ecrb = 0.0_R8
         dumm1 = 0.0_R8
         dumm4(:,0) = co%chvi(:,0)*nif
         dumm4(:,1) = co%chvi(:,1)*nif
         wrkf = sign(dumm4,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_strange,dumm3)
-        fhi_strange = sign(fhi_strange,dumm4)
+     &    wrkf,dumm1,dumm2,dv%fhi_strange,dumm3)
+        dv%fhi_strange = sign(dv%fhi_strange,dumm4)
         dumm4(:,0) = 1.5_R8/qe*dv%fchinert(:,0)*switch%b2tfnb_xcur
         dumm4(:,1) = 1.5_R8/qe*dv%fchinert(:,1)*switch%b2tfnb_ycur
         wrkf = sign(dumm4,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_inert,dumm3)
-        fhi_inert = sign(fhi_inert,dumm4)
+     &    wrkf,dumm1,dumm2,dv%fhi_inert,dumm3)
+        dv%fhi_inert = sign(dv%fhi_inert,dumm4)
         dumm4(:,0) = 1.5_R8/qe*dv%fchvispar(:,0)*switch%b2tfnb_xcur
         dumm4(:,1) = 1.5_R8/qe*dv%fchvispar(:,1)*switch%b2tfnb_ycur
         wrkf = sign(dumm4,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_vispar,dumm3)
-        fhi_vispar = sign(fhi_vispar,dumm4)
-        dumm4(:,0) = 1.5_R8/qe*dv%fchvisper(:,0)*switch%b2tfnb_xcur
-        dumm4(:,1) = 1.5_R8/qe*dv%fchvisper(:,1)*switch%b2tfnb_ycur
+     &    wrkf,dumm1,dumm2,dv%fhi_vispar,dumm3)
+        dv%fhi_vispar = sign(dv%fhi_vispar,dumm4)
+        dumm4(:,0) = 1.5_R8/qe*switch%fnb_vis_per*dv%fchvisper(:,0)*
+     &    switch%b2tfnb_xcur
+        dumm4(:,1) = 1.5_R8/qe*switch%fnb_vis_per*dv%fchvisper(:,1)*
+     &    switch%b2tfnb_ycur
         wrkf = sign(dumm4,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_visper,dumm3)
-        fhi_visper = sign(fhi_visper,dumm4)
-        dumm4(:,0) = 1.5_R8/qe*dv%fchvisq(:,0)*switch%b2tfnb_xcur
-        dumm4(:,1) = 1.5_R8/qe*dv%fchvisq(:,1)*switch%b2tfnb_ycur
+     &    wrkf,dumm1,dumm2,dv%fhi_visper,dumm3)
+        dv%fhi_visper = sign(dv%fhi_visper,dumm4)
+        dumm4(:,0) = 1.5_R8/qe*switch%fnb_vis_q*dv%fchvisq(:,0)*
+     &    switch%b2tfnb_xcur
+        dumm4(:,1) = 1.5_R8/qe*switch%fnb_vis_q*dv%fchvisq(:,1)*
+     &    switch%b2tfnb_ycur
         wrkf = sign(dumm4,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_visq,dumm3)
-        fhi_visq = sign(fhi_visq,dumm4)
+     &    wrkf,dumm1,dumm2,dv%fhi_visq,dumm3)
+        dv%fhi_visq = sign(dv%fhi_visq,dumm4)
         dumm4(:,0) = 1.5_R8/qe*dv%fchanml(:,0)*switch%b2tfnb_xcur
         dumm4(:,1) = 1.5_R8/qe*dv%fchanml(:,1)*switch%b2tfnb_ycur
         wrkf = sign(dumm4,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_anml,dumm3)
-        fhi_anml = sign(fhi_anml,dumm4)
+     &    wrkf,dumm1,dumm2,dv%fhi_anml,dumm3)
+        dv%fhi_anml = sign(dv%fhi_anml,dumm4)
+        dumm4(:,0) = 1.5_R8/qe*dv%fchviskt(:,0)
+        dumm4(:,1) = 1.5_R8/qe*dv%fchviskt(:,1)
+        wrkf = sign(dumm4,floi0_mdf)
+        call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
+     &    wrkf,dumm1,dumm2,dv%fhi_viskt,dumm3)
+        dv%fhi_viskt = sign(dv%fhi_viskt,dumm4)
         wrkf = 0.0_R8
         wrkf(:,0) = sign(floi_vhx,floi0_mdf(:,0))
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_vzh,dumm4)
-        fhi_vzh(:,0) = sign(fhi_vzh(:,0),floi_vhx)
+     &    wrkf,dumm1,dumm2,dv%fhi_vzh,dumm4)
+        dv%fhi_vzh(:,0) = sign(dv%fhi_vzh(:,0),floi_vhx)
+*   ..fluxes for balance.nc file                  !nh  Jan2024
+      if (balance.and.(balance_netcdf.ne.0)) then !djm Jan2017
+        fhi_32 = dv%fhi_conv
+        fhi_52 = 0.0_R8
+        fhi_cond = dv%fhi_cond
+        fhi_dia = dv%fhi_dia
+        if (switch%mdf_fhi.eq.0) then
+          fhi_pschused = 0.0_R8
+        else
+          fhi_pschused = -dv%fhiPSch
+        endif
+        fhi_ecrb = 0.0_R8
+        fhi_strange = dv%fhi_strange
+        fhi_inert = dv%fhi_inert
+        fhi_vispar = dv%fhi_vispar
+        fhi_visper = dv%fhi_visper
+        fhi_visq = dv%fhi_visq
+        fhi_anml = dv%fhi_anml
+        fhi_kevis = dv%fhi_viskt
+        fhi_vzh = dv%fhi_vzh
       endif
 #endif
 

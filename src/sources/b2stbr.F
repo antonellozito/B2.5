@@ -344,6 +344,23 @@
       call sfill (nCv*4, 0.0_R8, she0_eir, 1)
       call sfill (nCv*4, 0.0_R8, shi0_eir, 1)
       call sfill (nCv*4, 0.0_R8, shn0_eir, 1)
+      st%srw%sna0_eir_papl = 0.0_R8
+      st%srw%sna0_eir_pmpl = 0.0_R8
+      st%srw%sna0_eir_pipl = 0.0_R8
+      st%srw%sna0_eir_pppl = 0.0_R8
+      st%srw%sna0_eir_core = 0.0_R8
+      st%srw%smo0_eir_mapl = 0.0_R8
+      st%srw%smo0_eir_mmpl = 0.0_R8
+      st%srw%smo0_eir_mipl = 0.0_R8
+      st%srw%smo0_eir_mppl = 0.0_R8
+      st%srw%she0_eir_eael = 0.0_R8
+      st%srw%she0_eir_emel = 0.0_R8
+      st%srw%she0_eir_eiel = 0.0_R8
+      st%srw%she0_eir_epel = 0.0_R8
+      st%srw%shi0_eir_eapl = 0.0_R8
+      st%srw%shi0_eir_empl = 0.0_R8
+      st%srw%shi0_eir_eipl = 0.0_R8
+      st%srw%shi0_eir_eppl = 0.0_R8
 #ifdef B25_EIRENE
       fatm_eir = 0.0_R8
 #endif
@@ -665,6 +682,16 @@ c   --> better solution wanted here..
             do iCv=1,mpg%nCi
               if (do_sna_corr_core(k) .or.
      &                (.not.mpg%cvOnClosedSurface(iCv))) then
+                st%srw%sna0_eir_papl(iCv,is) =
+     &           st%srw%sna0_eir_papl(iCv,is)*t(k)
+                st%srw%sna0_eir_pmpl(iCv,is) =
+     &           st%srw%sna0_eir_pmpl(iCv,is)*t(k)
+                st%srw%sna0_eir_pipl(iCv,is) =
+     &           st%srw%sna0_eir_pipl(iCv,is)*t(k)
+                st%srw%sna0_eir_pppl(iCv,is) =
+     &           st%srw%sna0_eir_pppl(iCv,is)*t(k)
+                st%srw%sna0_eir_core(iCv,is) =
+     &           st%srw%sna0_eir_core(iCv,is)*t(k)
                 sna0_eir(iCv,0,is) = sna0_eir(iCv,0,is)*t(k)
                 sna0_eir(iCv,1,is) = sna0_eir(iCv,1,is)*t(k)
 #ifndef FIXED_POINT

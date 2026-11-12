@@ -236,8 +236,9 @@ c       call ipgeti ('b2trcl_conductive_limit', conductive_limit)         !srv 1
       dv%cone(:,:,0) = dv%cone(:,:,0) + cone0
 
 #ifndef FIXED_POINT
-*   ..fluxes for balance.nc file                  !nh  Jan2024
-      if (balance.and.(balance_netcdf.ne.0)) then !djm Jan2017
+*   ..components of fhe, each with the sign of the total convective
+*     velocity in calcflow, so that they add up to fhe when mdf_fhe = 0
+*     and to fhe_mdf + fhePSch otherwise
         dumm1 = 0.0_R8
         dumm2 = 0.0_R8
         dumm3 = 0.0_R8
@@ -245,35 +246,45 @@ c       call ipgeti ('b2trcl_conductive_limit', conductive_limit)         !srv 1
         wrkc = 1.5_R8*pl%te
         wrkf = sign(dv%fne_he,floe0_mdf)
         call calcflow(nCv,nFc,nVx,switch%b2tfhe_discr_meth,geo,mpg,
-     &    wrkc,wrkf,dumm1,dumm2,fhe_32,dumm3)
-        fhe_32 = sign(fhe_32,dv%fne_he)
-        fhe_52 = 0.0_R8
+     &    wrkc,wrkf,dumm1,dumm2,dv%fhe_conv,dumm3)
+        dv%fhe_conv = sign(dv%fhe_conv,dv%fne_he)
         dumm4(:,0) = -c071*dv%fch_p(:,0)/qe*switch%fch_pTe
         wrkf = sign(dumm4,floe0_mdf)
         call calcflow(nCv,nFc,nVx,switch%b2tfhe_discr_meth,geo,mpg,
-     &    pl%te,wrkf,dumm1,dumm2,fhe_thermj,dumm3)
-        fhe_thermj = sign(fhe_thermj,dumm4)
-        fhe_thermj(:,0) = fhe_thermj(:,0) +
+     &    pl%te,wrkf,dumm1,dumm2,dv%fhe_thermj,dumm3)
+        dv%fhe_thermj = sign(dv%fhe_thermj,dumm4)
+        dv%fhe_thermj(:,0) = dv%fhe_thermj(:,0) +
      &    switch%alfTeEh*alfe0*tefh*ehx
-        fhe_thermj(:,1) = fhe_thermj(:,1) +
+        dv%fhe_thermj(:,1) = dv%fhe_thermj(:,1) +
      &    switch%alfTeEh*co%calf(:,1)*tefh*ehy
         call calcflow(nCv,nFc,nVx,switch%b2tfhe_discr_meth,geo,mpg,
-     &    pl%te,floe0_mdf,co%chce,dumm1,dumm2,fhe_cond)
+     &    pl%te,floe0_mdf,co%chce,dumm1,dumm2,dv%fhe_cond)
         if (switch%mdf_fhe.eq.0) then
-          fhe_dia(:,0) = 2.5_R8*fledia(:,0)*nef*tef
-          fhe_dia(:,1) = 2.5_R8*fledia(:,1)*nef*tef
-          fhe_pschused = 0.0_R8
+          dv%fhe_dia(:,0) = 2.5_R8*fledia(:,0)*nef*tef
+          dv%fhe_dia(:,1) = 2.5_R8*fledia(:,1)*nef*tef
         else
-          fhe_dia = 0.0_R8
-          fhe_pschused = -dv%fhePSch
+          dv%fhe_dia = 0.0_R8
         endif
-        fhe_ecrb = 0.0_R8
         dumm4(:,0) = co%chve(:,0)*nef
         dumm4(:,1) = co%chve(:,1)*nef
         wrkf = sign(dumm4,floe0_mdf)
         call calcflow(nCv,nFc,nVx,switch%b2tfhe_discr_meth,geo,mpg,
-     &    pl%te,wrkf,dumm1,dumm2,fhe_strange,dumm3)
-        fhe_strange = sign(fhe_strange,dumm4)
+     &    pl%te,wrkf,dumm1,dumm2,dv%fhe_strange,dumm3)
+        dv%fhe_strange = sign(dv%fhe_strange,dumm4)
+*   ..fluxes for balance.nc file                  !nh  Jan2024
+      if (balance.and.(balance_netcdf.ne.0)) then !djm Jan2017
+        fhe_32 = dv%fhe_conv
+        fhe_52 = 0.0_R8
+        fhe_thermj = dv%fhe_thermj
+        fhe_cond = dv%fhe_cond
+        fhe_dia = dv%fhe_dia
+        if (switch%mdf_fhe.eq.0) then
+          fhe_pschused = 0.0_R8
+        else
+          fhe_pschused = -dv%fhePSch
+        endif
+        fhe_ecrb = 0.0_R8
+        fhe_strange = dv%fhe_strange
       endif
 #endif
 

@@ -46,14 +46,32 @@
      .                           fnaPSch(:,:,:), fna_fcor(:,:,:),
      .                           fna_eir(:,:,:), fna_ExB(:,:),
      .                           fmo(:,:,:)
+        ! components of fna and fmo
+        real(R8), allocatable :: fna_pll(:,:,:), fna_pinch(:,:,:),
+     .                           fna_ecrb(:,:,:), fna_dia(:,:,:),
+     .                           fna_ch(:,:,:), fna_nanom(:,:,:),
+     .                           fna_panom(:,:,:)
+        real(R8), allocatable :: fmo_flua(:,:,:), fmo_cvsa(:,:,:),
+     .                           fmo_hybr(:,:,:)
         real(R8), allocatable :: fne(:,:), fne_he(:,:), fne_32(:,:),
      .                           fne_52(:,:), fne_eir(:,:), fne_53(:,:),
      .                           fhe(:,:), fhe_mdf(:,:), fhet(:,:),
      .                           fhePSch(:,:), fhe_eir(:,:),
      .                           fhe_ExB(:,:)
+        ! components of fhe
+        real(R8), allocatable :: fhe_conv(:,:), fhe_cond(:,:),
+     .                           fhe_thermj(:,:), fhe_dia(:,:),
+     .                           fhe_strange(:,:)
         real(R8), allocatable :: fhi(:,:), fhi_mdf(:,:), fhit(:,:),
      .                           fhiPSch(:,:), fhi_eir(:,:),
      .                           fhi_ExB(:,:)
+        ! components of fhi
+        real(R8), allocatable :: fhi_conv(:,:), fhi_cond(:,:),
+     .                           fhi_dia(:,:), fhi_strange(:,:),
+     .                           fhi_inert(:,:), fhi_vispar(:,:),
+     .                           fhi_visper(:,:), fhi_visq(:,:),
+     .                           fhi_anml(:,:), fhi_viskt(:,:),
+     .                           fhi_vzh(:,:)
         real(R8), allocatable :: fnn(:,:), fnn_32(:,:), fnn_52(:,:),
      .                           fhn(:,:), fnn_inc(:,:)
         real(R8), allocatable :: fhm(:,:,:), fhp(:,:,:), fhj(:,:),
@@ -240,11 +258,23 @@
      .                                           smo0_eir_tot,
      .                                           smr0_eir_tot,
      .                                           smd0_eir_tot
+        ! Eirene sources by process, summed over the strata
+        real(R8), dimension(:,:), allocatable :: sna0_eir_papl,
+     .            sna0_eir_pmpl, sna0_eir_pipl, sna0_eir_pppl,
+     .            sna0_eir_core
+        real(R8), dimension(:,:), allocatable :: smo0_eir_mapl,
+     .            smo0_eir_mmpl, smo0_eir_mipl, smo0_eir_mppl
         real(R8), dimension(:), allocatable :: sne0_eir_tot,
      .                                         she0_eir_tot,
      .                                         shi0_eir_tot,
      .                                         shn0_eir_tot,
      .                                         sch0_eir_tot
+        real(R8), dimension(:), allocatable :: she0_eir_eael,
+     .            she0_eir_emel, she0_eir_eiel, she0_eir_epel
+        real(R8), dimension(:), allocatable :: shi0_eir_eapl,
+     .            shi0_eir_empl, shi0_eir_eipl, shi0_eir_eppl
+        ! electron-ion equipartition
+        real(R8), dimension(:), allocatable :: b2npht_shei
       end type B2SourceWork
 
 ! b2mod_rates
@@ -1050,8 +1080,18 @@
       allocate( dv % fne_eir( nFc, 0:1 ), SOURCE=0._R8 )
 
       allocate( dv % fna_nodrift( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fna_pll( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fna_pinch( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fna_ecrb( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fna_dia( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fna_ch( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fna_nanom( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fna_panom( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
 
       allocate( dv % fmo( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fmo_flua( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fmo_cvsa( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( dv % fmo_hybr( nFc, 0:1, 0:ns-1 ), SOURCE=0._R8 )
 
       allocate( dv % fhe( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhe_mdf( nFc, 0:1 ), SOURCE=0._R8 )
@@ -1059,12 +1099,28 @@
       allocate( dv % fhet( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhe_eir( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhe_ExB( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhe_conv( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhe_cond( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhe_thermj( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhe_dia( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhe_strange( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhi( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhi_mdf( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhiPSch( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhit( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhi_eir( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhi_ExB( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_conv( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_cond( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_dia( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_strange( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_inert( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_vispar( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_visper( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_visq( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_anml( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_viskt( nFc, 0:1 ), SOURCE=0._R8 )
+      allocate( dv % fhi_vzh( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhn( nFc, 0:1 ), SOURCE=0._R8 )
       allocate( dv % fhm( nFc, 0:1, 0:ns-1), SOURCE=0._R8 )
       allocate( dv % fhp( nFc, 0:1, 0:ns-1), SOURCE=0._R8 )
@@ -1172,8 +1228,18 @@
       allocate( dv % fne_eir( nFc, 0:1 ) )
 
       allocate( dv % fna_nodrift( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fna_pll( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fna_pinch( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fna_ecrb( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fna_dia( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fna_ch( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fna_nanom( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fna_panom( nFc, 0:1, 0:ns-1 ) )
 
       allocate( dv % fmo( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fmo_flua( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fmo_cvsa( nFc, 0:1, 0:ns-1 ) )
+      allocate( dv % fmo_hybr( nFc, 0:1, 0:ns-1 ) )
 
       allocate( dv % fhe( nFc, 0:1 ) )
       allocate( dv % fhe_mdf( nFc, 0:1 ) )
@@ -1181,12 +1247,28 @@
       allocate( dv % fhet( nFc, 0:1 ) )
       allocate( dv % fhe_eir( nFc, 0:1 ) )
       allocate( dv % fhe_ExB( nFc, 0:1 ) )
+      allocate( dv % fhe_conv( nFc, 0:1 ) )
+      allocate( dv % fhe_cond( nFc, 0:1 ) )
+      allocate( dv % fhe_thermj( nFc, 0:1 ) )
+      allocate( dv % fhe_dia( nFc, 0:1 ) )
+      allocate( dv % fhe_strange( nFc, 0:1 ) )
       allocate( dv % fhi( nFc, 0:1 ) )
       allocate( dv % fhi_mdf( nFc, 0:1 ) )
       allocate( dv % fhiPSch( nFc, 0:1 ) )
       allocate( dv % fhit( nFc, 0:1 ) )
       allocate( dv % fhi_eir( nFc, 0:1 ) )
       allocate( dv % fhi_ExB( nFc, 0:1 ) )
+      allocate( dv % fhi_conv( nFc, 0:1 ) )
+      allocate( dv % fhi_cond( nFc, 0:1 ) )
+      allocate( dv % fhi_dia( nFc, 0:1 ) )
+      allocate( dv % fhi_strange( nFc, 0:1 ) )
+      allocate( dv % fhi_inert( nFc, 0:1 ) )
+      allocate( dv % fhi_vispar( nFc, 0:1 ) )
+      allocate( dv % fhi_visper( nFc, 0:1 ) )
+      allocate( dv % fhi_visq( nFc, 0:1 ) )
+      allocate( dv % fhi_anml( nFc, 0:1 ) )
+      allocate( dv % fhi_viskt( nFc, 0:1 ) )
+      allocate( dv % fhi_vzh( nFc, 0:1 ) )
       allocate( dv % fhn( nFc, 0:1 ) )
       allocate( dv % fhm( nFc, 0:1, 0:ns-1) )
       allocate( dv % fhp( nFc, 0:1, 0:ns-1) )
@@ -1294,8 +1376,18 @@
       dv % fne_eir = 0._R8
 
       dv % fna_nodrift = 0._R8
+      dv % fna_pll = 0._R8
+      dv % fna_pinch = 0._R8
+      dv % fna_ecrb = 0._R8
+      dv % fna_dia = 0._R8
+      dv % fna_ch = 0._R8
+      dv % fna_nanom = 0._R8
+      dv % fna_panom = 0._R8
 
       dv % fmo = 0._R8
+      dv % fmo_flua = 0._R8
+      dv % fmo_cvsa = 0._R8
+      dv % fmo_hybr = 0._R8
 
       dv % fhe = 0._R8
       dv % fhe_mdf = 0._R8
@@ -1303,12 +1395,28 @@
       dv % fhet = 0._R8
       dv % fhe_eir = 0._R8
       dv % fhe_ExB = 0._R8
+      dv % fhe_conv = 0._R8
+      dv % fhe_cond = 0._R8
+      dv % fhe_thermj = 0._R8
+      dv % fhe_dia = 0._R8
+      dv % fhe_strange = 0._R8
       dv % fhi = 0._R8
       dv % fhi_mdf = 0._R8
       dv % fhiPSch = 0._R8
       dv % fhit = 0._R8
       dv % fhi_eir = 0._R8
       dv % fhi_ExB = 0._R8
+      dv % fhi_conv = 0._R8
+      dv % fhi_cond = 0._R8
+      dv % fhi_dia = 0._R8
+      dv % fhi_strange = 0._R8
+      dv % fhi_inert = 0._R8
+      dv % fhi_vispar = 0._R8
+      dv % fhi_visper = 0._R8
+      dv % fhi_visq = 0._R8
+      dv % fhi_anml = 0._R8
+      dv % fhi_viskt = 0._R8
+      dv % fhi_vzh = 0._R8
       dv % fhn = 0._R8
       dv % fhm = 0._R8
       dv % fhp = 0._R8
@@ -1503,11 +1611,21 @@
       deallocate( dv % fnaPSch )
       deallocate( dv % fna_fcor )
       deallocate( dv % fna_nodrift )
+      deallocate( dv % fna_pll )
+      deallocate( dv % fna_pinch )
+      deallocate( dv % fna_ecrb )
+      deallocate( dv % fna_dia )
+      deallocate( dv % fna_ch )
+      deallocate( dv % fna_nanom )
+      deallocate( dv % fna_panom )
       deallocate( dv % fna_eir )
       deallocate( dv % fna_ExB )
       deallocate( dv % fne_eir )
 
       deallocate( dv % fmo )
+      deallocate( dv % fmo_flua )
+      deallocate( dv % fmo_cvsa )
+      deallocate( dv % fmo_hybr )
 
       deallocate( dv % ne )
       deallocate( dv % ne2 )
@@ -1544,6 +1662,17 @@
       deallocate( dv % fhit )
       deallocate( dv % fhi_eir )
       deallocate( dv % fhi_ExB )
+      deallocate( dv % fhi_conv )
+      deallocate( dv % fhi_cond )
+      deallocate( dv % fhi_dia )
+      deallocate( dv % fhi_strange )
+      deallocate( dv % fhi_inert )
+      deallocate( dv % fhi_vispar )
+      deallocate( dv % fhi_visper )
+      deallocate( dv % fhi_visq )
+      deallocate( dv % fhi_anml )
+      deallocate( dv % fhi_viskt )
+      deallocate( dv % fhi_vzh )
       deallocate( dv % fhe )
       deallocate( dv % fhn )
       deallocate( dv % fhe_mdf )
@@ -1551,6 +1680,11 @@
       deallocate( dv % fhet )
       deallocate( dv % fhe_eir )
       deallocate( dv % fhe_ExB )
+      deallocate( dv % fhe_conv )
+      deallocate( dv % fhe_cond )
+      deallocate( dv % fhe_thermj )
+      deallocate( dv % fhe_dia )
+      deallocate( dv % fhe_strange )
 
       deallocate( dv % fhm )
       deallocate( dv % fhp )
@@ -1852,13 +1986,31 @@
       allocate( srw % b2sihs_str( nCv ), SOURCE=0._R8 )
 
       allocate( srw % sna0_eir_tot( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % sna0_eir_papl( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % sna0_eir_pmpl( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % sna0_eir_pipl( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % sna0_eir_pppl( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % sna0_eir_core( nCv, 0:ns-1 ), SOURCE=0._R8 )
       allocate( srw % smo0_eir_tot( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % smo0_eir_mapl( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % smo0_eir_mmpl( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % smo0_eir_mipl( nCv, 0:ns-1 ), SOURCE=0._R8 )
+      allocate( srw % smo0_eir_mppl( nCv, 0:ns-1 ), SOURCE=0._R8 )
       allocate( srw % smr0_eir_tot( nCv, 0:ns-1 ), SOURCE=0._R8 )
       allocate( srw % smd0_eir_tot( nCv, 0:ns-1 ), SOURCE=0._R8 )
       allocate( srw % sne0_eir_tot( nCv ), SOURCE=0._R8 )
       allocate( srw % she0_eir_tot( nCv ), SOURCE=0._R8 )
+      allocate( srw % she0_eir_eael( nCv ), SOURCE=0._R8 )
+      allocate( srw % she0_eir_emel( nCv ), SOURCE=0._R8 )
+      allocate( srw % she0_eir_eiel( nCv ), SOURCE=0._R8 )
+      allocate( srw % she0_eir_epel( nCv ), SOURCE=0._R8 )
       allocate( srw % shn0_eir_tot( nCv ), SOURCE=0._R8 )
       allocate( srw % shi0_eir_tot( nCv ), SOURCE=0._R8 )
+      allocate( srw % shi0_eir_eapl( nCv ), SOURCE=0._R8 )
+      allocate( srw % shi0_eir_empl( nCv ), SOURCE=0._R8 )
+      allocate( srw % shi0_eir_eipl( nCv ), SOURCE=0._R8 )
+      allocate( srw % shi0_eir_eppl( nCv ), SOURCE=0._R8 )
+      allocate( srw % b2npht_shei( nCv ), SOURCE=0._R8 )
       allocate( srw % sch0_eir_tot( nCv ), SOURCE=0._R8 )
 #else
       allocate( srw % sch0( nCv, 0:3 ) )
@@ -1932,12 +2084,30 @@
       allocate( srw % b2sihs_str( nCv ) )
 
       allocate( srw % sna0_eir_tot( nCv, 0:ns-1 ) )
+      allocate( srw % sna0_eir_papl( nCv, 0:ns-1 ) )
+      allocate( srw % sna0_eir_pmpl( nCv, 0:ns-1 ) )
+      allocate( srw % sna0_eir_pipl( nCv, 0:ns-1 ) )
+      allocate( srw % sna0_eir_pppl( nCv, 0:ns-1 ) )
+      allocate( srw % sna0_eir_core( nCv, 0:ns-1 ) )
       allocate( srw % smo0_eir_tot( nCv, 0:ns-1 ) )
+      allocate( srw % smo0_eir_mapl( nCv, 0:ns-1 ) )
+      allocate( srw % smo0_eir_mmpl( nCv, 0:ns-1 ) )
+      allocate( srw % smo0_eir_mipl( nCv, 0:ns-1 ) )
+      allocate( srw % smo0_eir_mppl( nCv, 0:ns-1 ) )
       allocate( srw % smr0_eir_tot( nCv, 0:ns-1 ) )
       allocate( srw % smd0_eir_tot( nCv, 0:ns-1 ) )
       allocate( srw % sne0_eir_tot( nCv ) )
       allocate( srw % she0_eir_tot( nCv ) )
+      allocate( srw % she0_eir_eael( nCv ) )
+      allocate( srw % she0_eir_emel( nCv ) )
+      allocate( srw % she0_eir_eiel( nCv ) )
+      allocate( srw % she0_eir_epel( nCv ) )
       allocate( srw % shi0_eir_tot( nCv ) )
+      allocate( srw % shi0_eir_eapl( nCv ) )
+      allocate( srw % shi0_eir_empl( nCv ) )
+      allocate( srw % shi0_eir_eipl( nCv ) )
+      allocate( srw % shi0_eir_eppl( nCv ) )
+      allocate( srw % b2npht_shei( nCv ) )
       allocate( srw % shn0_eir_tot( nCv ) )
       allocate( srw % sch0_eir_tot( nCv ) )
 
@@ -2012,12 +2182,30 @@
       srw % b2sihs_str = 0.0_R8
 
       srw % sna0_eir_tot = 0.0_R8
+      srw % sna0_eir_papl = 0.0_R8
+      srw % sna0_eir_pmpl = 0.0_R8
+      srw % sna0_eir_pipl = 0.0_R8
+      srw % sna0_eir_pppl = 0.0_R8
+      srw % sna0_eir_core = 0.0_R8
       srw % smo0_eir_tot = 0.0_R8
+      srw % smo0_eir_mapl = 0.0_R8
+      srw % smo0_eir_mmpl = 0.0_R8
+      srw % smo0_eir_mipl = 0.0_R8
+      srw % smo0_eir_mppl = 0.0_R8
       srw % smr0_eir_tot = 0.0_R8
       srw % smd0_eir_tot = 0.0_R8
       srw % sne0_eir_tot = 0.0_R8
       srw % she0_eir_tot = 0.0_R8
+      srw % she0_eir_eael = 0.0_R8
+      srw % she0_eir_emel = 0.0_R8
+      srw % she0_eir_eiel = 0.0_R8
+      srw % she0_eir_epel = 0.0_R8
       srw % shi0_eir_tot = 0.0_R8
+      srw % shi0_eir_eapl = 0.0_R8
+      srw % shi0_eir_empl = 0.0_R8
+      srw % shi0_eir_eipl = 0.0_R8
+      srw % shi0_eir_eppl = 0.0_R8
+      srw % b2npht_shei = 0.0_R8
       srw % shn0_eir_tot = 0.0_R8
       srw % sch0_eir_tot = 0.0_R8
 #endif
@@ -2101,12 +2289,30 @@
       deallocate( srw % b2sihs_str )
 
       deallocate( srw % sna0_eir_tot )
+      deallocate( srw % sna0_eir_papl )
+      deallocate( srw % sna0_eir_pmpl )
+      deallocate( srw % sna0_eir_pipl )
+      deallocate( srw % sna0_eir_pppl )
+      deallocate( srw % sna0_eir_core )
       deallocate( srw % smo0_eir_tot )
+      deallocate( srw % smo0_eir_mapl )
+      deallocate( srw % smo0_eir_mmpl )
+      deallocate( srw % smo0_eir_mipl )
+      deallocate( srw % smo0_eir_mppl )
       deallocate( srw % smr0_eir_tot )
       deallocate( srw % smd0_eir_tot )
       deallocate( srw % sne0_eir_tot )
       deallocate( srw % she0_eir_tot )
+      deallocate( srw % she0_eir_eael )
+      deallocate( srw % she0_eir_emel )
+      deallocate( srw % she0_eir_eiel )
+      deallocate( srw % she0_eir_epel )
       deallocate( srw % shi0_eir_tot )
+      deallocate( srw % shi0_eir_eapl )
+      deallocate( srw % shi0_eir_empl )
+      deallocate( srw % shi0_eir_eipl )
+      deallocate( srw % shi0_eir_eppl )
+      deallocate( srw % b2npht_shei )
       deallocate( srw % shn0_eir_tot )
       deallocate( srw % sch0_eir_tot )
 
@@ -2993,11 +3199,42 @@
 
 *   ..read fluxes
       call cfrure (ninp, nFc*2*ns, st % dv % fna, 'fna')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fna_pll, 'fna_pll')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fna_pinch, 'fna_pinch')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fna_ecrb, 'fna_ecrb')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fna_dia, 'fna_dia')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fna_ch, 'fna_ch')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fna_nanom, 'fna_nanom')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fna_panom, 'fna_panom')
       call cfrure (ninp, nFc*2,    st % dv % fne, 'fne')
       call cfrure (ninp, nFc*2,    st % dv % fni, 'fni')
       call cfrure (ninp, nFc*2*ns, st % dv % fmo, 'fmo')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fmo_flua, 'fmo_flua')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fmo_cvsa, 'fmo_cvsa')
+      call cfrure_opt (ninp, nFc*2*ns, st % dv % fmo_hybr, 'fmo_hybr')
       call cfrure (ninp, nFc*2,    st % dv % fhe, 'fhe')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhe_conv, 'fhe_conv')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhe_cond, 'fhe_cond')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhe_thermj,
+     .                                                     'fhe_thermj')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhe_dia, 'fhe_dia')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhe_strange,
+     .                                                    'fhe_strange')
       call cfrure (ninp, nFc*2,    st % dv % fhi, 'fhi')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_conv, 'fhi_conv')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_cond, 'fhi_cond')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_dia, 'fhi_dia')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_strange,
+     .                                                    'fhi_strange')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_inert, 'fhi_inert')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_vispar,
+     .                                                     'fhi_vispar')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_visper,
+     .                                                     'fhi_visper')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_visq, 'fhi_visq')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_anml, 'fhi_anml')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_viskt, 'fhi_viskt')
+      call cfrure_opt (ninp, nFc*2,    st % dv % fhi_vzh, 'fhi_vzh')
       call cfrure (ninp, nFc*2,    st % dv % fhn, 'fhn')
       call cfrure (ninp, nFc*2,    st % dv % fch, 'fch')
       call cfrure (ninp, nFc*2,    st % dv % fch_32, 'fch_32')
@@ -3111,13 +3348,49 @@
         call cfrure (ninp, nCv,    st % srw % b2stbc_szt, 'b2stbc_szt')
         call cfrure (ninp, nCv,    st % srw % b2stbr_szt, 'b2stbr_szt')
         call cfrure (ninp, nCv*ns, st % srw % sna0_eir_tot, 'sna0_eir')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % sna0_eir_papl,
+     .                                                  'sna0_eir_papl')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % sna0_eir_pmpl,
+     .                                                  'sna0_eir_pmpl')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % sna0_eir_pipl,
+     .                                                  'sna0_eir_pipl')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % sna0_eir_pppl,
+     .                                                  'sna0_eir_pppl')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % sna0_eir_core,
+     .                                                  'sna0_eir_core')
         call cfrure (ninp, nCv*ns, st % srw % smo0_eir_tot, 'smo0_eir')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % smo0_eir_mapl,
+     .                                                  'smo0_eir_mapl')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % smo0_eir_mmpl,
+     .                                                  'smo0_eir_mmpl')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % smo0_eir_mipl,
+     .                                                  'smo0_eir_mipl')
+        call cfrure_opt (ninp, nCv*ns,   st % srw % smo0_eir_mppl,
+     .                                                  'smo0_eir_mppl')
         call cfrure_opt
      .              (ninp, nCv*ns, st % srw % smr0_eir_tot, 'smr0_eir')
         call cfrure_opt
      .              (ninp, nCv*ns, st % srw % smd0_eir_tot, 'smd0_eir')
         call cfrure (ninp, nCv,    st % srw % she0_eir_tot, 'she0_eir')
+        call cfrure_opt (ninp, nCv,      st % srw % she0_eir_eael,
+     .                                                  'she0_eir_eael')
+        call cfrure_opt (ninp, nCv,      st % srw % she0_eir_emel,
+     .                                                  'she0_eir_emel')
+        call cfrure_opt (ninp, nCv,      st % srw % she0_eir_eiel,
+     .                                                  'she0_eir_eiel')
+        call cfrure_opt (ninp, nCv,      st % srw % she0_eir_epel,
+     .                                                  'she0_eir_epel')
         call cfrure (ninp, nCv,    st % srw % shi0_eir_tot, 'shi0_eir')
+        call cfrure_opt (ninp, nCv,      st % srw % shi0_eir_eapl,
+     .                                                  'shi0_eir_eapl')
+        call cfrure_opt (ninp, nCv,      st % srw % shi0_eir_empl,
+     .                                                  'shi0_eir_empl')
+        call cfrure_opt (ninp, nCv,      st % srw % shi0_eir_eipl,
+     .                                                  'shi0_eir_eipl')
+        call cfrure_opt (ninp, nCv,      st % srw % shi0_eir_eppl,
+     .                                                  'shi0_eir_eppl')
+        call cfrure_opt (ninp, nCv,      st % srw % b2npht_shei,
+     .                                                    'b2npht_shei')
         call cfrure (ninp, nCv,    st % srw % sch0_eir_tot, 'sch0_eir')
         call cfrure (ninp, nCv,    st % srw % sne0_eir_tot, 'sne0_eir')
         call cfrure (ninp, nCv,    st % srw % b2sihs_divua,
@@ -3240,11 +3513,39 @@
 
 *   ..save fluxes
       call cfwure (nout, nFc*2*ns, st % dv % fna, 'fna')
+      call cfwure (nout, nFc*2*ns, st % dv % fna_pll, 'fna_pll')
+      call cfwure (nout, nFc*2*ns, st % dv % fna_pinch, 'fna_pinch')
+      call cfwure (nout, nFc*2*ns, st % dv % fna_ecrb, 'fna_ecrb')
+      call cfwure (nout, nFc*2*ns, st % dv % fna_dia, 'fna_dia')
+      call cfwure (nout, nFc*2*ns, st % dv % fna_ch, 'fna_ch')
+      call cfwure (nout, nFc*2*ns, st % dv % fna_nanom, 'fna_nanom')
+      call cfwure (nout, nFc*2*ns, st % dv % fna_panom, 'fna_panom')
       call cfwure (nout, nFc*2,    st % dv % fne, 'fne')
       call cfwure (nout, nFc*2,    st % dv % fni, 'fni')
       call cfwure (nout, nFc*2*ns, st % dv % fmo, 'fmo')
+      call cfwure (nout, nFc*2*ns, st % dv % fmo_flua, 'fmo_flua')
+      call cfwure (nout, nFc*2*ns, st % dv % fmo_cvsa, 'fmo_cvsa')
+      call cfwure (nout, nFc*2*ns, st % dv % fmo_hybr, 'fmo_hybr')
       call cfwure (nout, nFc*2,    st % dv % fhe, 'fhe')
+      call cfwure (nout, nFc*2,    st % dv % fhe_conv, 'fhe_conv')
+      call cfwure (nout, nFc*2,    st % dv % fhe_cond, 'fhe_cond')
+      call cfwure (nout, nFc*2,    st % dv % fhe_thermj, 'fhe_thermj')
+      call cfwure (nout, nFc*2,    st % dv % fhe_dia, 'fhe_dia')
+      call cfwure (nout, nFc*2,    st % dv % fhe_strange,
+     .                                                    'fhe_strange')
       call cfwure (nout, nFc*2,    st % dv % fhi, 'fhi')
+      call cfwure (nout, nFc*2,    st % dv % fhi_conv, 'fhi_conv')
+      call cfwure (nout, nFc*2,    st % dv % fhi_cond, 'fhi_cond')
+      call cfwure (nout, nFc*2,    st % dv % fhi_dia, 'fhi_dia')
+      call cfwure (nout, nFc*2,    st % dv % fhi_strange,
+     .                                                    'fhi_strange')
+      call cfwure (nout, nFc*2,    st % dv % fhi_inert, 'fhi_inert')
+      call cfwure (nout, nFc*2,    st % dv % fhi_vispar, 'fhi_vispar')
+      call cfwure (nout, nFc*2,    st % dv % fhi_visper, 'fhi_visper')
+      call cfwure (nout, nFc*2,    st % dv % fhi_visq, 'fhi_visq')
+      call cfwure (nout, nFc*2,    st % dv % fhi_anml, 'fhi_anml')
+      call cfwure (nout, nFc*2,    st % dv % fhi_viskt, 'fhi_viskt')
+      call cfwure (nout, nFc*2,    st % dv % fhi_vzh, 'fhi_vzh')
       call cfwure (nout, nFc*2,    st % dv % fhn, 'fhn')
       call cfwure (nout, nFc*2,    st % dv % fch, 'fch')
       call cfwure (nout, nFc*2,    st % dv % fch_32, 'fch_32')
@@ -3358,11 +3659,47 @@
         call cfwure (nout, nCv,    st % srw % b2stbc_szt, 'b2stbc_szt')
         call cfwure (nout, nCv,    st % srw % b2stbr_szt, 'b2stbr_szt')
         call cfwure (nout, nCv*ns, st % srw % sna0_eir_tot, 'sna0_eir')
+        call cfwure (nout, nCv*ns,   st % srw % sna0_eir_papl,
+     .                                                  'sna0_eir_papl')
+        call cfwure (nout, nCv*ns,   st % srw % sna0_eir_pmpl,
+     .                                                  'sna0_eir_pmpl')
+        call cfwure (nout, nCv*ns,   st % srw % sna0_eir_pipl,
+     .                                                  'sna0_eir_pipl')
+        call cfwure (nout, nCv*ns,   st % srw % sna0_eir_pppl,
+     .                                                  'sna0_eir_pppl')
+        call cfwure (nout, nCv*ns,   st % srw % sna0_eir_core,
+     .                                                  'sna0_eir_core')
         call cfwure (nout, nCv*ns, st % srw % smo0_eir_tot, 'smo0_eir')
+        call cfwure (nout, nCv*ns,   st % srw % smo0_eir_mapl,
+     .                                                  'smo0_eir_mapl')
+        call cfwure (nout, nCv*ns,   st % srw % smo0_eir_mmpl,
+     .                                                  'smo0_eir_mmpl')
+        call cfwure (nout, nCv*ns,   st % srw % smo0_eir_mipl,
+     .                                                  'smo0_eir_mipl')
+        call cfwure (nout, nCv*ns,   st % srw % smo0_eir_mppl,
+     .                                                  'smo0_eir_mppl')
         call cfwure (nout, nCv*ns, st % srw % smr0_eir_tot, 'smr0_eir')
         call cfwure (nout, nCv*ns, st % srw % smd0_eir_tot, 'smd0_eir')
         call cfwure (nout, nCv,    st % srw % she0_eir_tot, 'she0_eir')
+        call cfwure (nout, nCv,      st % srw % she0_eir_eael,
+     .                                                  'she0_eir_eael')
+        call cfwure (nout, nCv,      st % srw % she0_eir_emel,
+     .                                                  'she0_eir_emel')
+        call cfwure (nout, nCv,      st % srw % she0_eir_eiel,
+     .                                                  'she0_eir_eiel')
+        call cfwure (nout, nCv,      st % srw % she0_eir_epel,
+     .                                                  'she0_eir_epel')
         call cfwure (nout, nCv,    st % srw % shi0_eir_tot, 'shi0_eir')
+        call cfwure (nout, nCv,      st % srw % shi0_eir_eapl,
+     .                                                  'shi0_eir_eapl')
+        call cfwure (nout, nCv,      st % srw % shi0_eir_empl,
+     .                                                  'shi0_eir_empl')
+        call cfwure (nout, nCv,      st % srw % shi0_eir_eipl,
+     .                                                  'shi0_eir_eipl')
+        call cfwure (nout, nCv,      st % srw % shi0_eir_eppl,
+     .                                                  'shi0_eir_eppl')
+        call cfwure (nout, nCv,      st % srw % b2npht_shei,
+     .                                                    'b2npht_shei')
         call cfwure (nout, nCv,    st % srw % sch0_eir_tot, 'sch0_eir')
         call cfwure (nout, nCv,    st % srw % sne0_eir_tot, 'sne0_eir')
         call cfwure (nout, nCv,    st % srw % b2sihs_divua,

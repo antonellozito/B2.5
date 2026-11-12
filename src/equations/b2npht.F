@@ -447,6 +447,7 @@ c residuals for separate neutral energy equation
       enddo
 
 #ifndef FIXED_POINT
+      srw%b2npht_shei = shei
       if (balance_netcdf.ne.0) then
         b2npht_shei_bal = shei                                           !djm Jan2017
       endif

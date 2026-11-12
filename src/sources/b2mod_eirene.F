@@ -3204,6 +3204,19 @@ cdjm Jan2017 Calculate linearised components of source
                     endif
 #endif
                   end if !}
+#ifndef FIXED_POINT
+                  if (balance_netcdf.ne.0 .or.
+     *                switch%write_eirene_sources.ne.0) then
+                    st%srw%sna0_eir_papl(ic,is) =
+     &               st%srw%sna0_eir_papl(ic,is)+t0_a
+                    st%srw%sna0_eir_pmpl(ic,is) =
+     &               st%srw%sna0_eir_pmpl(ic,is)+t0_m
+                    st%srw%sna0_eir_pipl(ic,is) =
+     &               st%srw%sna0_eir_pipl(ic,is)+t0_i
+                    st%srw%sna0_eir_pppl(ic,is) =
+     &               st%srw%sna0_eir_pppl(ic,is)+t0_p
+                  endif
+#endif
                   if(crcstra(istrai).ne.'V' .or. t00.gt.0.0_R8)
      >             t0=t00*sclstra(j,istrai)
                   ssni(istrai,is)=ssni(istrai,is)+t0
@@ -3351,6 +3364,19 @@ cdjm Jan2017 Calculate linearised components of source
                     endif
 #endif
                   end if !}
+#ifndef FIXED_POINT
+                  if (balance_netcdf.ne.0 .or.
+     *                switch%write_eirene_sources.ne.0) then
+                    st%srw%smo0_eir_mapl(ic,is) =
+     &               st%srw%smo0_eir_mapl(ic,is)+t0_a
+                    st%srw%smo0_eir_mmpl(ic,is) =
+     &               st%srw%smo0_eir_mmpl(ic,is)+t0_m
+                    st%srw%smo0_eir_mipl(ic,is) =
+     &               st%srw%smo0_eir_mipl(ic,is)+t0_i
+                    st%srw%smo0_eir_mppl(ic,is) =
+     &               st%srw%smo0_eir_mppl(ic,is)+t0_p
+                  endif
+#endif
                   SSMO(istrai,IS)=SSMO(istrai,IS)+t0
 c*** calculate the integral sources for nregion regions, 3 instants:
 c*** before correction (r), after correction (c), after iteration (i)
@@ -3620,6 +3646,19 @@ cdjm Jan2017 Calculate linearised components of source
                 endif
 #endif
               end if !}
+#ifndef FIXED_POINT
+              if (balance_netcdf.ne.0 .or.
+     *            switch%write_eirene_sources.ne.0) then
+                st%srw%she0_eir_eael(ic) =
+     &           st%srw%she0_eir_eael(ic)+t0_a
+                st%srw%she0_eir_emel(ic) =
+     &           st%srw%she0_eir_emel(ic)+t0_m
+                st%srw%she0_eir_eiel(ic) =
+     &           st%srw%she0_eir_eiel(ic)+t0_i
+                st%srw%she0_eir_epel(ic) =
+     &           st%srw%she0_eir_epel(ic)+t0_p
+              endif
+#endif
               ssee(istrai)=ssee(istrai)+t0
 c*** calculate the integral sources for nregion regions, 3 instants:
 c*** before correction (r), after correction (c), after iteration (i)
@@ -4012,6 +4051,19 @@ cdjm Jan2017 Calculate linearised components of source
                 endif
 #endif
               end if !}
+#ifndef FIXED_POINT
+              if (balance_netcdf.ne.0 .or.
+     *            switch%write_eirene_sources.ne.0) then
+                st%srw%shi0_eir_eapl(ic) =
+     &           st%srw%shi0_eir_eapl(ic)+t0_a
+                st%srw%shi0_eir_empl(ic) =
+     &           st%srw%shi0_eir_empl(ic)+t0_m
+                st%srw%shi0_eir_eipl(ic) =
+     &           st%srw%shi0_eir_eipl(ic)+t0_i
+                st%srw%shi0_eir_eppl(ic) =
+     &           st%srw%shi0_eir_eppl(ic)+t0_p
+              endif
+#endif
             end if !}
 
         end do !} ic
@@ -4197,6 +4249,13 @@ cxpb  core recycling into ions of the highest ionisation stage
                 endif
 #endif
               end if !}
+#ifndef FIXED_POINT
+              if (balance_netcdf.ne.0 .or.
+     *            switch%write_eirene_sources.ne.0) then
+                st%srw%sna0_eir_core(iCv,ishigh(j)) =
+     &           st%srw%sna0_eir_core(iCv,ishigh(j))+t0
+              endif
+#endif
             enddo
           endif
         enddo

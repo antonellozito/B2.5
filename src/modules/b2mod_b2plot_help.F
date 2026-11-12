@@ -4,7 +4,7 @@
 
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
-      parameter(nlabels=429,nfns=239,nsparameters=34,nelabels=36,
+      parameter(nlabels=499,nfns=239,nsparameters=34,nelabels=36,
      *     nconstants=10,nefns=50,nwfns=62,nwlabels=97,ntrgfns=89)
 
       integer, save ::
@@ -118,6 +118,22 @@
      1  'ro'      , 'wpe'     , 'wce'     , 'wci'     , 'vthe'    ,
      2  'vthi'    , 'valfven' , 'fchxvspa', 'fchyvspa', 'fchxvspe',
      3  'fchyvspe', 'fchxn'   , 'fchyn'   /
+      data labels(430:479) /
+     1  'fnaxpll'  , 'fnaypll'  , 'fnaxpnch' , 'fnaypnch' , 'fnaxecrb' ,
+     2  'fnayecrb' , 'fnaxdia'  , 'fnaydia'  , 'fnaxch'   , 'fnaych'   ,
+     3  'fnaxnanm' , 'fnaynanm' , 'fnaxpanm' , 'fnaypanm' , 'fmoxflua' ,
+     4  'fmoyflua' , 'fmoxcvsa' , 'fmoycvsa' , 'fmoxhybr' , 'fmoyhybr' ,
+     5  'fhexconv' , 'fheyconv' , 'fhexcond' , 'fheycond' , 'fhexthj'  ,
+     6  'fheythj'  , 'fhexdia'  , 'fheydia'  , 'fhexstr'  , 'fheystr'  ,
+     7  'fhixconv' , 'fhiyconv' , 'fhixcond' , 'fhiycond' , 'fhixdia'  ,
+     8  'fhiydia'  , 'fhixstr'  , 'fhiystr'  , 'fhixinrt' , 'fhiyinrt' ,
+     9  'fhixvspa' , 'fhiyvspa' , 'fhixvspe' , 'fhiyvspe' , 'fhixvisq' ,
+     *  'fhiyvisq' , 'fhixanml' , 'fhiyanml' , 'fhixvskt' , 'fhiyvskt' /
+      data labels(480:499) /
+     1  'fhixvzh'  , 'fhiyvzh'  , 'snapapl'  , 'snapmpl'  , 'snapipl'  ,
+     2  'snapppl'  , 'snacore'  , 'smomapl'  , 'smommpl'  , 'smomipl'  ,
+     3  'smomppl'  , 'sheeael'  , 'sheemel'  , 'sheeiel'  , 'sheepel'  ,
+     4  'shieapl'  , 'shiempl'  , 'shieipl'  , 'shieppl'  , 'shei'     /
       data descriptions(1:10) /
      1    'Pitch',
      2    'b_{x} (T) (poloidal)',
@@ -590,6 +606,83 @@
      1    'Rad comp of fchvisper (A)',
      2    'Pol comp of fchin (A)',
      3    'Rad comp of fchin (A)'/
+      data descriptions(430:439) /
+     1    'Poloidal parallel particle flux (s^{-1})',
+     2    'Radial parallel particle flux (s^{-1})',
+     3    'Poloidal pinch particle flux (s^{-1})',
+     4    'Radial pinch particle flux (s^{-1})',
+     5    'Poloidal ExB drift particle flux (s^{-1})',
+     6    'Radial ExB drift particle flux (s^{-1})',
+     7    'Poloidal grad-B drift particle flux (s^{-1})',
+     8    'Radial grad-B drift particle flux (s^{-1})',
+     9    'Poloidal particle flux carried by currents (s^{-1})',
+     *    'Radial particle flux carried by currents (s^{-1})'/
+      data descriptions(440:449) /
+     1    'Poloidal density diffusion particle flux (s^{-1})',
+     2    'Radial density diffusion particle flux (s^{-1})',
+     3    'Poloidal pressure diffusion particle flux (s^{-1})',
+     4    'Radial pressure diffusion particle flux (s^{-1})',
+     5    'Poloidal convected momentum flux (N)',
+     6    'Radial convected momentum flux (N)',
+     7    'Poloidal viscous momentum flux (N)',
+     8    'Radial viscous momentum flux (N)',
+     9    'Poloidal hybrid correction of momentum flux (N)',
+     *    'Radial hybrid correction of momentum flux (N)'/
+      data descriptions(450:459) /
+     1    'Poloidal convective electron heat flux (W)',
+     2    'Radial convective electron heat flux (W)',
+     3    'Poloidal conductive electron heat flux (W)',
+     4    'Radial conductive electron heat flux (W)',
+     5    'Poloidal thermoelectric electron heat flux (W)',
+     6    'Radial thermoelectric electron heat flux (W)',
+     7    'Poloidal diamagnetic electron heat flux (W)',
+     8    'Radial diamagnetic electron heat flux (W)',
+     9    'Poloidal anomalous convective el. heat flux (W)',
+     *    'Radial anomalous convective el. heat flux (W)'/
+      data descriptions(460:469) /
+     1    'Poloidal convective ion heat flux (W)',
+     2    'Radial convective ion heat flux (W)',
+     3    'Poloidal conductive ion heat flux (W)',
+     4    'Radial conductive ion heat flux (W)',
+     5    'Poloidal diamagnetic ion heat flux (W)',
+     6    'Radial diamagnetic ion heat flux (W)',
+     7    'Poloidal anomalous convective ion heat flux (W)',
+     8    'Radial anomalous convective ion heat flux (W)',
+     9    'Poloidal ion heat flux by inertia current (W)',
+     *    'Radial ion heat flux by inertia current (W)'/
+      data descriptions(470:479) /
+     1    'Poloidal ion heat flux by par. viscosity current (W)',
+     2    'Radial ion heat flux by par. viscosity current (W)',
+     3    'Poloidal ion heat flux by perp. viscosity current (W)',
+     4    'Radial ion heat flux by perp. viscosity current (W)',
+     5    'Poloidal ion heat flux by q viscosity current (W)',
+     6    'Radial ion heat flux by q viscosity current (W)',
+     7    'Poloidal ion heat flux by anomalous current (W)',
+     8    'Radial ion heat flux by anomalous current (W)',
+     9    'Poloidal ion heat flux by kt-model current (W)',
+     *    'Radial ion heat flux by kt-model current (W)'/
+      data descriptions(480:489) /
+     1    'Poloidal Zhdanov viscous ion heat flux (W)',
+     2    'Radial Zhdanov viscous ion heat flux (W)',
+     3    'Eirene particle source, atoms (s^{-1})',
+     4    'Eirene particle source, molecules (s^{-1})',
+     5    'Eirene particle source, test ions (s^{-1})',
+     6    'Eirene particle source, recombination (s^{-1})',
+     7    'Eirene particle source, core (s^{-1})',
+     8    'Eirene momentum source, atoms (N)',
+     9    'Eirene momentum source, molecules (N)',
+     *    'Eirene momentum source, test ions (N)'/
+      data descriptions(490:499) /
+     1    'Eirene momentum source, recombination (N)',
+     2    'Eirene electron energy source, atoms (W)',
+     3    'Eirene electron energy source, molecules (W)',
+     4    'Eirene electron energy source, test ions (W)',
+     5    'Eirene electron energy source, recomb. (W)',
+     6    'Eirene ion energy source, atoms (W)',
+     7    'Eirene ion energy source, molecules (W)',
+     8    'Eirene ion energy source, test ions (W)',
+     9    'Eirene ion energy source, recombination (W)',
+     *    'Electron-ion equipartition power (W)'/
       data dimensions(1:50) /
      1    1,      1,      1,      1,      1,
      2    2,      2,      2,      2,      2,
@@ -687,6 +780,22 @@
      1    2,      1,      1,      2,      1,
      2    2,      2,      1,      1,      1,
      3    1,      1,      1/
+      data dimensions(430:479) /
+     1    2,      2,      2,      2,      2,
+     2    2,      2,      2,      2,      2,
+     3    2,      2,      2,      2,      2,
+     4    2,      2,      2,      2,      2,
+     5    1,      1,      1,      1,      1,
+     6    1,      1,      1,      1,      1,
+     7    1,      1,      1,      1,      1,
+     8    1,      1,      1,      1,      1,
+     9    1,      1,      1,      1,      1,
+     *    1,      1,      1,      1,      1/
+      data dimensions(480:499) /
+     1    1,      1,      2,      2,      2,
+     2    2,      2,      2,      2,      2,
+     3    2,      1,      1,      1,      1,
+     4    1,      1,      1,      1,      1/
       data fns(1:50) /
      1 'sumx', 'sumy', 'f.x' , 'f.y' , 'intx',
      2 'inty', 'f.lx', 'f.ly', 'cont', 'surf',
