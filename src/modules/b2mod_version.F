@@ -355,4 +355,7 @@ c                                 Added srw arrays to b2fplasma
 c                                 Added multi-species netCDF tally output
 c                                 Open-source release
 c    Version 03.002.002  11.08.26 Added optional topology records to b2fgmtry
+c                        12.11.26 Added to b2fplasma the components of fna, fmo,
+c                                 fhe and fhi, the Eirene sources by process
+c                                 and the electron-ion equipartition
 c

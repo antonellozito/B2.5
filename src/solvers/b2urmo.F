@@ -2,7 +2,8 @@
 *.specification
 
       subroutine b2urmo (nCv, nFc, nVx, switch, geo, mpg, isb, ub, rob,
-     .  smb, flub, cvsb, resmb, fmb, fkb, cvsb_eff)                      !srv 02.06.11
+     .  smb, flub, cvsb, resmb, fmb, fkb, cvsb_eff,                      !srv 02.06.11
+     .  fmb_flua, fmb_cvsa, fmb_hybr)
       use b2mod_types
       use b2mod_switches
       use b2us_geo
@@ -32,7 +33,8 @@
      *   cvsb(nFc,0:1)
 *   ..output arguments (unspecified on entry)
       real (kind=R8) ::
-     *   resmb(nCv), fmb(nFc,0:1), fkb(nFc,0:1), cvsb_eff(nFc,0:1)
+     *   resmb(nCv), fmb(nFc,0:1), fkb(nFc,0:1), cvsb_eff(nFc,0:1),
+     *   fmb_flua(nFc,0:1), fmb_cvsa(nFc,0:1), fmb_hybr(nFc,0:1)
 
 *-----------------------------------------------------------------------
 *.documentation
@@ -54,6 +56,9 @@
 *     The flux will be computed in the array fmb; it has the form:
 *       fmbx = flubx*ub-cvsbx*(d/dx)ub
 *       fmby = fluby*up-cvsby*(d/dy)ub
+*     fmb is split into the convected part fmb_flua, the viscous part
+*     fmb_cvsa = -cvsb*(d/dx)ub and the rest of the hybrid scheme,
+*     fmb_hybr, so that fmb = fmb_flua + fmb_cvsa + fmb_hybr.
 *     The right hand side has a linearised representation with
 *     coefficients given by smb. This linearisation may include a
 *     contribution from an implicit discretisation in time.
@@ -113,11 +118,14 @@ cwdk store effective viscosity, for use in viscous heating
       cvsb_eff  = -flv/(wrkf + eps)
 
 #ifndef FIXED_POINT
-      if (balance_netcdf.ne.0) then !djm Jan2017
-        fmo_flua(:,:,isb)=flf
+        fmb_flua=flf
         call diff(nCv,nFc,nVx,0,geo,mpg,ub,ubv,dub)
-        fmo_cvsa(:,:,isb)=-cvsb*dub
-        fmo_hybr(:,:,isb)=fmb-fmo_cvsa(:,:,isb)-fmo_flua(:,:,isb)
+        fmb_cvsa=-cvsb*dub
+        fmb_hybr=fmb-fmb_cvsa-fmb_flua
+      if (balance_netcdf.ne.0) then !djm Jan2017
+        fmo_flua(:,:,isb)=fmb_flua
+        fmo_cvsa(:,:,isb)=fmb_cvsa
+        fmo_hybr(:,:,isb)=fmb_hybr
       endif
 #endif
 

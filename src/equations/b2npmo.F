@@ -391,6 +391,7 @@ c time-dependent treatment
          smbch(:,k) = geo%cvVol*geo%cvHz*smbch(:,k)
          smbtf(:,k) = geo%cvVol*geo%cvHz*smbtf(:,k)
         enddo
+        srw%smpt(:,is) = smbtf(:,0)
         srw%smfr(:,is) = geo%cvVol*geo%cvHz*(
      &   (smbfrea(:,0) + smbfria(:,0)) +
      &   (smbfrea(:,1) + smbfria(:,1))*pl%ua(:,is) +
@@ -529,7 +530,8 @@ c time-dependent treatment
            call b2urmo (nCv, nFc, nVx, switch, geo, mpg, is,
      &       pl%ua(:,is), rob, smb, flub, co%cvsahz(:,:,is),
      &       dv%resmo0(:,is), dv%fmo(:,:,is), dv%fhm(:,:,is),
-     &       co%cvsahz_eff(:,:,is))
+     &       co%cvsahz_eff(:,:,is), dv%fmo_flua(:,:,is),
+     &       dv%fmo_cvsa(:,:,is), dv%fmo_hybr(:,:,is))
          endif
        endif
 *    .. calculate time-dependent source
@@ -575,7 +577,8 @@ cdjm Jan2017 update momentum source components for balance
      &            .or.switch%get_residuals.eq.1) then                   !srv 22.05.18
         call b2urmo (nCv, nFc, nVx, switch, geo, mpg, is, pl%ua(:,is),
      &    rob, smb, flub, co%cvsahz(:,:,is), dv%resmo(:,is),
-     &    dv%fmo(:,:,is), dv%fhm(:,:,is), co%cvsahz_eff(:,:,is))        !srv 04.07.08
+     &    dv%fmo(:,:,is), dv%fhm(:,:,is), co%cvsahz_eff(:,:,is),        !srv 04.07.08
+     &    dv%fmo_flua(:,:,is), dv%fmo_cvsa(:,:,is), dv%fmo_hybr(:,:,is))
       endif                                                             !srv 22.05.18
 *    ..modify residual for ckn scheme
       if (switch%b2mndt_ckn.eq.2) then
@@ -718,7 +721,9 @@ csw 21feb2014 and do this only for the solved species, i.e. added next branch
         call b2saxpy (nCv*4, 1.0_R8, smbcf, 1, smb, 1)                  !srv 09.07.01
         call b2saxpy (nCv*4, 1.0_R8, smban, 1, smb, 1)                  !srv 25.09.17
         call b2urmo (nCv, nFc, nVx, switch, geo, mpg,  is, pl%ua(:,is),
-     .     rob, smb, flub, co%cvsahz(:,:,is), wrk0, wrkf, wrkff, wrkfff)
+     .     rob, smb, flub, co%cvsahz(:,:,is), wrk0, wrkf, wrkff, wrkfff,
+     .     dv%fmo_flua(:,:,is), dv%fmo_cvsa(:,:,is),
+     .     dv%fmo_hybr(:,:,is))
 *    ..accumulate residual
         call b2saxpy (nCv, 1.0_R8, wrk0, 1, resmt, 1)
 *    ..accumulate smb
