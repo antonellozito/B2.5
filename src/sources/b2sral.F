@@ -22,9 +22,7 @@
 #ifndef FIXED_POINT
       use b2mod_balance
      & , only : b2stcx_sna0to1, b2stcx_smq0to3, b2stcx_shi0to3,
-     &          b2scdt_sna0to1, art_sna0to1, art_smo0to3, art_she0to3,
-     &          art_shi0to3, art_sch0to3, b2sral_sna0to1,
-     &          b2sral_smo0to3, balance_netcdf
+     &          b2scdt_sna0to1, balance_netcdf
 #endif
       use b2mod_ad
      & , only : b2sral_elm_count, ncall_b2sral, sources_inputfile
@@ -261,18 +259,8 @@
       call b2sqel (nCv, ns, ismain, switch, ev, st%pl%te, st%rt, st%rtw)
 #ifndef FIXED_POINT
 *   ..balance.nc: the sources are built anew here, without the time
-*     derivative of b2npco (b2mndt_style 2) and the artificial sources
-*     (equation_sources) that are added later
-      if (balance_netcdf.ne.0) then
-        b2scdt_sna0to1 = 0.0_R8
-        art_sna0to1 = 0.0_R8
-        art_smo0to3 = 0.0_R8
-        art_she0to3 = 0.0_R8
-        art_shi0to3 = 0.0_R8
-        art_sch0to3 = 0.0_R8
-        b2sral_sna0to1 = 0.0_R8
-        b2sral_smo0to3 = 0.0_R8
-      endif
+*     derivative of b2npco (b2mndt_style 2) that is added later
+      if (balance_netcdf.ne.0) b2scdt_sna0to1 = 0.0_R8
 #endif
 *   ..compute standard contributions due to boundaries
       wrong_flow = .false.                                              !xpb
@@ -542,14 +530,6 @@ csw 17oct2012, erase sna, smo, smq, (she, shi, sch) for fluid neutrals
       if(no_fluid_neutral_sources .eq. 1) then
        do is=0,ns-1
         if(is_neutral(is)) then
-#ifndef FIXED_POINT
-*   ..balance.nc: the sources removed here
-          if (balance_netcdf.ne.0) then
-            b2sral_sna0to1(:,:,is) = -st%sr%sna(:,:,is)
-            b2sral_smo0to3(:,:,is) = -st%sr%smo(:,:,is)-
-     &                               st%sr%smq(:,:,is)
-          endif
-#endif
           st%sr%sna(:,:,is) =0.d0
           st%sr%smo(:,:,is) =0.d0
           st%sr%smq(:,:,is) =0.d0

@@ -25,9 +25,7 @@
 #endif
      &          eirene_mc_papl_sna0to1, eirene_mc_pmpl_sna0to1,
      &          eirene_mc_pipl_sna0to1, eirene_mc_pppl_sna0to1,
-     &          eirene_mc_core_sna0to1, eirene_aver_sna0to1,
-     &          eirene_aver_smo0to3, eirene_aver_she0to3,
-     &          eirene_aver_shi0to3, b2stbr_sch0to3,
+     &          eirene_mc_core_sna0to1, b2stbr_sch0to3,
      &          balance_netcdf
 #endif
       use b2mod_subsys
@@ -738,18 +736,6 @@ cwdk       down in this routine
 
 cwdk if ird_aver > 0, all sources computed by Eirene are overwritten (!!!),
 cwdk i.e. fully replaced by the averaged values from b2faveri
-#ifndef FIXED_POINT
-*   ..balance.nc: the change of the sources by the averaging, the
-*     instantaneous sources are in the eirene_mc arrays
-          if (balance_netcdf.ne.0) then
-            eirene_aver_sna0to1 = -sna0_eir
-            eirene_aver_smo0to3 = -smo0_eir
-            eirene_aver_she0to3 = -she0_eir
-            eirene_aver_shi0to3 = -shi0_eir
-            if (switch%tn_style.eq.0)
-     &       eirene_aver_shi0to3 = eirene_aver_shi0to3 - shn0_eir
-          endif
-#endif
           sna0_eir = 0.0_R8
           smo0_eir = 0.0_R8
           smr0_eir = 0.0_R8
@@ -776,16 +762,6 @@ cwdk these are now put back into the constant part of the sources (0-component)
           she0_eir(:,0) = st%srw%she0_eir_tot
           shi0_eir(:,0) = st%srw%shi0_eir_tot
           shn0_eir(:,0) = st%srw%shn0_eir_tot
-#ifndef FIXED_POINT
-          if (balance_netcdf.ne.0) then
-            eirene_aver_sna0to1 = eirene_aver_sna0to1 + sna0_eir
-            eirene_aver_smo0to3 = eirene_aver_smo0to3 + smo0_eir
-            eirene_aver_she0to3 = eirene_aver_she0to3 + she0_eir
-            eirene_aver_shi0to3 = eirene_aver_shi0to3 + shi0_eir
-            if (switch%tn_style.eq.0)
-     &       eirene_aver_shi0to3 = eirene_aver_shi0to3 + shn0_eir
-          endif
-#endif
         endif
 
         st%srw%sna0 = st%srw%sna0 + sna0_eir

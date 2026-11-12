@@ -15,7 +15,7 @@
       use b2mod_balance                                                 !djm Jan2017
      & , only : fhi_32, fhi_52, fhi_cond, fhi_dia, fhi_ecrb,
      &          fhi_strange, fhi_pschused, fhi_inert, fhi_vispar,
-     &          fhi_visper, fhi_visq, fhi_anml, fhi_vzh, fhi_kevis,
+     &          fhi_visper, fhi_visq, fhi_anml, fhi_vzh,
      &          balance_netcdf
 #endif
       use b2mod_ad
@@ -364,20 +364,14 @@ cwdk    related to (fluctuations in diamagnetic current) * (fluctuations in pote
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
      &    wrkf,dumm1,dumm2,fhi_vispar,dumm3)
         fhi_vispar = sign(fhi_vispar,dumm4)
-*   ..with the factor fnb_vis_per, as in the flux of the equation
-        dumm4(:,0) = 1.5_R8/qe*dv%fchvisper(:,0)*switch%b2tfnb_xcur*
-     &    switch%fnb_vis_per
-        dumm4(:,1) = 1.5_R8/qe*dv%fchvisper(:,1)*switch%b2tfnb_ycur*
-     &    switch%fnb_vis_per
+        dumm4(:,0) = 1.5_R8/qe*dv%fchvisper(:,0)*switch%b2tfnb_xcur
+        dumm4(:,1) = 1.5_R8/qe*dv%fchvisper(:,1)*switch%b2tfnb_ycur
         wrkf = sign(dumm4,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
      &    wrkf,dumm1,dumm2,fhi_visper,dumm3)
         fhi_visper = sign(fhi_visper,dumm4)
-*   ..with the factor fnb_vis_q, as in the flux of the equation
-        dumm4(:,0) = 1.5_R8/qe*dv%fchvisq(:,0)*switch%b2tfnb_xcur*
-     &    switch%fnb_vis_q
-        dumm4(:,1) = 1.5_R8/qe*dv%fchvisq(:,1)*switch%b2tfnb_ycur*
-     &    switch%fnb_vis_q
+        dumm4(:,0) = 1.5_R8/qe*dv%fchvisq(:,0)*switch%b2tfnb_xcur
+        dumm4(:,1) = 1.5_R8/qe*dv%fchvisq(:,1)*switch%b2tfnb_ycur
         wrkf = sign(dumm4,floi0_mdf)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
      &    wrkf,dumm1,dumm2,fhi_visq,dumm3)
@@ -388,12 +382,6 @@ cwdk    related to (fluctuations in diamagnetic current) * (fluctuations in pote
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
      &    wrkf,dumm1,dumm2,fhi_anml,dumm3)
         fhi_anml = sign(fhi_anml,dumm4)
-*   ..current of the k-epsilon model (fchviskt), without b2tfnb_x/ycur
-        dumm4 = 1.5_R8/qe*dv%fchviskt
-        wrkf = sign(dumm4,floi0_mdf)
-        call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
-     &    wrkf,dumm1,dumm2,fhi_kevis,dumm3)
-        fhi_kevis = sign(fhi_kevis,dumm4)
         wrkf = 0.0_R8
         wrkf(:,0) = sign(floi_vhx,floi0_mdf(:,0))
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
