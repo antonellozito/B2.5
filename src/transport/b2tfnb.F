@@ -15,7 +15,7 @@
 #ifndef FIXED_POINT
       use b2mod_balance                                                 !djm Jan2017
      & , only : fna_pinch, fna_pll, fna_drift, fna_nanom, fna_panom,
-     &          fna_ch, fna_pschused, balance_netcdf
+     &          fna_ch, fna_pschused, fna_ecrb, fna_dia, balance_netcdf
 #endif
       use b2mod_ad
      & , only : ncall_b2tfnb
@@ -918,6 +918,8 @@ cwdk should this be conb in general? (but without the rescaling for pressure)
         fna_pinch(:,:,isb) = dv%fna_pinch(:,:,isb)
         fna_pll(:,:,isb) = dv%fna_pll(:,:,isb)
         fna_drift(:,:,isb) = dv%fna_ecrb(:,:,isb) + dv%fna_dia(:,:,isb)
+        fna_ecrb(:,:,isb) = dv%fna_ecrb(:,:,isb)
+        fna_dia(:,:,isb) = dv%fna_dia(:,:,isb)
         if (switch%mdf_fnb.eq.0) then
           fna_pschused(:,:,isb) = 0.0_R8
         else
