@@ -482,8 +482,9 @@ c b2npmo with rxf = 0 and recompute fluxes.
         call b2xppb (nCv, st%rt%rza(:,is), st%pl%na(:,is), st%pl%te,
      &      st%pl%ti, st%pl%tn, is, st%dv%pa(:,is))                      !srv 01.10.99
 *    ..compute particle flux
+*      (balance.nc keeps the parts of the flux used by b2npco above)
         call b2tfnb (nCv, nFc, nVx, is, ismain,
-     &      switch, geo, mpg, st%pl, st%dv, st%co, st%rt, .true.)        !djm Jan2017
+     &      switch, geo, mpg, st%pl, st%dv, st%co, st%rt, .false.)
       enddo                                                              !srv 01.10.99
 #if ( defined(_OPENMP) && !defined(NO_OPENMP_B2NEWS_UNDERSCORE_M_LOOP2))
 !$OMP END PARALLEL DO
