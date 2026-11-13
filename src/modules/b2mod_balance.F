@@ -12,6 +12,8 @@
      *  fna_pinch(:,:,:),
      *  fna_pll(:,:,:),
      *  fna_drift(:,:,:),
+     *  fna_ecrb(:,:,:),
+     *  fna_dia(:,:,:),
      *  fna_ch(:,:,:),
      *  fna_nanom(:,:,:),
      *  fna_panom(:,:,:),
@@ -73,6 +75,8 @@
      *  fna_pinch_av(:,:,:),
      *  fna_pll_av(:,:,:),
      *  fna_drift_av(:,:,:),
+     *  fna_ecrb_av(:,:,:),
+     *  fna_dia_av(:,:,:),
      *  fna_ch_av(:,:,:),
      *  fna_nanom_av(:,:,:),
      *  fna_panom_av(:,:,:),
@@ -267,6 +271,8 @@
      *  ext_she_bal(:),
      *  b2stel_she0to3(:,:,:),
      *  b2stel_she_bal(:,:),
+     *  b2stel_she_part0to3(:,:,:,:),
+     *  b2stel_she_part_bal(:,:,:),
      *  b2srsm_she0to3(:,:),
      *  b2srsm_she_bal(:),
      *  b2srdt_she0to3(:,:),
@@ -302,6 +308,7 @@
      *  b2stbm_she_bal_av(:),
      *  ext_she_bal_av(:),
      *  b2stel_she_bal_av(:,:),
+     *  b2stel_she_part_bal_av(:,:,:),
      *  b2srsm_she_bal_av(:),
      *  b2srdt_she_bal_av(:),
      *  b2srst_she_bal_av(:),
@@ -508,6 +515,8 @@
       allocate(fna_pinch(nFc,0:1,0:nsd-1))
       allocate(fna_pll(nFc,0:1,0:nsd-1))
       allocate(fna_drift(nFc,0:1,0:nsd-1))
+      allocate(fna_ecrb(nFc,0:1,0:nsd-1))
+      allocate(fna_dia(nFc,0:1,0:nsd-1))
       allocate(fna_ch(nFc,0:1,0:nsd-1))
       allocate(fna_nanom(nFc,0:1,0:nsd-1))
       allocate(fna_panom(nFc,0:1,0:nsd-1))
@@ -566,6 +575,8 @@
       allocate(fna_pinch_av(nFc,0:1,0:nsd-1))
       allocate(fna_pll_av(nFc,0:1,0:nsd-1))
       allocate(fna_drift_av(nFc,0:1,0:nsd-1))
+      allocate(fna_ecrb_av(nFc,0:1,0:nsd-1))
+      allocate(fna_dia_av(nFc,0:1,0:nsd-1))
       allocate(fna_ch_av(nFc,0:1,0:nsd-1))
       allocate(fna_nanom_av(nFc,0:1,0:nsd-1))
       allocate(fna_panom_av(nFc,0:1,0:nsd-1))
@@ -782,6 +793,10 @@
       allocate(ext_she_bal(nCv))
       allocate(b2stel_she0to3(nCv,0:3,0:nsd-1))
       allocate(b2stel_she_bal(nCv,0:nsd-1))
+*     b2stel_she by part: line radiation, bremsstrahlung, ionisation,
+*     recombination
+      allocate(b2stel_she_part0to3(nCv,0:3,0:nsd-1,4))
+      allocate(b2stel_she_part_bal(nCv,0:nsd-1,4))
       allocate(b2srsm_she0to3(nCv,0:3))
       allocate(b2srsm_she_bal(nCv))
       allocate(b2srdt_she0to3(nCv,0:3))
@@ -809,6 +824,8 @@
       ext_she_bal=0.0_R8
       b2stel_she0to3=0.0_R8
       b2stel_she_bal=0.0_R8
+      b2stel_she_part0to3=0.0_R8
+      b2stel_she_part_bal=0.0_R8
       b2srsm_she0to3=0.0_R8
       b2srsm_she_bal=0.0_R8
       b2srdt_she0to3=0.0_R8
@@ -839,6 +856,7 @@
       allocate(b2stbm_she_bal_av(nCv))
       allocate(ext_she_bal_av(nCv))
       allocate(b2stel_she_bal_av(nCv,0:nsd-1))
+      allocate(b2stel_she_part_bal_av(nCv,0:nsd-1,4))
       allocate(b2srsm_she_bal_av(nCv))
       allocate(b2srdt_she_bal_av(nCv))
       allocate(b2srst_she_bal_av(nCv))
@@ -1091,6 +1109,8 @@ cdjm Jan2017 Flux arrays:
       deallocate(fna_pinch)
       deallocate(fna_pll)
       deallocate(fna_drift)
+      deallocate(fna_ecrb)
+      deallocate(fna_dia)
       deallocate(fna_ch)
       deallocate(fna_nanom)
       deallocate(fna_panom)
@@ -1125,6 +1145,8 @@ cdjm Jan2017 Flux arrays:
       deallocate(fna_pinch_av)
       deallocate(fna_pll_av)
       deallocate(fna_drift_av)
+      deallocate(fna_ecrb_av)
+      deallocate(fna_dia_av)
       deallocate(fna_ch_av)
       deallocate(fna_nanom_av)
       deallocate(fna_panom_av)
@@ -1277,6 +1299,8 @@ cdjm Jan2017 Flux arrays:
       deallocate(ext_she_bal)
       deallocate(b2stel_she0to3)
       deallocate(b2stel_she_bal)
+      deallocate(b2stel_she_part0to3)
+      deallocate(b2stel_she_part_bal)
       deallocate(b2srsm_she0to3)
       deallocate(b2srsm_she_bal)
       deallocate(b2srdt_she0to3)
@@ -1307,6 +1331,7 @@ cdjm Jan2017 Flux arrays:
       deallocate(b2stbm_she_bal_av)
       deallocate(ext_she_bal_av)
       deallocate(b2stel_she_bal_av)
+      deallocate(b2stel_she_part_bal_av)
       deallocate(b2srsm_she_bal_av)
       deallocate(b2srdt_she_bal_av)
       deallocate(b2srst_she_bal_av)
@@ -2126,6 +2151,11 @@ cxpb We also treat the electron particle sources
      &     b2stel_she0to3(iCv,1,is)*te(iCv)+
      &     b2stel_she0to3(iCv,2,is)*ne(iCv)+
      &     b2stel_she0to3(iCv,3,is)*ne(iCv)*te(iCv)
+          b2stel_she_part_bal(iCv,is,:)=
+     &     b2stel_she_part0to3(iCv,0,is,:)+
+     &     b2stel_she_part0to3(iCv,1,is,:)*te(iCv)+
+     &     b2stel_she_part0to3(iCv,2,is,:)*ne(iCv)+
+     &     b2stel_she_part0to3(iCv,3,is,:)*ne(iCv)*te(iCv)
         enddo
         b2shdt_she_bal(iCv)=
      &     b2shdt_she0to3(iCv,0)+
@@ -2449,6 +2479,8 @@ cdjm Update ion heat sources
         fna_pinch_av=0.0_R8
         fna_pll_av=0.0_R8
         fna_drift_av=0.0_R8
+        fna_ecrb_av=0.0_R8
+        fna_dia_av=0.0_R8
         fna_ch_av=0.0_R8
         fna_nanom_av=0.0_R8
         fna_panom_av=0.0_R8
@@ -2552,6 +2584,7 @@ cdjm Update ion heat sources
         b2stbm_she_bal_av=0.0_R8
         ext_she_bal_av=0.0_R8
         b2stel_she_bal_av=0.0_R8
+        b2stel_she_part_bal_av=0.0_R8
         b2srsm_she_bal_av=0.0_R8
         b2srdt_she_bal_av=0.0_R8
         b2srst_she_bal_av=0.0_R8
@@ -2669,6 +2702,10 @@ cdjm Update ion heat sources
      &             curmlt*fna_pll
       fna_drift_av = avmlt*fna_drift_av +
      &               curmlt*fna_drift
+      fna_ecrb_av = avmlt*fna_ecrb_av +
+     &              curmlt*fna_ecrb
+      fna_dia_av = avmlt*fna_dia_av +
+     &             curmlt*fna_dia
       fna_ch_av = avmlt*fna_ch_av +
      &            curmlt*fna_ch
       fna_nanom_av = avmlt*fna_nanom_av +
@@ -2869,6 +2906,8 @@ cdjm Update ion heat sources
      &                 curmlt*ext_she_bal
       b2stel_she_bal_av = avmlt*b2stel_she_bal_av +
      &                    curmlt*b2stel_she_bal
+      b2stel_she_part_bal_av = avmlt*b2stel_she_part_bal_av +
+     &                         curmlt*b2stel_she_part_bal
       b2srsm_she_bal_av = avmlt*b2srsm_she_bal_av +
      &                    curmlt*b2srsm_she_bal
       b2srdt_she_bal_av = avmlt*b2srdt_she_bal_av +
@@ -3230,6 +3269,10 @@ cdjm Update ion heat sources
      &                   fna_pll_av,vdims,3)
       call write_cdf_double(ncid,'fna_drift',
      &                   fna_drift_av,vdims,3)
+      call write_cdf_double(ncid,'fna_ecrb',
+     &                   fna_ecrb_av,vdims,3)
+      call write_cdf_double(ncid,'fna_dia',
+     &                   fna_dia_av,vdims,3)
       call write_cdf_double(ncid,'fna_ch',
      &                   fna_ch_av,vdims,3)
       call write_cdf_double(ncid,'fna_nanom',
@@ -3389,6 +3432,14 @@ cdjm Update ion heat sources
       vdims(2)=nsid
       call write_cdf_double(ncid,'b2stel_she_bal',
      &                   b2stel_she_bal_av,vdims,2)
+      call write_cdf_double(ncid,'b2stel_rqrad_bal',
+     &                   b2stel_she_part_bal_av(:,:,1),vdims,2)
+      call write_cdf_double(ncid,'b2stel_rqbrm_bal',
+     &                   b2stel_she_part_bal_av(:,:,2),vdims,2)
+      call write_cdf_double(ncid,'b2stel_iz_bal',
+     &                   b2stel_she_part_bal_av(:,:,3),vdims,2)
+      call write_cdf_double(ncid,'b2stel_rc_bal',
+     &                   b2stel_she_part_bal_av(:,:,4),vdims,2)
       call write_cdf_double(ncid,'b2srsm_she_bal',
      &                   b2srsm_she_bal_av,vdims,1)
       call write_cdf_double(ncid,'b2srdt_she_bal',
