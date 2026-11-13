@@ -313,6 +313,7 @@ csw 26feb2014
       integer :: gs_sni_d1, gs_sni_d2, gs_sni_d3
       integer :: gs_smo_d(1:4,1:3)
       integer :: gs_i1, gs_i2, gs_i3
+      integer :: gs_nfl
 
 *   ..procedures
       real (kind=R8) :: rratio
@@ -2901,6 +2902,14 @@ c   and apply linearisation
       src_ne=0.0_R8
       smo_tot=0.0_R8
       sni_tot=0.0_R8
+#if(defined(_OPENMP))
+!$OMP PARALLEL DEFAULT(NONE)
+!$OMP& SHARED(nCv,ns,nstrat,smo_tot,sni_tot,smo_av,sni_av)
+!$OMP& SHARED(tflux,flux_scale,sclstra,sclalph,crcstra)
+!$OMP& SHARED(recyc,recyceir,use_recyceir,iscltst,ih_end)
+!$OMP& SHARED(b2eatcr,fluids_list,is_neutral,lneustra)
+!$OMP& PRIVATE(is,istrai,ic,j,ifl,recyctmp,t00)
+#endif
       do is = 0, ns-1 !{
         if(.not.is_neutral(is).or.lneustra) then !{
           j=b2eatcr(is)
@@ -2911,6 +2920,9 @@ c   and apply linearisation
             else !}{
               recyctmp=recyc(is,istrai)
             endif !}
+#if(defined(_OPENMP))
+!$OMP DO SCHEDULE(STATIC)
+#endif
             do ic = 1, nCv !{
               smo_tot(ic,ifl)=smo_tot(ic,ifl)+
      .           smo_av(ic,ifl,istrai)*tflux(istrai)*
@@ -2928,9 +2940,15 @@ c   and apply linearisation
               endif
               sni_tot(ic,ifl)=sni_tot(ic,ifl)+t00
             enddo !}
+#if(defined(_OPENMP))
+!$OMP END DO NOWAIT
+#endif
           enddo !}
         endif !}
       enddo !}
+#if(defined(_OPENMP))
+!$OMP END PARALLEL
+#endif
 #ifndef FIXED_POINT
       if (balance_netcdf.ne.0 .or.
      *    switch%write_eirene_sources.ne.0) then
@@ -3037,6 +3055,53 @@ c   and apply linearisation
         gs_fsi = flux_scale(istrai)
         gs_inv_dbihend = 1.0_R8/dble(ih_end)
         gs_prod_3 = gs_ti * gs_fsi * gs_inv_dbihend
+        gs_nfl = nfl
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP PARALLEL DEFAULT(NONE)
+!$OMP& SHARED(nCv,ns,dtim,sna0,smo0,smr0,smd0,she0,shi0,shn0)
+!$OMP& SHARED(main_call,switch,geo,mpg,st)
+!$OMP& SHARED(istrai,gs_prod_3,ncall,eirene_mod,linearisation)
+!$OMP& SHARED(dpc_fix,iscltst,stab_corr,no_sseicorr,l_neutrad)
+!$OMP& SHARED(use_recyceir,recyc,recyceir,crcstra,sclstra,sclalph)
+!$OMP& SHARED(b2eatcr,b2espcr,fluids_list,is_neutral,lneustra)
+!$OMP& SHARED(am,gs_nfl,nnatmi,nnmoli,nnioni,RF_NEUT,dtco,dtmo,dtei)
+!$OMP& SHARED(sni_av,smo_av,see_av,sei_av,smo_tot,sni_tot)
+!$OMP& SHARED(cor_ni,cor_mo,cor_ee,cor_ei,radarr)
+!$OMP& SHARED(balance_netcdf)
+!$OMP& SHARED(sni_av_papl,sni_av_pmpl,sni_av_pipl,sni_av_pppl)
+!$OMP& SHARED(smo_av_mapl,smo_av_mmpl,smo_av_mipl,smo_av_mppl)
+!$OMP& SHARED(sna_av_paat,sna_av_pmat,sna_av_piat)
+!$OMP& SHARED(sna_av_paml,sna_av_pmml,sna_av_piml)
+!$OMP& SHARED(sna_av_paio,sna_av_pmio,sna_av_piio)
+!$OMP& SHARED(sne_av_pael,sne_av_pmel)
+!$OMP& SHARED(see_av_eael,see_av_emel,see_av_eiel,see_av_epel)
+!$OMP& SHARED(sei_av_eapl,sei_av_empl,sei_av_eipl,sei_av_eppl)
+!$OMP& SHARED(eirene_mc_papl_sna0to1,eirene_mc_pmpl_sna0to1)
+!$OMP& SHARED(eirene_mc_pipl_sna0to1,eirene_mc_pppl_sna0to1)
+!$OMP& SHARED(eirene_mc_mapl_smo0to3,eirene_mc_mmpl_smo0to3)
+!$OMP& SHARED(eirene_mc_mipl_smo0to3,eirene_mc_mppl_smo0to3)
+!$OMP& SHARED(eirene_mc_paat_sna_bal,eirene_mc_pmat_sna_bal)
+!$OMP& SHARED(eirene_mc_piat_sna_bal,eirene_mc_paml_sna_bal)
+!$OMP& SHARED(eirene_mc_pmml_sna_bal,eirene_mc_piml_sna_bal)
+!$OMP& SHARED(eirene_mc_paio_sna_bal,eirene_mc_pmio_sna_bal)
+!$OMP& SHARED(eirene_mc_piio_sna_bal)
+!$OMP& SHARED(eirene_mc_pael_sne0to1,eirene_mc_pmel_sne0to1)
+!$OMP& SHARED(eirene_mc_eael_she0to3,eirene_mc_emel_she0to3)
+!$OMP& SHARED(eirene_mc_eiel_she0to3,eirene_mc_epel_she0to3)
+!$OMP& SHARED(eirene_mc_eapl_shi0to3,eirene_mc_empl_shi0to3)
+!$OMP& SHARED(eirene_mc_eipl_shi0to3,eirene_mc_eppl_shi0to3)
+!$OMP& PRIVATE(is,ic,j,ifl,recyctmp,gs_prod_4,gs_inv_sqrt_ammpme)
+!$OMP& PRIVATE(rf0,t0,t00,t0n,t1,t2,t3,t4,dua,vthe)
+!$OMP& PRIVATE(t0_a,t0_m,t0_i,t0_p)
+!$OMP& PRIVATE(t1_apl,t1_mpl,t1_ipl,t1_ppl,t2_apl,t2_mpl,t2_ipl,t2_ppl)
+!$OMP& PRIVATE(t3_apl,t3_mpl,t3_ipl,t3_ppl,t4_apl,t4_mpl,t4_ipl,t4_ppl)
+!$OMP& PRIVATE(chistrai,chncall)
+!$OMP& FIRSTPRIVATE(recyc_hlp)
+!$OMP& REDUCTION(+:ssni,ssmo,ssee,ssei,sseicorr,sseistab,ssnastra)
+!$OMP& REDUCTION(+:ssnireg,sseereg,sseireg,rdneureg,recycereg)
+!$OMP& REDUCTION(+:recycireg,rad_neutr)
+!$OMP& REDUCTION(+:src_ni,src_mo,src_ms,src_ee,src_ei,src_es)
+#endif
         do is=0,ns-1 !{
           j=b2eatcr(is)
           gs_inv_sqrt_ammpme = 1.0_R8/sqrt(am(is)*mp/me)
@@ -3049,6 +3114,9 @@ c   and apply linearisation
           recyc_hlp=max(recyc_hlp,recyctmp)
           if(.not.is_neutral(is).or.lneustra) then !{
             ifl=fluids_list(is)
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP DO SCHEDULE(STATIC)
+#endif
             do ic=1,nCv !{
               if((ic <= mpg%nCi) .and.
      &           (mpg%cvReg(ic).ne.0)) then !{
@@ -3378,17 +3446,20 @@ c*** before correction (r), after correction (c), after iteration (i)
                     src_ms(0,3)=src_ms(0,3)+t0
                   endif
 c Radial momentum source component
-                  t0=smo_av(ic,nfl+ifl,istrai)*
+                  t0=smo_av(ic,gs_nfl+ifl,istrai)*
      *             gs_prod_4 * sclstra(j,istrai) *
      *             geo%cvHz(ic)
                   smr0(ic,0,is)=smr0(ic,0,is)+t0
 c Diamagnetic momentum source component
-                  t0=smo_av(ic,2*nfl+ifl,istrai)*
+                  t0=smo_av(ic,2*gs_nfl+ifl,istrai)*
      *             gs_prod_4 * sclstra(j,istrai) *
      *             geo%cvHz(ic)
                   smd0(ic,0,is)=smd0(ic,0,is)+t0
                 end if !}
             end do !}  ! ic
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP END DO NOWAIT
+#endif
           end if !}
         end do !}  ! is
 cnh  12.01.2024
@@ -3398,6 +3469,9 @@ cnh  12.01.2024
      *      switch%write_eirene_sources.ne.0) then !{
           rf0=RF_NEUT(1)
           do is=1,nnatmi !{
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP DO SCHEDULE(STATIC)
+#endif
             do ic=1,nCv !{
               t0_a = sna_av_paat(ic,is,istrai)*
      *               gs_prod_3 * recyc_hlp
@@ -3412,8 +3486,14 @@ cnh  12.01.2024
               eirene_mc_piat_sna_bal(ic,is,istrai)=
      *               eirene_mc_piat_sna_bal(ic,is,istrai)+t0_i
             end do !}  ! ic
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP END DO NOWAIT
+#endif
           end do !}  ! natmi
           do is=1,nnmoli !{
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP DO SCHEDULE(STATIC)
+#endif
             do ic=1,nCv !{
               t0_a = sna_av_paml(ic,is,istrai)*
      *               gs_prod_3 * recyc_hlp
@@ -3428,8 +3508,14 @@ cnh  12.01.2024
               eirene_mc_piml_sna_bal(ic,is,istrai)=
      *               eirene_mc_piml_sna_bal(ic,is,istrai)+t0_i
             end do !}  ! ic
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP END DO NOWAIT
+#endif
           end do !}  ! nmoli
           do is=1,nnioni !{
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP DO SCHEDULE(STATIC)
+#endif
             do ic=1,nCv !{
               t0_a = sna_av_paio(ic,is,istrai)*
      *               gs_prod_3 * recyc_hlp
@@ -3444,8 +3530,14 @@ cnh  12.01.2024
               eirene_mc_piio_sna_bal(ic,is,istrai)=
      *               eirene_mc_piio_sna_bal(ic,is,istrai)+t0_i
             end do !}  ! ic
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP END DO NOWAIT
+#endif
           end do !}  ! nioni
         end if !}
+#endif
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP DO SCHEDULE(STATIC)
 #endif
         do ic = 1, nCv
 * electron particle source
@@ -3508,7 +3600,13 @@ cdjm Jan2017 Calculate linearised components of source
 #endif
           end if !}
         end do
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP END DO NOWAIT
+#endif
 
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP SINGLE
+#endif
         if (switch%eirene_mc_iout.ne.0) then
           write (chistrai,'(i1)') istrai
           call my_out_us(70,nCv*ns,0,sei_av(:,:,istrai),'sei'//chistrai)
@@ -3518,7 +3616,13 @@ cdjm Jan2017 Calculate linearised components of source
      .        'sei1_'//chncall)
           endif
         endif
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP END SINGLE NOWAIT
+#endif
 
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP DO SCHEDULE(STATIC)
+#endif
         do ic=1,nCv !{
             if(ic <= mpg%nCi .and.
      &         mpg%cvReg(ic).ne.0) then !{
@@ -3676,13 +3780,13 @@ c     1         recyc_hlp*flux_scale(istrai)*sclstra(0,istrai)
                 if (switch%tn_style.ne.0) then
                   call xerrab('netcdf not yet for tn_style.ne.0')
                 endif
-                t0_a=sum(sei_av_eapl(ic,1:nfl,istrai))*gs_prod_3* !djm Jan2017
+                t0_a=sum(sei_av_eapl(ic,1:gs_nfl,istrai))*gs_prod_3* !djm Jan2017
      1           recyc_hlp*sclstra(0,istrai)
-                t0_m=sum(sei_av_empl(ic,1:nfl,istrai))*gs_prod_3*
+                t0_m=sum(sei_av_empl(ic,1:gs_nfl,istrai))*gs_prod_3*
      1           recyc_hlp*sclstra(0,istrai)
-                t0_i=sum(sei_av_eipl(ic,1:nfl,istrai))*gs_prod_3*
+                t0_i=sum(sei_av_eipl(ic,1:gs_nfl,istrai))*gs_prod_3*
      1           recyc_hlp*sclstra(0,istrai)
-                t0_p=sum(sei_av_eppl(ic,1:nfl,istrai))*gs_prod_3*
+                t0_p=sum(sei_av_eppl(ic,1:gs_nfl,istrai))*gs_prod_3*
      1           recyc_hlp*sclstra(0,istrai)
               endif
 #endif
@@ -4015,6 +4119,12 @@ cdjm Jan2017 Calculate linearised components of source
             end if !}
 
         end do !} ic
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP END DO NOWAIT
+#endif
+#if(defined(_OPENMP) && !defined(FIXED_POINT))
+!$OMP END PARALLEL
+#endif
       end do !} istrai
 c
 c*** correct radiation losses for the molecule dissociation
