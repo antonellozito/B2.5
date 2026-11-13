@@ -281,6 +281,8 @@
       real (kind=R8) ::
      *  delta_cdfmovie_time, save_cdfmovie_time
       real (kind=R8) ::
+     *  delta_cdfchord_time, save_cdfchord_time
+      real (kind=R8) ::
      *  delta_plasma_time, save_plasma_time
       real (kind=R8) ::
      *  delta_ids_time, save_ids_time
@@ -315,6 +317,7 @@
       save delta_tran_time, save_tran_time, tran_num
 #endif
       save delta_cdfmovie_time, save_cdfmovie_time
+      save delta_cdfchord_time, save_cdfchord_time
       save delta_plasma_time, save_plasma_time
       save delta_ids_time, save_ids_time
       save min_areshe, min_areshi, min_aresco, min_aresmo,
@@ -354,6 +357,7 @@
      1     tran_num/0/
 #endif
       data delta_cdfmovie_time/0.0_R8/, save_cdfmovie_time/0.0_R8/
+      data delta_cdfchord_time/0.0_R8/, save_cdfchord_time/0.0_R8/
       data delta_plasma_time/0.0_R8/, save_plasma_time/0.0_R8/
       data delta_ids_time/0.0_R8/, save_ids_time/0.0_R8/
       data min_areshe/0.0_R8/, min_areshi/0.0_R8/, min_aresco/0.0_R8/,
@@ -1115,6 +1119,13 @@
        call xertst (delta_cdfmovie_time.eq.0.0_R8.or.
      &              delta_cdfmovie_time.ge.dtim,
      &  'b2mndr_cdfmovietim too short compared to timestep !')
+       call ipgetr ('b2mndr_cdfchordtim', delta_cdfchord_time)
+       if (delta_cdfchord_time.gt.0.0_R8)
+     >  write(*,*) 'Saving CDF chord files every ',
+     1  delta_cdfchord_time,' simulation seconds'
+       call xertst (delta_cdfchord_time.eq.0.0_R8.or.
+     &              delta_cdfchord_time.ge.dtim,
+     &  'b2mndr_cdfchordtim too short compared to timestep !')
        call ipgetr ('b2mndr_plasmatim', delta_plasma_time)
        if (delta_plasma_time.gt.0.0_R8)
      >  write(*,*) 'Saving plasma state files every ',
@@ -1791,7 +1802,7 @@ cwdk eventually to be moved into init_geometry (or: defined through b2fgmtry)
 !      if (switch%solve_keps.gt.1 .and.
 !     &   .not.smax(nCv,state%pl%zt,1).gt.0.0_R8)
 !     .  state%pl%zt = state%pl%ti*1e5_R8
-      call createB2Diagnostic( nCv, ns, mpg%nnreg, state % diag )
+      call createB2Diagnostic( nCv, ns, mpg%nnreg, state%diag )
 !WG_TODO      call init_state(mpg, geo, state)
 
 *   initialize 2d batch averages
@@ -2103,6 +2114,7 @@ c   --> better way doing this is necessary)
       save_plasma_time = tim + delta_plasma_time
       save_ids_time = tim + delta_ids_time
       save_cdfmovie_time = tim + delta_cdfmovie_time
+      save_cdfchord_time = tim + delta_cdfchord_time
 *   ..initialise tracing routines
       write(*,*) 'Calling alloc_b2mod_elements'
       call alloc_b2mod_elements(ns,zn,am)
@@ -2122,7 +2134,7 @@ c   --> better way doing this is necessary)
       if (switch%b2tqna_transport_inputfile .eq. 1) then
         call read_transport_input(transport_ip_filename)
       endif
-      call alloc_b2mod_numerics(nCv,ns,mpg%nnreg, switch)
+      call alloc_b2mod_numerics(nCv,ns,mpg%nnreg,switch)
       allocate(
      *   old_erosion(nwall,ntrack), old_deposition(nwall,ntrack))
       if (flag_optim .or. switch%b2optim_namelist .eq. 1) then
@@ -2192,12 +2204,25 @@ c new CDF movie option (1st frame at t=0)
         endif
         save_cdfmovie_time=save_cdfmovie_time+delta_cdfmovie_time
       endif
+c new CDF chord option (1st frame at t=0)
+      if(tim.ge.(save_cdfchord_time-dtim/2.0_R8).and.
+     1 delta_cdfchord_time.gt.0.0_R8) then
+        if(switch%use_eirene.eq.0) then
+#ifndef NO_CDF
+          call cdfchord(ncid,nCv,nFc,ns,geo,mpg,state,switch)
+#else
+          write(*,*) 'Compile b2mndr without NO_CDF option for chords!'
+#endif
+        endif
+        save_cdfchord_time=save_cdfchord_time+delta_cdfchord_time
+      endif
       idx = 0
       write (*,*) 'b2mndr_0, end: nCv = ',mpg%nCv
 
-      !Initialize residual if using Crank-Nicolson scheme
+      !Initialize plasma snapshots when using second-order schemes
       if ( itim.eq.0.and.(switch%b2mndt_ckn.eq.2
-     &     .or.switch%b2mndt_startup.eq.2) ) then
+     &   .or.(switch%b2mndt_bdf.eq.2.and.
+     &   switch%b2mndt_startup.eq.0)) ) then
         !Dummy call to b2mndt
         !Temporarily set dummy switch to 1
         switch%b2mndt_dummy = 1
@@ -2219,13 +2244,7 @@ c new CDF movie option (1st frame at t=0)
         !Set back dummy switch to default value of 0
         switch%b2mndt_dummy = 0
         !Update plasma snapshots with initialized residuals (without time-stepping sources)
-        state%psnl%resco0 = state%dv%resco0
-        state%psnl%resmo0 = state%dv%resmo0
-        state%psnl%reshe0 = state%dv%reshe0
-        state%psnl%reshi0 = state%dv%reshi0
-        state%psnl%reshn0 = state%dv%reshn0
-        state%psnl%reskt0 = state%dv%reskt0
-        state%psnl%reszt0 = state%dv%reszt0
+        call getB2PlasmaSnapshot(state%pl, state%dv, state%psnl)
       endif
 
       call subend()
@@ -2615,6 +2634,16 @@ c new CDF movie option
           write(*,*) 'Compile b2mndr without NO_CDF option for movies!'
 #endif
           save_cdfmovie_time=save_cdfmovie_time+delta_cdfmovie_time
+        endif
+c new CDF chord option
+        if(tim.ge.(save_cdfchord_time-dtim/2.0_R8).and.
+     1    delta_cdfchord_time.gt.0.0_R8) then
+#ifndef NO_CDF
+          call cdfchord(ncid,nCv,nFc,ns,geo,mpg,state,switch)
+#else
+          write(*,*) 'Compile b2mndr without NO_CDF option for chords!'
+#endif
+          save_cdfchord_time=save_cdfchord_time+delta_cdfchord_time
         endif
 #endif
         lwti = .false.
@@ -3675,6 +3704,15 @@ cxpb Copy the IDS to a temporary location with the new DD and then bring it back
         call cdfmovie(ncid,nCv,nFc,mpg%nCi,ns,geo,state,switch)
 #else
         write(*,*) 'Compile b2mndr without NO_CDF option for movies!'
+#endif
+      endif
+*   ..produce last CDF chord frame if not yet done
+      if(tim.gt.save_cdfchord_time-delta_cdfchord_time+dtim.and.
+     1  delta_cdfchord_time.gt.0.0_R8) then
+#ifndef NO_CDF
+        call cdfchord(ncid,nCv,nFc,ns,geo,mpg,state,switch)
+#else
+        write(*,*) 'Compile b2mndr without NO_CDF option for chords!'
 #endif
       endif
 *   ..produce 2d profiles if not yet done
