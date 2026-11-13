@@ -331,7 +331,7 @@
           nnVx = idum(2)
           nnFs = idum(4)
           nnFt = idum(5)
-          if (grid_version.eq."03.002.000") then
+          if (grid_version.ge."03.002.000") then
             !ghostcells are not provided, nnCv does not match nCv
             !but will match after guard cells are created
 
@@ -347,9 +347,8 @@
             call calc_add_connectivity(m)
 
 !     .. Order the vertices and faces as rightturning
-!     .. and consequently check convexity
+!     .. (cell convexity is checked later, in b2agmt)
             call order_vertices(g,m)
-            call check_convexity(g,m)
 
 !     .. Construct intcellP and intcellR
             call calc_intcell(g,m,intcellP_new)
@@ -394,7 +393,8 @@
               g%fcBb(:,3) = sqrt( cvBp(1)**2 + cvBt(1)**2)
             endif
           else
-            call xerrab('Grid version not equal to 03.002.00')
+            call xerrab('Grid version not greater than or equal to' //
+     &         '03.002.000')
           endif  ! if of the grid_version
 
         else
@@ -450,7 +450,7 @@
       !rewind nrid
       call cfverr(nrid,grid_version)
 
-      if (grid_version.eq."03.002.000") then
+      if (grid_version.ge."03.002.000") then
         !read nCv, nFc, nVx (without ghostcells)
         call cfruin (nrid, 6, idum, 'nCi,nFc,nVx,nCg,nFs,nFt')
         nnCv = idum(0)
@@ -502,7 +502,7 @@
           enddo
         endif
 
-        !read cell information
+        ! read cell information
         read(nrid,*,err=91) idcod, id
         if (streql('*cf:',idcod).and.streql('cv',id)) then
           do iCv = 1, nnCv
@@ -784,54 +784,6 @@
 
       return
       end subroutine order_vertices
-
-*-----------------------------------------------------------------------
-
-      subroutine check_convexity(g,m)
-      use b2mod_types
-      use b2us_map
-      use b2us_geo
-      implicit none
-      !output argument
-      type(mapping)  :: m
-      type(geometry)  :: g
-      integer iCv, nv, i, j, k
-      integer, allocatable ::  vx(:)
-      real (kind=R8) :: sin, dx1, dx2, dy1, dy2
-
-      do iCv = 1,m%nCv
-        nv = m%cvVxP(iCv,2)
-        if (nv.ge.4) then
-          allocate(vx(nv))
-          vx = m%cvVx(m%cvVxP(iCv,1):m%cvVxP(iCv,1)+nv-1)
-          do i = 1,nv
-            j = i-1
-            if (j .lt. 1) then
-              j = nv
-            endif
-            k = i+1
-            if (k.gt.nv) then
-              k = 1
-            endif
-
-            dx1 = g%vxX(vx(j)) - g%vxX(vx(i))
-            dy1 = g%vxY(vx(j)) - g%vxY(vx(i))
-            dx2 = g%vxX(vx(k)) - g%vxX(vx(i))
-            dy2 = g%vxY(vx(k)) - g%vxY(vx(i))
-
-            sin = dx1*dy2 - dy1*dx2
-
-            if (sin.gt.1.0e-7_R8) then
-              write(*,*) "b2agfs: cell not convex", iCv
-              !call xerrab('Check convexity: cell is not convex')
-            endif
-          enddo
-          deallocate(vx)
-        endif
-      enddo
-
-      return
-      end subroutine check_convexity
 
 *-----------------------------------------------------------------------
 
