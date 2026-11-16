@@ -71,12 +71,13 @@
 
 *   ..local variables
       integer ninp(0:6), nout(0:2), nCv, nFc, ns, idum(0:9), io
-      logical file_open
+      logical file_open, plasma, track
+      character*256 fname
       character*120 cdum
 *   ..procedures
       character*32 get_B25_hash
       external get_B25_hash
-      external prgini, prgend, xertst, cfopen, cfruin
+      external prgini, prgend, xertst, cfopen, cfruin, find_file
       external b2pldr
 *   ..initialise input/output units
       data ninp/50,51,52,53,54,55,56/
@@ -117,17 +118,24 @@
       call cfopen (ninp(1),'b2fgmtry','old','un*formatted')
       call cfopen (ninp(2),'b2fparam','old','un*formatted')
       call cfopen (ninp(3),'b2fstate','old','un*formatted')
-      call cfopen (ninp(4),'b2fplasma','old','unformatted')
+*     (b2fplasma and b2ftrack only when present: a run in progress or
+*     stopped before its end has none; without b2fplasma the sources
+*     are computed from the state, as for b2fplasma before 03.002.001)
+      fname = 'b2fplasma'
+      call find_file (fname, plasma)
+      if (plasma) call cfopen (ninp(4),'b2fplasma','old','unformatted')
       call cfopen (ninp(5),'b2frates','old','un*formatted')
-      call cfopen (ninp(6),'b2ftrack','old','un*formatted')
+      fname = 'b2ftrack'
+      call find_file (fname, track)
+      if (track) call cfopen (ninp(6),'b2ftrack','old','un*formatted')
 *   ..mark output unit for error messages
       call xerset (0)
 *   ..obtain version numbers                                             !xpb
       call cfverr (ninp(1), b2fgmtry_version)                            !xpb
       call cfverr (ninp(2), b2fparam_version)                            !xpb
       call cfverr (ninp(3), b2fstate_version)                            !xpb
-      call cfverr (ninp(4), b2fplasma_version)
-      call cfverr (ninp(6), b2ftrack_version)                            !xpb
+      if (plasma) call cfverr (ninp(4), b2fplasma_version)
+      if (track) call cfverr (ninp(6), b2ftrack_version)                 !xpb
       write(6,*) 'Running with VERSION ',newversion,' ', get_B25_hash()
 *   ..obtain nCv, nFc, ns from b2fstate file
       call cfruin (ninp(3), 3, idum, 'nCv,nFc,ns')
@@ -152,15 +160,21 @@
       call createB2State (nCv, nFc, ns, state)
       call createB2StateExt (mpg%nCv, mpg%nFc, ns, state_ext)
 *   ..obtain parameters from b2fplasmf file
-      call cfruin (ninp(4),3,idum,'nCv,nFc,ns')
-      call xertst (idum(0).eq.nCv.and.idum(1).eq.nFc.and.idum(2).eq.ns,
-     &  'faulty input nCv, nFc, ns from b2fplasmf file')
+      if (plasma) then
+        call cfruin (ninp(4),3,idum,'nCv,nFc,ns')
+        call xertst (idum(0).eq.nCv.and.idum(1).eq.nFc.and.
+     &    idum(2).eq.ns,
+     &    'faulty input nCv, nFc, ns from b2fplasmf file')
+      endif
 *   ..obtain parameters from tracing file
-      call cfruin (ninp(6),3,idum,'nCv,nFc,ns')
-      call xertst (idum(0).eq.nCv.and.idum(1).eq.nFc.and.idum(2).eq.ns,
-     &  'faulty input nCv, nFc, ns from tracing file')
+      if (track) then
+        call cfruin (ninp(6),3,idum,'nCv,nFc,ns')
+        call xertst (idum(0).eq.nCv.and.idum(1).eq.nFc.and.
+     &    idum(2).eq.ns,
+     &    'faulty input nCv, nFc, ns from tracing file')
+      endif
 *   ..read plasma state
-      call read_b2fplasma(ninp(4), nCv, nFc, ns, state)
+      if (plasma) call read_b2fplasma(ninp(4), nCv, nFc, ns, state)
       call alloc_b2mod_ppout(DEF_NXD, DEF_NYD, ns)
       call b2pldr (ninp, nout, ns)
 *   ..close files

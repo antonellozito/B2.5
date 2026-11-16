@@ -27,6 +27,7 @@
       integer is, idum(0:9), k, ismain
       integer external_species
       character lblcp*120, lblmn*120, lblrc*120
+      logical track
       character cnamip*80, cvalip*80, line*500
 *   ..initialisation
       save ismain, external_species
@@ -105,12 +106,16 @@
        call xertst (ltst(zn(is),rtzn(is)),
      &   'faulty input rtzn--wrong rate table?')
       enddo
-*   ..read parameters from tracing file
+*   ..read parameters from tracing file (b2ftrack when there is one)
+      inquire (unit=ninp(6), opened=track)
+      if (track) then
       call cfruch (ninp(6), 120, lblmn, 'label')
       call b2ruzd (ninp(6), b2ftrack_version,
      &  ns, zamin, zamax, zn, am, .true.)
+      endif
 *   ..tracing loop
-   10 if (.not.cfendf(ninp(6))) then
+   10 if (track) then
+      if (.not.cfendf(ninp(6))) then
 *    ..get itim, itcnt
        call cfruin (ninp(6), 2, idum, 'itim,itcnt')
 *    ..get residuals and corrections
@@ -128,6 +133,7 @@
        call cfrure (ninp(6), mpg%nCv, state%dv%corpo, 'corpo')
 *    ..tracing loop
        goto 10
+      endif
       endif
 *    ..compute log-log electron rate coefficients
       call b2spel (mpg%nCv, ns, ev, state%pl%te, state%dv%ne, state%rt)
