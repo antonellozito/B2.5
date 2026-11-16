@@ -57,6 +57,12 @@
       xhi=real(min(1.0e30_R8,max(-1.0e30_R8,xhid)),R4)
       ylo=real(min(1.0e30_R8,max(-1.0e30_R8,ylod)),R4)
       yhi=real(min(1.0e30_R8,max(-1.0e30_R8,yhid)),R4)
+*     (a limit that is not finite, the data being only NaN of an error:
+*     zero, so that the range is that of equal limits)
+      if (.not.(abs(xlo).le.huge(xlo))) xlo=0.0_R4
+      if (.not.(abs(xhi).le.huge(xhi))) xhi=0.0_R4
+      if (.not.(abs(ylo).le.huge(ylo))) ylo=0.0_R4
+      if (.not.(abs(yhi).le.huge(yhi))) yhi=0.0_R4
       if(xlo.eq.xhi) then
         xlo=min(xlo*0.9_R4,xlo*1.1_R4)
         xhi=max(xhi*0.9_R4,xhi*1.1_R4)

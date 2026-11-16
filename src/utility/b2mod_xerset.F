@@ -9,6 +9,15 @@
 *     npsave is the designated unit number.
       data npsave/npdflt/
 
+*     xerhook is a routine without arguments that xerrab calls once,
+*     before the program stops (b2mn: write b2fplasma); not associated:
+*     none.
+      abstract interface
+       subroutine xerhook_routine ()
+       end subroutine xerhook_routine
+      end interface
+      procedure (xerhook_routine), pointer, save :: xerhook => null()
+
       contains
 
 *     ------------------------------------------------------------------

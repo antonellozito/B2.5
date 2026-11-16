@@ -363,6 +363,8 @@
      &     ne_wanted_mod_time/0.0_R8/
 
       logical :: eirene_wall_read = .false.
+*     unit of the b2fplasma that b2mndr_xerrab writes
+      integer, save :: nout_xerrab = 0
 
       contains
 
@@ -2286,6 +2288,8 @@ c new CDF chord option (1st frame at t=0)
       use b2mod_ual
      , , only : new_batch_edge, put_batch_edge
 #endif
+      use b2mod_xerset
+     & , only : xerhook
       implicit none
 #ifdef JET
       integer nout(0:11), ns, idum(0:9)
@@ -2341,6 +2345,9 @@ c new CDF chord option (1st frame at t=0)
 #endif
 
       call subini ('b2mndr_1')
+*   ..from here an error stopping B2.5 (xerrab) writes b2fplasma
+      nout_xerrab = nout(7)
+      xerhook => b2mndr_xerrab
 *   ..no error so far
       ierr = 0
 *   ..initialise counters
@@ -3514,6 +3521,8 @@ cxpb Copy the IDS to a temporary location with the new DD and then bring it back
       use b2mod_switches
       use b2mod_ad
      & , only : old_erosion, old_deposition
+      use b2mod_xerset
+     & , only : xerhook
       implicit none
 #ifdef JET
       integer nout(0:11), ns, idum(0:9)
@@ -3616,6 +3625,9 @@ cxpb Copy the IDS to a temporary location with the new DD and then bring it back
       call cfwuin (nout(7), 3, idum, 'nCv,nFc,ns')
       call write_b2fplasma (nout(7), nCv, nFc, ns, state)
       close(nout(7))
+*   ..b2fstate and b2fplasma of the end of the run written: an error
+*     after this leaves them
+      xerhook => null()
 
 *   ..mms steady-state error analysis
       if(switch%use_mms.eq.1.and.switch%iout_b2wdat.eq.10) then          !srv 26.02.18 {
@@ -4369,5 +4381,30 @@ c
       write(*,*) exp(rtlsa(:,rtnn/2,0))
       return
       end subroutine dpc_mod_rates
+
+      subroutine b2mndr_xerrab
+      implicit none
+*     Called once by xerrab, when an error stops B2.5 between the start
+*     of b2mndr_1 and the b2fplasma of b2mndr_2: writes b2fplasma with
+*     the plasma of that moment, which can be in the middle of a time
+*     step and hold NaN. b2fstate stays empty; b2plot then shows this
+*     b2fplasma with the species of b2fstati.
+      integer idum(0:2)
+
+      close (nout_xerrab)
+      call cfopen (nout_xerrab,'b2fplasma','replace','unformatted')
+      call cfverw (nout_xerrab, newversion)
+      idum(0) = mpg%nCv
+      idum(1) = mpg%nFc
+      idum(2) = state%ns
+      call cfwuin (nout_xerrab, 3, idum, 'nCv,nFc,ns')
+      call write_b2fplasma (nout_xerrab, mpg%nCv, mpg%nFc, state%ns,
+     &  state)
+      close (nout_xerrab)
+      write (*,'(1x,a,i9,a,es14.6)')
+     &  'xerrab: b2fplasma written with the plasma of itim', itim,
+     &  ', time', tim
+      return
+      end subroutine b2mndr_xerrab
 
       end module b2mod_driver

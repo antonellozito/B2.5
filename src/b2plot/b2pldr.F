@@ -84,16 +84,20 @@
       isymm = idum(0)
       call read_b2fgmtry (ninp(1), mpg, geo)
       call init_geometry (mpg, geo, switch)
-*   ..read plasma state file
+*   ..read plasma state file (b2fstati when b2fstate is empty or
+*     absent: b2pl has read the plasma of b2fplasma, which b2mn writes
+*     when an error stops it)
       call cfruch (ninp(3), 120, lblmn, 'label')
 *   ..read species data
       call b2ruzd (ninp(3), b2fstate_version,
      &  ns, zamin, zamax, zn, am, .true.)
       call check_switches(switch,ns,nspecies)
-*   ..read plasma state
-      call read_b2fstate (ninp(3), mpg%nCv, mpg%nFc, ns, state)
-*   ..test plasma state and fluxes
-      call b2xvps (mpg%nCv, mpg%nFc, ns, state%pl, state%dv)
+*   ..read plasma state and test it with the fluxes (not b2fstati: the
+*     plasma of an error, which may hold NaN or negative values)
+      if (.not.b2fstate_initial) then
+        call read_b2fstate (ninp(3), mpg%nCv, mpg%nFc, ns, state)
+        call b2xvps (mpg%nCv, mpg%nFc, ns, state%pl, state%dv)
+      endif
 *   ..read atomic rate data
       call cfverr (ninp(5), b2frates_version)
       call cfruch (ninp(5), 120, lblrc, 'label')

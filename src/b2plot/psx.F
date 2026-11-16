@@ -24,8 +24,8 @@ c
           end do
           if (iCv.le.mpg%nCi) sx=0.5_R8*sx
           work(iCv,is,iwrk)=work(iCv,is,iwrk)/sx/geo%cvHz(iCv)
-          values(9)=min(values(9),work(iCv,is,iwrk))
-          values(10)=max(values(10),work(iCv,is,iwrk))
+          values(9)=minfin(values(9),work(iCv,is,iwrk))
+          values(10)=maxfin(values(10),work(iCv,is,iwrk))
         enddo
       enddo
       stmp=trim(graphlabel(iwrk))//'/(m^{2})'
@@ -49,8 +49,8 @@ c
         do iCv=1,mpg%nCv
           work(iCv,is,iwrk)=work(iCv,is,iwrk)/
      .     geo%cvHy(iCv)/geo%cvHz(iCv)
-          values(9)=min(values(9),work(iCv,is,iwrk))
-          values(10)=max(values(10),work(iCv,is,iwrk))
+          values(9)=minfin(values(9),work(iCv,is,iwrk))
+          values(10)=maxfin(values(10),work(iCv,is,iwrk))
         enddo
       enddo
       stmp=trim(graphlabel(iwrk))//'/(m^{2})'
