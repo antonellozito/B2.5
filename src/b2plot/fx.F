@@ -49,8 +49,8 @@ c
           if(xparallel) xmult=geo%cvBb(iCv,3)/
      1     sqrt(geo%cvBb(iCv,0)**2+geo%cvBb(iCv,1)**2)
           wrk(ix)=wrk(ix)+geo%cvHx(iCv)/2.0_R8*xmult
-          lmin=min(lmin,work(iCv,is,iwrk))
-          lmax=max(lmax,work(iCv,is,iwrk))
+          lmin=minfin(lmin,work(iCv,is,iwrk))
+          lmax=maxfin(lmax,work(iCv,is,iwrk))
         enddo
         if (values(13).ne.init_value) then
           dsep=(1.0_R8-values(13))*wrk(ixstart)+(values(13))*wrk(ixend)
@@ -133,9 +133,9 @@ cxpb : new default behaviour : zero of distance set at ixref
             iCn=mpg%imapCv(ix+1,iy)
             call lined_d(
      1       wrk(ix),
-     2       min(lmax,max(lmin,work(iCv,is,iwrk))),
+     2       clipfin(work(iCv,is,iwrk),lmin,lmax),
      3       wrk(ix+1),
-     4       min(lmax,max(lmin,work(iCn,is,iwrk))))
+     4       clipfin(work(iCn,is,iwrk),lmin,lmax))
             if(mpg%cvOnClosedSurface(iCv).neqv.
      .         mpg%cvOnClosedSurface(iCn)) then
 #ifndef PLPLOT
@@ -166,8 +166,8 @@ cxpb : new default behaviour : zero of distance set at ixref
           do ix=ixstart,ixend
             iCv=mpg%imapCv(ix,iy)
             wrk(ix)=xx(iCv,2)
-            lmin=min(lmin,work(iCv,is,iwrk))
-            lmax=max(lmax,work(iCv,is,iwrk))
+            lmin=minfin(lmin,work(iCv,is,iwrk))
+            lmax=maxfin(lmax,work(iCv,is,iwrk))
           enddo
           if(values(9) .ne. values(10)) then
             lmin=values(9)
@@ -233,9 +233,9 @@ cxpb : new default behaviour : zero of distance set at ixref
             iCn=mpg%imapCv(ix+1,iy)
             call lined_d(
      1       wrk(ix),
-     2       min(lmax,max(lmin,work(iCv,is,iwrk))),
+     2       clipfin(work(iCv,is,iwrk),lmin,lmax),
      3       wrk(ix+1),
-     4       min(lmax,max(lmin,work(iCn,is,iwrk))))
+     4       clipfin(work(iCn,is,iwrk),lmin,lmax))
             if(mpg%cvOnClosedSurface(iCv).neqv.
      .         mpg%cvOnClosedSurface(iCn)) then
 #ifndef PLPLOT
@@ -301,8 +301,8 @@ c
           if(xparallel) xmult=geo%cvBb(iCv,3)/
      1     sqrt(geo%cvBb(iCv,0)**2+geo%cvBb(iCv,1)**2)
           wrk(i)=wrk(i)+geo%cvHx(iCv)/2.0_R8*xmult
-          lmin=min(lmin,work(iCv,is,iwrk))
-          lmax=max(lmax,work(iCv,is,iwrk))
+          lmin=minfin(lmin,work(iCv,is,iwrk))
+          lmax=maxfin(lmax,work(iCv,is,iwrk))
         end do
         if (values(13).ne.init_value) then
           dsep=(1.0_R8-values(13))*wrk(1)+
@@ -383,9 +383,9 @@ c
             iCn=mpg%ftCv(mpg%ftCvP(iFt,1)+i)
             call lined_d(
      1       wrk(i),
-     2       min(lmax,max(lmin,work(iCv,is,iwrk))),
+     2       clipfin(work(iCv,is,iwrk),lmin,lmax),
      3       wrk(i+1),
-     4       min(lmax,max(lmin,work(iCn,is,iwrk))))
+     4       clipfin(work(iCn,is,iwrk),lmin,lmax))
           end do
 #ifndef PLPLOT
           call lastd
@@ -398,8 +398,8 @@ c
           do i=1,mpg%ftCvP(iFt,2)
             iCv=mpg%ftCv(mpg%ftCvP(iFt,1)+i-1)
             wrk(i)=real(i,R8)
-            lmin=min(lmin,work(iCv,is,iwrk))
-            lmax=max(lmax,work(iCv,is,iwrk))
+            lmin=minfin(lmin,work(iCv,is,iwrk))
+            lmax=maxfin(lmax,work(iCv,is,iwrk))
           end do
           if(values(9) .ne. values(10)) then
             lmin=values(9)
@@ -464,9 +464,9 @@ c
             iCn=mpg%ftCv(mpg%ftCvP(iFt,1)+i)
             call lined_d(
      1       wrk(i),
-     2       min(lmax,max(lmin,work(iCv,is,iwrk))),
+     2       clipfin(work(iCv,is,iwrk),lmin,lmax),
      3       wrk(i+1),
-     4       min(lmax,max(lmin,work(iCn,is,iwrk))))
+     4       clipfin(work(iCn,is,iwrk),lmin,lmax))
           enddo
 #ifndef PLPLOT
           call lastd

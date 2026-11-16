@@ -6,6 +6,9 @@
       real (kind=R8) :: xa,xb,ya,yb
       real (kind=R4) :: xas,xbs,yas,ybs
 
+*   ..no segment to a value that is not finite (NaN of an error)
+      if (.not.(abs(xa).le.huge(xa).and.abs(xb).le.huge(xb).and.
+     &          abs(ya).le.huge(ya).and.abs(yb).le.huge(yb))) return
       xas=real(min(1e30_R8,max(-1e30_R8,xa)),R4)
       xbs=real(min(1e30_R8,max(-1e30_R8,xb)),R4)
       yas=real(min(1e30_R8,max(-1e30_R8,ya)),R4)
@@ -55,6 +58,8 @@ c      write(*,*) 'lined: ',xas,yas,xbs,ybs
       real (kind=R4) :: xas,yas
       integer is
 
+*   ..no point at a value that is not finite (NaN of an error)
+      if (.not.(abs(xa).le.huge(xa).and.abs(ya).le.huge(ya))) return
       xas=real(min(1e30_R8,max(-1e30_R8,xa)),R4)
       yas=real(min(1e30_R8,max(-1e30_R8,ya)),R4)
       if((xas.lt.xlo).or.(xas.gt.xhi).or.

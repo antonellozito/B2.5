@@ -200,15 +200,15 @@ c Top matrix stack field with its values at the vertices (FIELD)
         call b2py_put_str(textwk(iz,iwrk))
       end do
       do iz = 0, nz-1
-        buf(1:mpg%nCv) = real(min(1.0e30_R8,max(-1.0e30_R8,
-     .   work(1:mpg%nCv,iz,iwrk))),R4)
+        buf(1:mpg%nCv) = clip4(
+     .   work(1:mpg%nCv,iz,iwrk))
         call b2py_put_r4v(mpg%nCv,buf)
       end do
       call b2py_put_i4(mpg%nVx)
       do iz = 0, nz-1
         call intvertex(mpg%nCv,mpg%nVx,mpg,geo%vxVol,work(1,iz,iwrk),
      .   fvx)
-        buf(1:mpg%nVx) = real(min(1.0e30_R8,max(-1.0e30_R8,fvx)),R4)
+        buf(1:mpg%nVx) = clip4(fvx)
         call b2py_put_r4v(mpg%nVx,buf)
       end do
       call b2py_end
@@ -240,8 +240,8 @@ c Top EIRENE stack field on the triangles (FIELD)
         call b2py_put_str(textewk(iz,iewrk))
       end do
       do iz = 0, nz-1
-        buf(1:n) = real(min(1.0e30_R8,max(-1.0e30_R8,
-     .   eirene_stack(1:n,iz,iewrk))),R4)
+        buf(1:n) = clip4(
+     .   eirene_stack(1:n,iz,iewrk))
         call b2py_put_r4v(n,buf)
       end do
       call b2py_put_i4(0)
@@ -289,24 +289,24 @@ c (R,Z) vector at the cell centres and at the vertices (VECTOR)
         call b2py_put_str(textwk(iz,ip))
       end do
       do iz = 0, nz-1
-        buf(1:mpg%nCv) = real(min(1.0e30_R8,max(-1.0e30_R8,
-     .   vr(:,iz))),R4)
+        buf(1:mpg%nCv) = clip4(
+     .   vr(:,iz))
         call b2py_put_r4v(mpg%nCv,buf)
       end do
       do iz = 0, nz-1
-        buf(1:mpg%nCv) = real(min(1.0e30_R8,max(-1.0e30_R8,
-     .   vz(:,iz))),R4)
+        buf(1:mpg%nCv) = clip4(
+     .   vz(:,iz))
         call b2py_put_r4v(mpg%nCv,buf)
       end do
       call b2py_put_i4(mpg%nVx)
       do iz = 0, nz-1
         call intvertex(mpg%nCv,mpg%nVx,mpg,geo%vxVol,vr(1,iz),fvx)
-        buf(1:mpg%nVx) = real(min(1.0e30_R8,max(-1.0e30_R8,fvx)),R4)
+        buf(1:mpg%nVx) = clip4(fvx)
         call b2py_put_r4v(mpg%nVx,buf)
       end do
       do iz = 0, nz-1
         call intvertex(mpg%nCv,mpg%nVx,mpg,geo%vxVol,vz(1,iz),fvx)
-        buf(1:mpg%nVx) = real(min(1.0e30_R8,max(-1.0e30_R8,fvx)),R4)
+        buf(1:mpg%nVx) = clip4(fvx)
         call b2py_put_r4v(mpg%nVx,buf)
       end do
       call b2py_end
@@ -342,13 +342,13 @@ c triangle centroids, as plot_trig_arrows draws them (VECTOR)
         call b2py_put_str(textewk(iz,ip))
       end do
       do iz = 0, nz-1
-        buf(1:n) = real(min(1.0e30_R8,max(-1.0e30_R8,
-     .   eirene_stack(1:n,iz,ip))),R4)
+        buf(1:n) = clip4(
+     .   eirene_stack(1:n,iz,ip))
         call b2py_put_r4v(n,buf)
       end do
       do iz = 0, nz-1
-        buf(1:n) = real(min(1.0e30_R8,max(-1.0e30_R8,
-     .   eirene_stack(1:n,iz,ir))),R4)
+        buf(1:n) = clip4(
+     .   eirene_stack(1:n,iz,ir))
         call b2py_put_r4v(n,buf)
       end do
       call b2py_put_i4(0)
@@ -678,8 +678,8 @@ c Top of the wall stack as FIELD at the wall elements (location 3)
         call b2py_put_str(textwwk(is,iwwrk))
       end do
       do is = 0, nz-1
-        buf = real(min(1.0e30_R8,max(-1.0e30_R8,
-     .   wall_stack(1:n,is,iwwrk))),R4)
+        buf = clip4(
+     .   wall_stack(1:n,is,iwwrk))
         call b2py_put_r4v(n,buf)
       end do
       call b2py_put_i4(0)

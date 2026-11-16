@@ -72,12 +72,11 @@
 *   ..local variables
       integer ninp(0:6), nout(0:2), nCv, nFc, ns, idum(0:9), io
       logical file_open, plasma, track
-      character*256 fname
       character*120 cdum
 *   ..procedures
       character*32 get_B25_hash
       external get_B25_hash
-      external prgini, prgend, xertst, cfopen, cfruin, find_file
+      external prgini, prgend, xertst, cfopen, cfruin
       external b2pldr
 *   ..initialise input/output units
       data ninp/50,51,52,53,54,55,56/
@@ -117,16 +116,19 @@
       call cfopen (ninp(0),'b2mn.dat','old','formatted')
       call cfopen (ninp(1),'b2fgmtry','old','un*formatted')
       call cfopen (ninp(2),'b2fparam','old','un*formatted')
-      call cfopen (ninp(3),'b2fstate','old','un*formatted')
-*     (b2fplasma and b2ftrack only when present: a run in progress or
-*     stopped before its end has none; without b2fplasma the sources
-*     are computed from the state, as for b2fplasma before 03.002.001)
-      fname = 'b2fplasma'
-      call find_file (fname, plasma)
+*     (b2fstate empty or absent, a run stopped before its end: the
+*     plasma of b2fplasma, which b2mn writes when an error stops it,
+*     with the species of b2fstati; b2fplasma and b2ftrack only when
+*     present: a run in progress has none, and without b2fplasma the
+*     sources are computed from the state, as for b2fplasma before
+*     03.002.001)
+      inquire (file='b2fplasma', exist=plasma)
+      call open_b2fstate (ninp(3))
+      call xertst (plasma .or. .not.b2fstate_initial,
+     &  'b2fstate empty or absent, and no b2fplasma')
       if (plasma) call cfopen (ninp(4),'b2fplasma','old','unformatted')
       call cfopen (ninp(5),'b2frates','old','un*formatted')
-      fname = 'b2ftrack'
-      call find_file (fname, track)
+      inquire (file='b2ftrack', exist=track)
       if (track) call cfopen (ninp(6),'b2ftrack','old','un*formatted')
 *   ..mark output unit for error messages
       call xerset (0)

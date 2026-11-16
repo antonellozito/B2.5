@@ -83,12 +83,20 @@ C ====================================================================
 
       ZLO=real(ZLOD,R4)
       ZHI=real(ZHID,R4)
-      rlo=real(field(1),R4)
-      rhi=real(field(1),R4)
-      DO iCv=2,nCv
-        RLO=MIN(RLO,REAL(FIELD(iCv),R4))
-        RHI=MAX(RHI,REAL(FIELD(iCv),R4))
+*     (range of the finite values: NaN of an error left out, no contours
+*     around it)
+      rlo=huge(rlo)
+      rhi=-huge(rhi)
+      DO iCv=1,nCv
+        if (abs(FIELD(iCv)).le.huge(FIELD(iCv))) then
+          RLO=MIN(RLO,REAL(FIELD(iCv),R4))
+          RHI=MAX(RHI,REAL(FIELD(iCv),R4))
+        endif
       ENDDO
+      if (rlo.gt.rhi) then
+        rlo=0.0_R4
+        rhi=0.0_R4
+      endif
       IF(zlo.eq.zhi) then
         zlo=rlo
         zhi=rhi
@@ -216,6 +224,8 @@ C First, set the field data
           RPNT(i)=0.0_R4
           i=i+1
           RPNT(i)=real(FVX(iVx),R4)
+*         (not finite: its triangles are blocked below)
+          if (.not.(abs(FVX(iVx)).le.huge(FVX(iVx)))) RPNT(i)=0.0_R4
         end do
         NOPN=ib
         NPNT=NOPN*LOPN
@@ -358,6 +368,10 @@ C Fourth, split the cells into triangles and link edges to triangles
               end if
             end do
             ITRI(ib+4)=0
+            do ks=1,3
+              if (.not.(abs(FVX(ip(ks))).le.huge(FVX(ip(ks)))))
+     .          ITRI(ib+4)=1
+            end do
           end do
         end do
         NEDG=NOEN*LOEN
@@ -770,6 +784,7 @@ cxpb Obtaining the computational domain contour
             Y(IC)=real(iy,R4)    ! was real(CZ(IY,0),R4)
             if (mpg%imapCv(ix,iy).ne.0) then
               Z(IC)=real(FIELD(mpg%imapCv(IX,IY)),R4)
+              if (.not.(abs(Z(IC)).le.huge(Z(IC)))) Z(IC)=SPECIAL
             else
               Z(IC)=0.0_R4
             end if

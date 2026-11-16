@@ -157,6 +157,57 @@ cank
 
       contains
 
+      elemental real (kind=R8) function minfin (a, b)
+      implicit none
+*     min(a,b) of the finite ones (NaN in the b2fplasma of an error left
+*     out); a when neither is finite
+      real (kind=R8), intent(in) :: a, b
+      if (.not.(abs(b).le.huge(b))) then
+        minfin = a
+      else if (.not.(abs(a).le.huge(a))) then
+        minfin = b
+      else
+        minfin = min(a, b)
+      endif
+      end function minfin
+
+      elemental real (kind=R8) function maxfin (a, b)
+      implicit none
+*     max(a,b) of the finite ones, as minfin
+      real (kind=R8), intent(in) :: a, b
+      if (.not.(abs(b).le.huge(b))) then
+        maxfin = a
+      else if (.not.(abs(a).le.huge(a))) then
+        maxfin = b
+      else
+        maxfin = max(a, b)
+      endif
+      end function maxfin
+
+      elemental real (kind=R8) function clipfin (x, lo, hi)
+      implicit none
+*     min(hi,max(lo,x)); x when it is not finite (NaN of an error: no
+*     line drawn to it)
+      real (kind=R8), intent(in) :: x, lo, hi
+      if (abs(x).le.huge(x)) then
+        clipfin = min(hi, max(lo, x))
+      else
+        clipfin = x
+      endif
+      end function clipfin
+
+      elemental real (kind=R4) function clip4 (x)
+      implicit none
+*     x in single precision, limited to +-1.0e30; NaN kept (NaN of an
+*     error: no value)
+      real (kind=R8), intent(in) :: x
+      if (x.ne.x) then
+        clip4 = real(x, R4)
+      else
+        clip4 = real(min(1.0e30_R8, max(-1.0e30_R8, x)), R4)
+      endif
+      end function clip4
+
       subroutine alloc_b2mod_b2plot(nCv,nFc,nVx,nsd,ns_ext,wklngd,
      1 natmd,nmold,niond,nlim)
       implicit none
