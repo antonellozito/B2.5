@@ -98,7 +98,10 @@ cxpb Data file material properties
 #endif
 
       integer, allocatable, save :: imapw(:),
-     *  imapreg(:), wall_begin(:), wall_end(:)
+     *  imapreg(:), imapfc(:), wall_begin(:), wall_end(:)
+      integer, save :: xymap_tmp(-1:DEF_NXD,-1:DEF_NYD)
+c Wall element of each guard cell, 0 for guard cells of the core
+      integer, allocatable, save :: cvwall(:)
 
 cxpb Data file material properties
       character*32, allocatable, save :: surface_long_name(:)
@@ -209,8 +212,6 @@ cxpb element: xymap(ix,iy)
       call subini('b2mod_wall_init')
 cxpb  Geometric information
 #ifdef ALLOCATE_AND_NAMELIST
-      allocate(imapx(nwall), imapy(nwall))
-      allocate(plate_area(nwall))
       allocate(xymap(-1:nx,-1:ny))
 #else
       errdim=.false.
@@ -225,15 +226,28 @@ cxpb  Geometric information
       call xertst (.not.errdim, 'faulty def_nxd, def_nyd')
 #endif
 
-      nwall_segments=4*(2*max(nncut,1)+1)
-      allocate(imapw(nwall), imapreg(nwall),
-     *  wall_begin(nwall_segments), wall_end(nwall_segments))
-      allocate(r1(nwall), r2(nwall), z1(nwall), z2(nwall))
-      allocate(itrack_0(nwall))
+      call alloc_b2mod_wall_elements(4*(2*max(nncut,1)+1))
 
       call subend()
       return
       end subroutine alloc_b2mod_wall_init
+
+      subroutine alloc_b2mod_wall_elements(nsegd)
+      implicit none
+      integer nsegd
+
+      nwall_segments=nsegd
+#ifdef ALLOCATE_AND_NAMELIST
+      allocate(imapx(nwall), imapy(nwall))
+      allocate(plate_area(nwall))
+#endif
+      allocate(imapw(nwall), imapreg(nwall), imapfc(nwall),
+     *  wall_begin(nwall_segments), wall_end(nwall_segments))
+      allocate(r1(nwall), r2(nwall), z1(nwall), z2(nwall))
+      allocate(itrack_0(nwall))
+
+      return
+      end subroutine alloc_b2mod_wall_elements
 
       subroutine alloc_b2mod_wall(ns)
       implicit none
@@ -378,11 +392,12 @@ cxpb Data file material properties
 #ifdef ALLOCATE_AND_NAMELIST
       deallocate(imapx, imapy)
       deallocate(plate_area)
-      deallocate(xymap)
+      if(allocated(xymap)) deallocate(xymap)
 #endif
-      deallocate(imapw, imapreg, wall_begin, wall_end)
+      deallocate(imapw, imapreg, imapfc, wall_begin, wall_end)
       deallocate(r1, r2, z1, z2)
       deallocate(itrack_0)
+      if(allocated(cvwall)) deallocate(cvwall)
 
       return
       end subroutine dealloc_b2mod_wall_init
@@ -1129,7 +1144,7 @@ cxpb Normalise surface constituents
           endif
           filename='Surface_properties/'//trim(layer_alloys(ifile))
           if(open_file(99,filename,
-     .       'data.local|imodules/B2.5/Database')) then
+     .       'data.local|modules/B2.5/Database')) then
             read(99,*) adum
             read(99,*) alloy_nconstituents(ifile)
             read(99,*) alloy_nzconstituents
