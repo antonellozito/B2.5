@@ -412,11 +412,22 @@ cwdk    related to (fluctuations in diamagnetic current) * (fluctuations in pote
         fhi_visper = dv%fhi_visper
         fhi_visq = dv%fhi_visq
         fhi_anml = dv%fhi_anml
-        fhi_kevis = dv%fhi_viskt
         fhi_vzh = dv%fhi_vzh
       endif
 #endif
 
+#ifndef FIXED_POINT
+*   ..viscosity part of fhi for balance.nc file
+      if (balance.and.(balance_netcdf.ne.0)) then
+        dumm1 = 0.0_R8
+        dumm4(:,0) = 1.5_R8/qe*dv%fchviskt(:,0)
+        dumm4(:,1) = 1.5_R8/qe*dv%fchviskt(:,1)
+        wrkf = sign(dumm4,floi0_mdf)
+        call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,
+     &    wrkf,dumm1,dumm2,fhi_kevis,dumm3)
+        fhi_kevis = sign(fhi_kevis,dumm4)
+      endif
+#endif
 #ifdef WG_TODO
       if(lim_flux.eq.1 .and. conductive_limit.eq.0) then             !srv 17.01.12
         call xerrab ('b2tfhi_: option not yet available for WG')
