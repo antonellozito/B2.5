@@ -10,7 +10,7 @@
       use b2mod_types
       use b2us_map
       use b2us_geo
-      use b2us_io, only : read_b2fgmtry_header, read_b2fgmtry
+      use b2us_io, only : read_b2fgmtry
       use b2mod_switches
       use b2mod_version, only : cfverr
       implicit none
@@ -22,13 +22,13 @@
       type (switches) :: sw
       character(10) :: ver
       character(120) :: lbl
-      integer :: iun, isy
+      integer :: iun, isy, idum(0:9)
       logical :: ex
 #ifdef LEGACYCOMP
       integer newunit
       external newunit
 #endif
-      external ipgeti
+      external ipgeti, cfruin, cfruch
 
       call conv_tallies_cdf
       if (tria_mode.eq.0) then
@@ -52,7 +52,29 @@
      .  form='formatted')
 #endif
       call cfverr (iun, ver)
-      call read_b2fgmtry_header (iun, ver, mpu, lbl, isy)
+      call cfruin (iun, 7, idum, 'nCi,nCg,nCv,nFc,nVx,nFs,nFt')
+      mpu%nCi = idum(0)
+      mpu%nCg = idum(1)
+      mpu%nCv = idum(2)
+      mpu%nFc = idum(3)
+      mpu%nVx = idum(4)
+      mpu%nFs = idum(5)
+      mpu%nFt = idum(6)
+      call cfruin (iun, 5, idum, 'nCmxVx,nCmxFc,nVmxCv,nVmxFc,nCmxNv')
+      mpu%nCmxVx = idum(0)
+      mpu%nCmxFc = idum(1)
+      mpu%nVmxCv = idum(2)
+      mpu%nVmxFc = idum(3)
+      mpu%nCmxNv = idum(4)
+      call cfruin (iun, 1, idum, 'isClassicalGrid')
+      mpu%isClassicalGrid = idum(0)
+      call cfruin (iun, 3, idum, 'nx,ny,nncut')
+      mpu%nx = idum(0)
+      mpu%ny = idum(1)
+      mpu%nncut = idum(2)
+      call cfruch (iun, 120, lbl, 'label')
+      call cfruin (iun, 1, idum, 'isymm')
+      isy = idum(0)
       call alloc_mapping (mpu)
       call alloc_geometry (gmu, mpu%nCv, mpu%nFc, mpu%nVx, mpu%nFs,
      .  mpu%nFt, mpu%nVmxCv)
@@ -106,7 +128,7 @@
       character*80 :: line
       integer :: nci, nco, iret, nxd, nyd, ns, natm, nmol, nrec, nvars,
      .  ivar, vin, xtype, ndims, natts, irec, n, nin, ninp, nprf, i, j,
-     .  k, nk, ntgt, nc, igeo, ix, iy, it, ip, kind, iFc, iCv1, iCv2,
+     .  k, nk, ntgt, igeo, ix, iy, it, ip, kind, iFc, iCv1, iCv2,
      .  iun, toff, nmx, ismain, ismain0, is, jx_in(-1:0), jx_us(-1:0),
      .  icsep(-1:0),
      .  dimids(NF_MAX_VAR_DIMS), nprof(-1:mxtgt), iy0(-1:mxtgt)
@@ -155,15 +177,13 @@
       natm = max(natm, 0)
       nmol = max(nmol, 0)
 
-*   ..targets and nc as in b2mwti
+*   ..targets as in b2mwti
       igeo = geometryId (mpg, gm, 1)
       dn = igeo.eq.GEOMETRY_CDN .or. igeo.eq.GEOMETRY_DDN_BOTTOM .or.
      .     igeo.eq.GEOMETRY_DDN_TOP
       ntgt = 0
       if (igeo.eq.GEOMETRY_LIMITER .or. igeo.eq.GEOMETRY_SN .or. dn)
-     .  ntgt = mpg%nDiv
-      nc = 1
-      if (dn) nc = 2
+     .  ntgt = maxval(mpg%strDiv)
       nprof = 0
       iy0 = 0
       prof_ok = .false.
@@ -289,7 +309,7 @@
       if (.not.found .and. ismain.ne.1) ismain0 = ismain
       call ipgeti ('b2mwti_ismain0', ismain0)
       call b2crtimecdf (fout, mpg, ns, ismain, ismain0, natm, nmol,
-     .  ntgt, nc, 0, nco, batch, iret)
+     .  0, nco, batch, iret)
       iret = nf_open (fout, NF_WRITE, nco)
       call check_cdf_status (iret)
 
