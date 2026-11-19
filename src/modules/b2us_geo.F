@@ -468,7 +468,7 @@
       real (kind=R8) :: hzconst, r0, z0, t0, dux, duy, du, sbf,
      .  Psi1, Psi2, dpsi(mpg%nCv),
      .  dpsi_max_down, dpsi_max_up
-      logical active, match_found
+      logical active, match_found, ref_set
       logical, allocatable :: isPrimaryXpoint(:)
       intrinsic maxval, abs, sqrt
       external b2xbzb, intface, intvertex, ipgeti, xerrab, xertst
@@ -502,6 +502,7 @@
           !call xerrab ('Unknown number of regions!')
         end if
       endif
+      mpg%cvOnClosedSurface(mpg%nCi+1:mpg%nCv) = .false.
 
 *   ..set weights for interpolation to faces
       if (switch%fcVol_style.eq.0) then
@@ -541,10 +542,20 @@
       enddo
 
 *   ..precompute psi for flux tube
+*   ..cells lying along an open boundary (e.g. wall-truncated cells of
+*   ..a conformal grid) need not lie between two flux surfaces: they
+*   ..are neither used as reference nor checked
       do iFt = 1, mpg%nFt
         gm%ftFpsi(iFt) = gm%cvFpsi(mpg%ftCv(mpg%ftCvP(iFt,1)))
+        ref_set = .false.
         do i = 1, mpg%ftCvP(iFt,2)
           iCv = mpg%ftCv(mpg%ftCvP(iFt,1)+i-1)
+          if (mpg%cvAlongBoundary(iCv).and.
+     &        .not.mpg%cvOnClosedSurface(iCv)) cycle
+          if (.not.ref_set) then
+            gm%ftFpsi(iFt) = gm%cvFpsi(iCv)
+            ref_set = .true.
+          endif
           if (gm%cvFpsi(iCv).ne.gm%ftFpsi(iFt)) then
             write (*,'(a,i6,a,i4)')
      &       'Warning: cvFpsi value in cell ', iCv,
@@ -1802,7 +1813,7 @@ csc   than previous face, then identify next vertex
          do j = mpg%vxFcP(vx_current,1),
      &          mpg%vxFcP(vx_current,1)+mpg%vxFcP(vx_current,2)-1
            fc_next = mpg%vxFc(j)
-           if (fc_next==fc_current) cycle  ! we ingore the current face
+           if (fc_next==fc_current) cycle  ! we ignore the current face
            ! check if face belongs to same flux tube
            if (mpg%fcFs(fc_next)==ifs) then
              if (visited_face(fc_next)) cycle

@@ -81,7 +81,7 @@
       use eirmod_parmmod
      * , only : ndx, ndy, nstra, nfl, natm, nmol, nion, npls,
      *          nsrfs, n1st, n2nd, n3rd, nreac,
-     *          eirene_set_parmmod
+     *          ifoff, eirene_set_parmmod
       use eirmod_cinit
      * , only : eirene_init_cinit, fort_lc
       use eirmod_ccoupl
@@ -1617,7 +1617,7 @@ csw 09oct2012
 !$OMP PARALLEL
 #endif
 #endif
-        IUNOUT=6
+        IUNOUT=6+IFOFF
 #ifdef USE_OPENMP
 #ifndef USE_EXT_OPENMP
 !$OMP END PARALLEL
@@ -1805,7 +1805,7 @@ cwdk eventually to be moved into init_geometry (or: defined through b2fgmtry)
 !      if (switch%solve_keps.gt.1 .and.
 !     &   .not.smax(nCv,state%pl%zt,1).gt.0.0_R8)
 !     .  state%pl%zt = state%pl%ti*1e5_R8
-      call createB2Diagnostic( nCv, ns, mpg%nnreg, state % diag )
+      call createB2Diagnostic( nCv, ns, mpg%nnreg, state%diag )
 !WG_TODO      call init_state(mpg, geo, state)
 
 *   initialize 2d batch averages
@@ -2137,7 +2137,7 @@ c   --> better way doing this is necessary)
       if (switch%b2tqna_transport_inputfile .eq. 1) then
         call read_transport_input(transport_ip_filename)
       endif
-      call alloc_b2mod_numerics(nCv,ns,mpg%nnreg, switch)
+      call alloc_b2mod_numerics(nCv,ns,mpg%nnreg,switch)
       allocate(
      *   old_erosion(nwall,ntrack), old_deposition(nwall,ntrack))
       if (flag_optim .or. switch%b2optim_namelist .eq. 1) then
@@ -2222,9 +2222,10 @@ c new CDF chord option (1st frame at t=0)
       idx = 0
       write (*,*) 'b2mndr_0, end: nCv = ',mpg%nCv
 
-      !Initialize residual if using Crank-Nicolson scheme
+      !Initialize plasma snapshots when using second-order schemes
       if ( itim.eq.0.and.(switch%b2mndt_ckn.eq.2
-     &     .or.switch%b2mndt_startup.eq.2) ) then
+     &   .or.(switch%b2mndt_bdf.eq.2.and.
+     &   switch%b2mndt_startup.eq.0)) ) then
         !Dummy call to b2mndt
         !Temporarily set dummy switch to 1
         switch%b2mndt_dummy = 1
@@ -2246,13 +2247,7 @@ c new CDF chord option (1st frame at t=0)
         !Set back dummy switch to default value of 0
         switch%b2mndt_dummy = 0
         !Update plasma snapshots with initialized residuals (without time-stepping sources)
-        state%psnl%resco0 = state%dv%resco0
-        state%psnl%resmo0 = state%dv%resmo0
-        state%psnl%reshe0 = state%dv%reshe0
-        state%psnl%reshi0 = state%dv%reshi0
-        state%psnl%reshn0 = state%dv%reshn0
-        state%psnl%reskt0 = state%dv%reskt0
-        state%psnl%reszt0 = state%dv%reszt0
+        call getB2PlasmaSnapshot(state%pl, state%dv, state%psnl)
       endif
 
       call subend()

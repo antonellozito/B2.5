@@ -361,7 +361,7 @@ c     initialize debugging/analysis arrays
             Phi_app =
      .       getPhiApplied(switch%b2stbc_boundary_namelist,mpg,iRc1) ! the potential
 
-            lcore = mpg%cvOnClosedSurface(iRc1) ! xpb: no sputtering in core!
+            lcore = mpg%cvOnClosedSurface(iRc2) ! xpb: no sputtering in core!
 
 *   ..compute 2-D target temperature evolution
             if(plate_model.eq.2 .and. .not.lcore .and. main_call

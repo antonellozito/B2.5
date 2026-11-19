@@ -14,3 +14,4 @@ Added gui_movies.F (b2plot), the GUI movie commands guimvinf, guimovie and guimv
 Added b2mod_heatdiff_common, the data of the plate heat diffusion model shared by heatdiff1D and its routines
 Renamed b2mod_b2plot_gui to b2mod_b2plot_py, gui_movies.F to movie_frames.F and b2plot/gui/ncar_gui.F to b2plot/py/ncar_py.F (shared by the b2plot.py command line and GUI)
 Added conv_history_cdf.F (convert), the conversion of the history files by b2us; b2mod_movies uses b2mod_switches (create_cdf_b2movies_fields and create_cdf_eirenemovies_fields, the fields of b2movies.nc and eirenemovies.nc shared by cdfmovie, b2co_movies_cdf and b2us)
+Added b2mod_umfpack as new optional matrix solver

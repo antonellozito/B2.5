@@ -137,7 +137,8 @@ cxpb : new default behaviour : zero of distance set at ixref
      3       wrk(ix+1),
      4       clipfin(work(iCn,is,iwrk),lmin,lmax))
             if(mpg%cvOnClosedSurface(iCv).neqv.
-     .         mpg%cvOnClosedSurface(iCn)) then
+     .         mpg%cvOnClosedSurface(iCn) .and.
+     .         iCv.le.mpg%nCi .and. iCn.le.mpg%nCi) then
 #ifndef PLPLOT
               call lastd
               if (scol.gt.1 .or. dcol.ne.1) call gsplci(scol)
@@ -237,7 +238,8 @@ cxpb : new default behaviour : zero of distance set at ixref
      3       wrk(ix+1),
      4       clipfin(work(iCn,is,iwrk),lmin,lmax))
             if(mpg%cvOnClosedSurface(iCv).neqv.
-     .         mpg%cvOnClosedSurface(iCn)) then
+     .         mpg%cvOnClosedSurface(iCn) .and.
+     .         iCv.le.mpg%nCi .and. iCn.le.mpg%nCi) then
 #ifndef PLPLOT
               call lastd
               if (scol.gt.1 .or. dcol.ne.1) call gsplci(scol)

@@ -923,6 +923,7 @@ cwdk should this be conb in general? (but without the rescaling for pressure)
         if (switch%mdf_fnb.eq.0) then
           fna_pschused(:,:,isb) = 0.0_R8
         else
+          fna_dia(:,:,isb) = 0.0_R8
           fna_pschused(:,:,isb) = -dv%fnaPSch(:,:,isb)
         endif
         fna_ch(:,:,isb) = dv%fna_ch(:,:,isb)

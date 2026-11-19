@@ -19,7 +19,7 @@
       ! UMFPACK package thereof) and the manual included there. Below,
       ! we provide a brief description in the interface of the expected
       ! arguments for each function.
-
+#ifdef UMFPACK
       interface
         ! Defaults
         subroutine UmfpackDefaultsDI(control)
@@ -187,13 +187,13 @@
         end subroutine
 
       end interface
-
+#endif
       contains
 
 
-    ! UMFPACK
-    !========
-    ! The sparse solver
+      ! UMFPACK
+      !========
+      ! The sparse solver
       subroutine solve_umfpack(n, nnz, b, sol)
 
         ! Description
@@ -214,12 +214,13 @@
         ! Declare variables
         !==================
         ! Arguments
-        integer, intent(in) 	:: n, nnz
+        integer, intent(in)     :: n, nnz
         real(R8), intent(in)    :: b(n)
         real(R8), intent(out)   :: sol(n)
 
+#ifdef UMFPACK
         ! Matrix in triplet format, as saved in b2mod_ma28
-        integer			:: Arow(nnz), Acol(nnz)
+        integer                 :: Arow(nnz), Acol(nnz)
         real(R8)                :: Aval(nnz)
 
         ! Auxiliary
@@ -233,8 +234,8 @@
 
         type(c_ptr)        :: symbolic, numeric
 
-
-        ! Read in matrix from b2mod_ma28 (storage can perhaps be moved in the future)
+        ! Read in matrix from b2mod_ma28
+        ! (storage can perhaps be moved in the future)
         Arow = irnh(1:nnz)-1
         Acol = icnh(1:nnz)-1
         Aval = a1h(1:nnz)
@@ -250,8 +251,8 @@
 
         ! Solve
         !======
-        ! Solve using the C-routines of UMFPACK. The Double precision,
-        ! integer routines (_di_) are used
+        ! Solve using the C-routines of UMFPACK.
+        ! The double precision integer routines (_di_) are used
 
         ! Set defaults
         call UmfpackDefaultsDI(control)
@@ -285,8 +286,12 @@
 
         ! Cast flag
         flag = nint(info(1))
-
-      end subroutine
-
+#else
+        sol = 0.0_R8
+        call xertst(nnz.gt.0, 'Invalid parameter nnz!')
+        call xerrab('UMFPACK not available! Link and re-compile with'//
+     .   ' UMFPACK library')
+#endif
+      end subroutine solve_umfpack
 
       end module b2mod_umfpack
