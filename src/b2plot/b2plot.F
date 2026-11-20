@@ -44,7 +44,7 @@ c 2002-09-11: logic revised
      & , only : alloc_b2mod_zhfrtf, alloc_b2mod_zhfrtf_df,
      &          dealloc_b2mod_zhfrtf, dealloc_b2mod_zhfrtf_df
       use b2mod_frtf_nccorr
-     & , only : dealloc_b2mod_frtf_nccorr
+     & , only : alloc_b2mod_frtf_nccorr, dealloc_b2mod_frtf_nccorr
       use b2mod_b2plot_py
      & , only : b2py_startup, b2py_shutdown, b2py_sync,
      &   b2py_help_catalog, b2py_active, b2py_traj
@@ -879,6 +879,7 @@ c Zhdanov variables, allocated as in b2mndr_0
         call alloc_b2mod_mrel(nspecies, zmaxmax, ns)
         call alloc_b2mod_zhco(nspecies, mpg%nCv)
         call alloc_b2mod_zhfrtf(mpg%nCv, ns)
+        call alloc_b2mod_frtf_nccorr(mpg%nCv, ns)
         if (switch%zh_dist_fun.eq.1) then
           call alloc_b2mod_zhfrtf_df(mpg%nCv, ns)
         endif
