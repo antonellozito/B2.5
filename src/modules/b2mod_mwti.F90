@@ -142,7 +142,8 @@ contains
          tmne(1),tmte(1),tmti(1),tmvol
 
     integer i, j, is, iCv, iFc, ireg
-    integer target_offset
+    integer target_offset, isep, ftsep(2)
+    integer, allocatable, save :: sepfc(:), sepdir(:)
 
     real (kind=R8) :: fettmp, fdir
     real (kind=R8), allocatable :: ptf(:,:), taf(:,:), uaf(:,:)
@@ -160,7 +161,7 @@ contains
 #ifndef NO_CDF
     integer, save :: ncid, nbatch
     integer, allocatable :: cvlist(:), cnlist(:)
-    integer imap(maxvdims), iret, iCv1, iCv2, iFt, iatm, imol, k, cvtrg
+    integer imap(maxvdims), iret, iCv1, iCv2, iatm, imol, k, cvtrg
     integer nvars, natts, ndims, unlimid
     real (kind=R8) :: fac
     real (kind=R8), allocatable :: fcOr(:)
@@ -242,16 +243,29 @@ contains
         end if
         call output_ds_cv(mpg,geo,nomp,omp,icsepomp-1,'dsa',dsa,omp_pos(1:nomp))
       endif
+      ! separatrix face of each target (separatrix_face) and the coordinate
+      ! zero there, between it and its neighbour on the private flux side
+      if (.not.allocated(sepfc)) allocate(sepfc(max(ntgt,1)), sepdir(max(ntgt,1)))
+      sepfc = 0
+      sepdir = 1
+      ftsep = 0
+      if (nomp.gt.0) ftsep(1) = mpg%cvFt(omp(icsepomp))
+      if (nimp.gt.0) ftsep(2) = mpg%cvFt(imp(icsepimp))
+      do i = 1, ntgt
+        call separatrix_face(mpg,i,ftsep,sepfc(i),sepdir(i))
+      end do
       do i = 1, ntgt
         allocate(fclist(mpg%divFcP(i,2)))
         fclist(1:mpg%divFcp(i,2)) = &
      &   mpg%divFc(mpg%divFcP(i,1):mpg%divFcP(i,1)+mpg%divFcP(i,2)-1)
+        isep = sepfc(i)
+        if (sepdir(i).gt.0) isep = isep - 1
         select case (i)
         case (1)
           if (.not. allocated(dsl)) then
             allocate(dsl(1:mpg%divFcP(i,2)), dsLT(1:mpg%divFcP(i,2)), dsLP(1:mpg%divFcP(i,2)))
           end if
-          call output_ds_fc(geo,mpg%divFcP(i,2),fclist,mpg%ifdiv(i)-1,'dsl',dsl)
+          call output_ds_fc(geo,mpg%divFcP(i,2),fclist,isep,'dsl',dsl,sepdir(i))
           inquire(file='dsL', exist=file_exists)
           if (file_exists) then
             open(99,file='dsLT')
@@ -274,7 +288,7 @@ contains
             if (.not. allocated(dstl)) then
               allocate(dstl(1:mpg%divFcP(i,2)), dsTLT(1:mpg%divFcP(i,2)), dsTLP(1:mpg%divFcP(i,2)))
             end if
-            call output_ds_fc(geo,mpg%divFcP(i,2),fclist,mpg%ifdiv(i)-1,'dstl',dstl)
+            call output_ds_fc(geo,mpg%divFcP(i,2),fclist,isep,'dstl',dstl,sepdir(i))
             inquire(file='dsTL', exist=file_exists)
             if (file_exists) then
               open(99,file='dsTLT')
@@ -296,7 +310,7 @@ contains
             if (.not. allocated(dsr)) then
               allocate(dsr(1:mpg%divFcP(i,2)), dsRT(1:mpg%divFcP(i,2)), dsRP(1:mpg%divFcP(i,2)))
             end if
-            call output_ds_fc(geo,mpg%divFcP(i,2),fclist,mpg%ifdiv(i)-1,'dsr',dsr)
+            call output_ds_fc(geo,mpg%divFcP(i,2),fclist,isep,'dsr',dsr,sepdir(i))
             inquire(file='dsR', exist=file_exists)
             if (file_exists) then
               open(99,file='dsRT')
@@ -319,7 +333,7 @@ contains
           if (.not. allocated(dstr)) then
             allocate(dstr(1:mpg%divFcP(i,2)), dsTRT(1:mpg%divFcP(i,2)), dsTRP(1:mpg%divFcP(i,2)))
           end if
-          call output_ds_fc(geo,mpg%divFcP(i,2),fclist,mpg%ifdiv(i)-1,'dstr',dstr)
+          call output_ds_fc(geo,mpg%divFcP(i,2),fclist,isep,'dstr',dstr,sepdir(i))
           inquire(file='dsTR', exist=file_exists)
           if (file_exists) then
             open(99,file='dsTRT')
@@ -341,7 +355,7 @@ contains
           if (.not. allocated(dsr)) then
             allocate(dsr(1:mpg%divFcP(i,2)), dsRT(1:mpg%divFcP(i,2)), dsRP(1:mpg%divFcP(i,2)))
           end if
-          call output_ds_fc(geo,mpg%divFcP(i,2),fclist,mpg%ifdiv(i)-1,'dsr',dsr)
+          call output_ds_fc(geo,mpg%divFcP(i,2),fclist,isep,'dsr',dsr,sepdir(i))
           if (file_exists) then
             open(99,file='dsRT')
           else
@@ -1469,9 +1483,10 @@ contains
       vssepm(1) = 0.5_R8 * ( &
          co%vsa0(omp(icsepomp-1),ismain)/(mp*am(ismain)*pl%na(omp(icsepomp-1),ismain))+ &
          co%vsa0(omp(icsepomp),ismain)/(mp*am(ismain)*pl%na(omp(icsepomp),ismain)))
-      iFt = mpg%cvFt(omp(icsepomp)) !separatrix flux tube
-      cvtrg = mpg%ftCv(mpg%ftCvP(iFt,1)+target_offset) !inner
+      ! target values at the separatrix: cells of the separatrix faces
+      if (luse_targets) then
       if (.not.lgeo_dn .or. lgeo_ddn_bottom) then
+        cvtrg = separatrix_cell(mpg,1,sepfc(1),target_offset)
         do is = 0, ns-1
           nasepi(is+1,1) = pl%na(cvtrg,is)
         end do
@@ -1493,6 +1508,7 @@ contains
         posepi(1) = pl%po(cvtrg)
         ktsepi(1) = pl%kt(cvtrg)
       else
+        cvtrg = separatrix_cell(mpg,3,sepfc(3),target_offset)
         nesepa(2) = dv%ne(cvtrg)
         do is = 0, ns-1
           nasepa(is+1,2) = pl%na(cvtrg,is)
@@ -1514,8 +1530,8 @@ contains
         posepa(2) = pl%po(cvtrg)
         ktsepa(2) = pl%kt(cvtrg)
       end if
-      cvtrg = mpg%ftCv(mpg%ftCvP(iFt,1)+mpg%ftCvP(iFt,2)-1-target_offset) !outer
       if (.not.lgeo_dn .or. gridGeometry.ne.GEOMETRY_DDN_TOP) then
+        cvtrg = separatrix_cell(mpg,ntgt,sepfc(ntgt),target_offset)
         nesepa(1) = dv%ne(cvtrg)
         do is = 0, ns-1
           nasepa(is+1,1) = pl%na(cvtrg,is)
@@ -1537,6 +1553,7 @@ contains
         posepa(1) = pl%po(cvtrg)
         ktsepa(1) = pl%kt(cvtrg)
       else
+        cvtrg = separatrix_cell(mpg,2,sepfc(2),target_offset)
         do is = 0, ns-1
           nasepi(is+1,2) = pl%na(cvtrg,is)
         end do
@@ -1557,6 +1574,7 @@ contains
         endif
         posepi(2) = pl%po(cvtrg)
         ktsepi(2) = pl%kt(cvtrg)
+      end if
       end if
     end if
     if (nimp.gt.0.and.lgeo_dn) then
@@ -1614,9 +1632,10 @@ contains
       vssepm(2) = 0.5_R8 * ( &
          co%vsa0(imp(icsepimp-1),ismain)/(mp*am(ismain)*pl%na(imp(icsepimp-1),ismain))+ &
          co%vsa0(imp(icsepimp),ismain)/(mp*am(ismain)*pl%na(imp(icsepimp),ismain)))
+    end if
+    if (lgeo_dn) then
       if (gridGeometry.eq.GEOMETRY_CDN) then
-        iFt = mpg%cvFt(imp(icsepimp)) ! HFS separatrix flux tube
-        cvtrg = mpg%ftCv(mpg%ftCvP(ift,1)+target_offset) !inner
+        cvtrg = separatrix_cell(mpg,1,sepfc(1),target_offset)
         do is = 0, ns-1
           nasepi(is+1,1) = pl%na(cvtrg,is)
         end do
@@ -1637,7 +1656,7 @@ contains
           enddo
         endif
         ktsepi(1) = pl%kt(cvtrg)
-        cvtrg = mpg%ftCv(mpg%ftCvP(iFt,1)+mpg%ftCvP(iFt,2)-1-target_offset) !outer
+        cvtrg = separatrix_cell(mpg,2,sepfc(2),target_offset)
         do is = 0, ns-1
           nasepi(is+1,2) = pl%na(cvtrg,is)
         end do
@@ -1659,13 +1678,7 @@ contains
         posepi(2) = pl%po(cvtrg)
         ktsepi(2) = pl%kt(cvtrg)
       else if (gridGeometry.eq.GEOMETRY_DDN_TOP) then
-        iFc = mpg%divFc(mpg%divFcP(1,1)+mpg%ifdiv(1)-1)
-        if ((mpg%fcCv(iFc,1).gt.mpg%nCi.and.target_offset.eq.0).or. &
-          & (mpg%fcCv(iFc,1).le.mpg%nCi.and.target_offset.eq.1)) then
-          cvtrg = mpg%fcCv(iFc,1)
-        else
-          cvtrg = mpg%fcCv(iFc,2)
-        end if
+        cvtrg = separatrix_cell(mpg,1,sepfc(1),target_offset)
         do is = 0, ns-1
           nasepi(is+1,1) = pl%na(cvtrg,is)
         end do
@@ -1686,13 +1699,7 @@ contains
         endif
         posepi(1) = pl%po(cvtrg)
         ktsepi(1) = pl%kt(cvtrg)
-        iFc = mpg%divFc(mpg%divFcP(4,1)+mpg%ifdiv(4)-1)
-        if ((mpg%fcCv(iFc,1).gt.mpg%nCi.and.target_offset.eq.0).or. &
-          & (mpg%fcCv(iFc,1).le.mpg%nCi.and.target_offset.eq.1)) then
-          cvtrg = mpg%fcCv(iFc,1)
-        else
-          cvtrg = mpg%fcCv(iFc,2)
-        end if
+        cvtrg = separatrix_cell(mpg,4,sepfc(4),target_offset)
         do is = 0, ns-1
           nasepa(is+1,1) = pl%na(cvtrg,is)
         end do
@@ -1715,13 +1722,7 @@ contains
         ktsepa(1) = pl%kt(cvtrg)
       else if (gridGeometry.eq.GEOMETRY_DDN_BOTTOM) then
         if (ntgt.gt.2) then
-          iFc = mpg%divFc(mpg%divFcP(2,1)+mpg%ifdiv(2)-1)
-          if ((mpg%fcCv(iFc,1).gt.mpg%nCi.and.target_offset.eq.0).or. &
-            & (mpg%fcCv(iFc,1).le.mpg%nCi.and.target_offset.eq.1)) then
-            cvtrg = mpg%fcCv(iFc,1)
-          else
-            cvtrg = mpg%fcCv(iFc,2)
-          end if
+          cvtrg = separatrix_cell(mpg,2,sepfc(2),target_offset)
           do is = 0, ns-1
             nasepi(is+1,2) = pl%na(cvtrg,is)
           end do
@@ -1742,13 +1743,7 @@ contains
           endif
           posepi(2) = pl%po(cvtrg)
           ktsepi(2) = pl%kt(cvtrg)
-          iFc = mpg%divFc(mpg%divFcP(3,1)+mpg%ifdiv(3)-1)
-          if ((mpg%fcCv(iFc,1).gt.mpg%nCi.and.target_offset.eq.0).or. &
-            & (mpg%fcCv(iFc,1).le.mpg%nCi.and.target_offset.eq.1)) then
-            cvtrg = mpg%fcCv(iFc,1)
-          else
-            cvtrg = mpg%fcCv(iFc,2)
-          end if
+          cvtrg = separatrix_cell(mpg,3,sepfc(3),target_offset)
           do is = 0, ns-1
             nasepa(is+1,2) = pl%na(cvtrg,is)
           end do
@@ -3451,7 +3446,10 @@ contains
     return
   end subroutine output_ds_cv
 
-  subroutine output_ds_fc(geo,nlist,fclist,isep,filename,ds)
+  subroutine output_ds_fc(geo,nlist,fclist,isep,filename,ds,idir)
+    ! distance along the face list, zero between faces isep and isep+1 (at
+    ! the start of the list for isep 0, at its end for isep nlist); idir -1:
+    ! positive towards the start of the list
     use b2us_geo
     implicit none
     type (geometry), intent(in) :: geo
@@ -3460,17 +3458,23 @@ contains
     real (kind=R8), intent(out) :: ds(nlist)
     real (kind=R8) :: ds_offset
     character*(*) filename
+    integer, intent(in), optional :: idir
     integer i
 
     ds(1) = 0.5_R8 * geo%fcHt(fclist(1))
     do i = 2, nlist
       ds(i) = ds(i-1)+ 0.5_R8 * (geo%fcHt(fclist(i-1)) + geo%fcHt(fclist(i)))
     enddo
-    if(isep.ne.0) then
+    if (isep.ge.1 .and. isep.lt.nlist) then
       ds_offset = (ds(isep)+ds(isep+1))/2.0_R8
-      do i = 1, nlist
-        ds(i) = ds(i) - ds_offset
-      enddo
+    else if (isep.eq.nlist) then
+      ds_offset = ds(nlist) + 0.5_R8 * geo%fcHt(fclist(nlist))
+    else
+      ds_offset = 0.0_R8
+    endif
+    ds = ds - ds_offset
+    if (present(idir)) then
+      if (idir.lt.0) ds = -ds
     endif
     open(99,file=filename)
     do i=1,nlist
@@ -3479,6 +3483,60 @@ contains
     close(99)
     return
   end subroutine output_ds_fc
+
+  subroutine separatrix_face(mpg,itgt,ftsep,ipos,idir)
+    ! face of target itgt at the separatrix, on the side of the open field
+    ! lines: its position ipos in the face list (the face of a separatrix
+    ! flux tube ftsep, else the face at ifdiv), and the direction idir of the
+    ! open field lines along the list (+1 towards larger positions); any
+    ! order of the list (file order of grids with topology records)
+    use b2us_map
+    implicit none
+    type (mapping), intent(in) :: mpg
+    integer, intent(in) :: itgt, ftsep(2)
+    integer, intent(out) :: ipos, idir
+    integer j, n, iFc, iCv
+
+    n = mpg%divFcP(itgt,2)
+    ipos = 0
+    do j = 1, n
+      iFc = mpg%divFc(mpg%divFcP(itgt,1)+j-1)
+      iCv = mpg%fcCv(iFc,1)
+      if (iCv.gt.mpg%nCi) iCv = mpg%fcCv(iFc,2)
+      if (iCv.lt.1 .or. iCv.gt.mpg%nCi) cycle
+      if (any(ftsep.gt.0 .and. ftsep.eq.mpg%cvFt(iCv))) then
+        ipos = j
+        exit
+      end if
+    end do
+    if (ipos.eq.0) ipos = max(mpg%ifdiv(itgt),1)
+    if (mpg%ifdiv(itgt).gt.0) then
+      ! the strike point is between faces ifdiv-1 and ifdiv
+      idir = merge(1,-1,ipos.ge.mpg%ifdiv(itgt))
+    else
+      ! no strike point (limiter): the separatrix is at an end of the list
+      idir = merge(1,-1,2*ipos.le.n+1)
+    end if
+    return
+  end subroutine separatrix_face
+
+  integer function separatrix_cell(mpg,itgt,ipos,offset)
+    ! cell of face ipos of target itgt: the cell inside (offset 1) or the
+    ! guard cell (offset 0)
+    use b2us_map
+    implicit none
+    type (mapping), intent(in) :: mpg
+    integer, intent(in) :: itgt, ipos, offset
+    integer iFc
+
+    iFc = mpg%divFc(mpg%divFcP(itgt,1)+ipos-1)
+    if ((mpg%fcCv(iFc,1).le.mpg%nCi) .eqv. (offset.eq.1)) then
+      separatrix_cell = mpg%fcCv(iFc,1)
+    else
+      separatrix_cell = mpg%fcCv(iFc,2)
+    end if
+    return
+  end function separatrix_cell
 
 end module b2mod_mwti
 
