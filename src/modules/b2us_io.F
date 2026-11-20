@@ -122,25 +122,46 @@
       subroutine open_b2fstate (nput)
       implicit none
       integer, intent(in) :: nput
-      integer nbyte
+      integer nbyte, ios, iline
       logical found
       character*256 fname
+      character*80 line
       external cfopen, find_file, xertst
 
-* ..open b2fstate, or b2fstati when b2fstate is empty or absent (a run
-*   stopped by an error, see b2fstate_initial)
+* ..open b2fstate, or b2fstati when b2fstate has no plasma state: empty,
+*   absent, or only the header b2mn writes at its start (a run stopped
+*   by an error, see b2fstate_initial)
 
       inquire (file='b2fstate', exist=found, size=nbyte)
       b2fstate_initial = .not.(found .and. nbyte.ne.0)
+      if (.not.b2fstate_initial) then
+*   ..the header holds a few species blocks, the state starts with na
+        b2fstate_initial = .true.
+        open (nput, file='b2fstate', status='old', form='formatted',
+     &        iostat=ios)
+        iline = 0
+        do while (ios.eq.0 .and. iline.lt.10000)
+          read (nput, '(a)', iostat=ios) line
+          iline = iline + 1
+          if (ios.eq.0 .and. line(1:4).eq.'*cf:') then
+            if (index(line(5:), ' na ').gt.0) then
+              b2fstate_initial = .false.
+              exit
+            end if
+          end if
+        end do
+        close (nput)
+      endif
       if (.not.b2fstate_initial) then
         call cfopen (nput,'b2fstate','old','un*formatted')
         return
       endif
       fname = 'b2fstati'
       call find_file (fname, found)
-      call xertst (found, 'b2fstate empty or absent, and no b2fstati')
-      write (*,'(1x,3a)') 'b2fstate empty or absent (an error stopped ',
-     &  'the run): the plasma of b2fplasma, the species of ',
+      call xertst (found,
+     &  'b2fstate without plasma state, and no b2fstati')
+      write (*,'(1x,3a)') 'b2fstate without plasma state (an error ',
+     &  'stopped the run): the plasma of b2fplasma, the species of ',
      &  trim(fname)
       call cfopen (nput,trim(fname),'old','un*formatted')
 
