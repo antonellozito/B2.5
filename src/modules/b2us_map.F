@@ -804,7 +804,8 @@
       type (mapping), intent (inout) :: m
       integer :: i, j, k, l, indd, ind
       integer :: iCv, iCv1, iCv2, iFc, iFcc, iFs, iVa, iVb,
-     *           iNv, iNv1, iNv2, iVx, iVx1, iVx2, iNvmx, inew
+     *           iNv, iNv1, iNv2, iVx, iVx1, iVx2, iNvmx, inew,
+     *           iFs1, iFs2
       integer :: totalcount, fscount, iactive, icount, fccount,
      *           artificial_slab = 0, found = 0
       integer, allocatable :: indCv(:), indFsVx(:), indXpt(:),
@@ -1118,7 +1119,15 @@ cwdk  can be derived directly from data in that file
         m%strVxP(1,1) = 1
         do i = 1, m%nXpt
           if (i.gt.1) m%strVxP(i,1) = m%strVxP(i-1,1) + m%strVxP(i-1,2)
-          iFs = m%iFssep
+          iFs1 = 0 ! the flux surfaces through this X-point
+          iFs2 = 0
+          do l = m%vxFcP(m%Xpt(i),1),
+     &           m%vxFcP(m%Xpt(i),1) + m%vxFcP(m%Xpt(i),2) - 1
+            iFs = m%fcFs(m%vxFc(l))
+            if (iFs1.eq.0) iFs1 = iFs
+            if (iFs2.eq.0.and.iFs.ne.iFs1) iFs2 = iFs
+          end do
+          iFs = iFs1
           do j = m%fsFcP(iFs,1), m%fsFcP(iFs,1) + m%fsFcP(iFs,2) - 1
             iFc = m%fsFc(j)
             do k = 1, 2
@@ -1134,8 +1143,8 @@ cwdk  can be derived directly from data in that file
               end if
             end do
           end do
-          if (m%iFssep2.gt.0) then
-            iFs = m%iFssep2
+          if (iFs2.gt.0) then
+            iFs = iFs2
             do j = m%fsFcP(iFs,1), m%fsFcP(iFs,1) + m%fsFcP(iFs,2) - 1
               iFc = m%fsFc(j)
               do k = 1, 2
@@ -1158,9 +1167,9 @@ cwdk  can be derived directly from data in that file
         allocate(m%strVx(m%nStr))
         m%strVx(1:m%nStr) = indXpt(1:m%nStr)
         allocate(m%strDiv(m%nStr))
-        allocate(freg(m%nStr))
-        m%strDiv = 0
-        freg = 0
+        allocate(freg(4)) ! face region of each target, by default
+        m%strDiv = 0      ! those of B2.5
+        freg = (/1, 4, 5, 8/)
         do i = 1, m%nStr
           iVx = m%strVx(i)
           do j = m%vxFcP(iVx,1), m%vxFcP(iVx,1) + m%vxFcP(iVx,2) - 1
@@ -1168,24 +1177,24 @@ cwdk  can be derived directly from data in that file
             iFc = m%vxFc(j)
             if (m%fcReg(iFc).eq.1) then
               m%strDiv(i) = 1
-              freg(i) = 1
+              freg(m%strDiv(i)) = 1
             else if (m%fcReg(iFc).eq.4) then
               m%strDiv(i) = 2
-              freg(i) = 4
+              freg(m%strDiv(i)) = 4
             else if (m%fcReg(iFc).eq.5) then
               if (m%nXpt.eq.1) then
                 m%strDiv(i) = 1
               else
                 m%strDiv(i) = 3
               endif
-              freg(i) = 5
+              freg(m%strDiv(i)) = 5
             else if (m%fcReg(iFc).eq.8) then
               if (m%nXpt.eq.1) then
                 m%strDiv(i) = 2
               else
                 m%strDiv(i) = 4
               endif
-              freg(i) = 8
+              freg(m%strDiv(i)) = 8
             end if
           end do
         end do
