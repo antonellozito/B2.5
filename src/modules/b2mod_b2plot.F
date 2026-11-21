@@ -155,6 +155,45 @@ cank
 
       contains
 
+      elemental real (kind=R8) function minfin (a, b)
+      implicit none
+*     min(a,b) of the finite ones (NaN in the b2fplasma of an error left
+*     out); a when neither is finite
+      real (kind=R8), intent(in) :: a, b
+      if (.not.(abs(b).le.huge(b))) then
+        minfin = a
+      else if (.not.(abs(a).le.huge(a))) then
+        minfin = b
+      else
+        minfin = min(a, b)
+      endif
+      end function minfin
+
+      elemental real (kind=R8) function maxfin (a, b)
+      implicit none
+*     max(a,b) of the finite ones, as minfin
+      real (kind=R8), intent(in) :: a, b
+      if (.not.(abs(b).le.huge(b))) then
+        maxfin = a
+      else if (.not.(abs(a).le.huge(a))) then
+        maxfin = b
+      else
+        maxfin = max(a, b)
+      endif
+      end function maxfin
+
+      elemental real (kind=R8) function clipfin (x, lo, hi)
+      implicit none
+*     min(hi,max(lo,x)); x when it is not finite (NaN of an error: no
+*     line drawn to it)
+      real (kind=R8), intent(in) :: x, lo, hi
+      if (abs(x).le.huge(x)) then
+        clipfin = min(hi, max(lo, x))
+      else
+        clipfin = x
+      endif
+      end function clipfin
+
       subroutine alloc_b2mod_b2plot(nCv,nFc,nVx,nsd,ns_ext,wklngd,
      1 natmd,nmold,niond,nlim)
       implicit none

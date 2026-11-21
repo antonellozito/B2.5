@@ -41,8 +41,18 @@ c             pgf90 compiler , see below
         if (jloc.eq.0) jloc = index(zeile,'e')
         if (jloc.eq.0) jloc = index(zeile,'D')
         if (jloc.eq.0) jloc = index(zeile,'d')
-        if (iloc.eq.0 .or. jloc.eq.0) goto 93
-        ndigits = jloc-iloc-1
+        if (iloc.eq.0 .or. jloc.eq.0) then
+*       (no number with a point and an exponent, e.g. NaN or Infinity:
+*       the first field, right-justified, ends at its width w, and
+*       w = ndigits+9 in every format)
+          iloc = verify(zeile,' ')
+          if (iloc.eq.0) goto 93
+          jloc = index(zeile(iloc:),' ')
+          if (jloc.eq.0) goto 93
+          ndigits = iloc+jloc-11
+        else
+          ndigits = jloc-iloc-1
+        endif
         select case (ndigits)
         case (17)
           ifmt = 0
@@ -147,8 +157,18 @@ c             pgf90 compiler , see below
         if (jloc.eq.0) jloc = index(zeile,'e')
         if (jloc.eq.0) jloc = index(zeile,'D')
         if (jloc.eq.0) jloc = index(zeile,'d')
-        if (iloc.eq.0 .or. jloc.eq.0) goto 93
-        ndigits = jloc-iloc-1
+        if (iloc.eq.0 .or. jloc.eq.0) then
+*       (no number with a point and an exponent, e.g. NaN or Infinity:
+*       the first field, right-justified, ends at its width w, and
+*       w = ndigits+9 in every format)
+          iloc = verify(zeile,' ')
+          if (iloc.eq.0) goto 93
+          jloc = index(zeile(iloc:),' ')
+          if (jloc.eq.0) goto 93
+          ndigits = iloc+jloc-11
+        else
+          ndigits = jloc-iloc-1
+        endif
         select case (ndigits)
         case (17)
           ifmt = 0
@@ -273,8 +293,18 @@ c             pgf90 compiler , see below
         if (jloc.eq.0) jloc = index(zeile,'e')
         if (jloc.eq.0) jloc = index(zeile,'D')
         if (jloc.eq.0) jloc = index(zeile,'d')
-        if (iloc.eq.0 .or. jloc.eq.0) goto 93
-        ndigits = jloc-iloc-1
+        if (iloc.eq.0 .or. jloc.eq.0) then
+*       (no number with a point and an exponent, e.g. NaN or Infinity:
+*       the first field, right-justified, ends at its width w, and
+*       w = ndigits+9 in every format)
+          iloc = verify(zeile,' ')
+          if (iloc.eq.0) goto 93
+          jloc = index(zeile(iloc:),' ')
+          if (jloc.eq.0) goto 93
+          ndigits = iloc+jloc-11
+        else
+          ndigits = jloc-iloc-1
+        endif
         select case (ndigits)
         case (17)
           ifmt = 0

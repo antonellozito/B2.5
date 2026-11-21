@@ -82,12 +82,20 @@ C ====================================================================
 
       ZLO=real(ZLOD,R4)
       ZHI=real(ZHID,R4)
-      rlo=real(field(1),R4)
-      rhi=real(field(1),R4)
-      DO iCv=2,nCv
-        RLO=MIN(RLO,REAL(FIELD(iCv),R4))
-        RHI=MAX(RHI,REAL(FIELD(iCv),R4))
+*     (range of the finite values: NaN of an error left out, no contours
+*     around it)
+      rlo=huge(rlo)
+      rhi=-huge(rhi)
+      DO iCv=1,nCv
+        if (abs(FIELD(iCv)).le.huge(FIELD(iCv))) then
+          RLO=MIN(RLO,REAL(FIELD(iCv),R4))
+          RHI=MAX(RHI,REAL(FIELD(iCv),R4))
+        endif
       ENDDO
+      if (rlo.gt.rhi) then
+        rlo=0.0_R4
+        rhi=0.0_R4
+      endif
       IF(zlo.eq.zhi) then
         zlo=rlo
         zhi=rhi
@@ -215,6 +223,8 @@ C First, set the field data
           RPNT(i)=0.0_R4
           i=i+1
           RPNT(i)=real(FVX(iVx),R4)
+*         (not finite: its triangles are blocked below)
+          if (.not.(abs(FVX(iVx)).le.huge(FVX(iVx)))) RPNT(i)=0.0_R4
         end do
         NOPN=ib
         NPNT=NOPN*LOPN
@@ -426,6 +436,13 @@ cxpb Now assign the triangles
      .                 RPNT(IEDG(ITRI(ib+3)+2)+2))
             IF (rmin.gt.rhi.or.rmax.gt.rlo.or.
      .          zmin.gt.zhi.or.zmax.le.zlo) ITRI(ib+4)=1
+*           (a vertex not finite, NaN of an error: triangle blocked)
+            if (.not.(abs(FVX(nodelist(iCv,1))).le.
+     .                huge(FVX(nodelist(iCv,1)))) .or.
+     .          .not.(abs(FVX(nodelist(iCv,k-1))).le.
+     .                huge(FVX(nodelist(iCv,k-1)))) .or.
+     .          .not.(abs(FVX(nodelist(iCv,k))).le.
+     .                huge(FVX(nodelist(iCv,k))))) ITRI(ib+4)=1
           end do
         end do
 
@@ -814,6 +831,7 @@ cxpb Obtaining the computational domain contour
             Y(IC)=real(iy,R4)    ! was real(CZ(IY,0),R4)
             if (mpg%imapCv(ix,iy).ne.0) then
               Z(IC)=real(FIELD(mpg%imapCv(IX,IY)),R4)
+              if (.not.(abs(Z(IC)).le.huge(Z(IC)))) Z(IC)=SPECIAL
             else
               Z(IC)=0.0_R4
             end if
