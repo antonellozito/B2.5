@@ -8,3 +8,4 @@ Added b2mod_chord_interp for interpolation of fields onto arbitrary (R,Z) and al
 Added b2mod_chord_interp_tri for interpolation of Eirene triangle quantities onto chords
 Added b2mod_chords and cdfchord producing the chord output file b2chords.nc
 Added b2mod_umfpack as new optional matrix solver
+Added conv_history_cdf.F (convert), the conversion of the history files by b2us; b2mod_movies uses b2mod_switches (create_cdf_b2movies_fields and create_cdf_eirenemovies_fields, the fields of b2movies.nc and eirenemovies.nc shared by cdfmovie, b2co_movies_cdf and b2us)

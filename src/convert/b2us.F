@@ -492,6 +492,12 @@ c      hz = 1.0_R8*(1.0_R8-fac_hz)+fac_hz*vol/hx/hy
 
 *   ..build/convert the triangle mesh
       call prep_triangles(nout(0),mpg, gm, tria_mode)
+*   ..convert the history files of a structured run
+      if (b2fgmtry_version.lt.'03.002.000') then
+        inquire (unit=nout(1), opened=file_open)
+        if (file_open) close (nout(1))
+        call conv_history_cdf (isymm, tria_mode, switch)
+      end if
 
 *   ..convert feedback schemes (if present!)
       filename='b2.feedback_control.parameters'

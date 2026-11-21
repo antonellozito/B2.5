@@ -5411,7 +5411,8 @@ c$$$      end do
         integer :: ix, iy, ix1, ix2, iyi, iyo, iymin, iymax, iout,
      .             n_omp, n_imp, n_sep, nxtl, nxtr
         integer :: autodet = 1, artificial_slab = 0
-        character*24 hlp_frm, filename
+        character*24 hlp_frm
+        character*256 filename
         logical file_ok
 #ifdef LEGACYCOMP
         integer newunit
