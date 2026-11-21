@@ -171,7 +171,7 @@ c
       integer ntstepcdf, istepcdf
 #endif
       integer lucdf
-      integer itmp, istart, iend, ns,
+      integer itmp, istart, iend, istep, ns,
      * sput_src, refl_model, sput_phys_model,
      * sput_chem_model, sput_phys_col, nnucl_tral, zmaxmax, ntri_py
       real (kind=R8) :: values_default(nparameters)
@@ -13048,7 +13048,7 @@ c     <delta wavelength in A> <1 excitation or 2 recombination> npec
           iend=ipop(istack,iistack)
           istart=ipop(istack,iistack)
           itmp=ipop(istack,iistack)
-          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend,
+          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend,1,
      .     .false.)
         case('mvfrstd') ! push the standard deviation over frames k1 to k2
           stack_req=(/3,0,1,0,0,0,0/)
@@ -13056,8 +13056,17 @@ c     <delta wavelength in A> <1 excitation or 2 recombination> npec
           iend=ipop(istack,iistack)
           istart=ipop(istack,iistack)
           itmp=ipop(istack,iistack)
-          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend,
+          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend,1,
      .     .true.)
+        case('mvfrstep') ! push the mean of frames k1, k1+step, ... to k2
+          stack_req=(/4,0,1,0,0,0,0/)
+          if(bad_args(stack_req)) return
+          istep=ipop(istack,iistack)
+          iend=ipop(istack,iistack)
+          istart=ipop(istack,iistack)
+          itmp=ipop(istack,iistack)
+          call mvf_push(itmp,spop(sstack,isstack),' ',istart,iend,istep,
+     .     .false.)
         case('mvframev') ! push both components of a movie vector
           stack_req=(/3,0,2,0,0,0,0/)
           if(bad_args(stack_req)) return
@@ -13066,7 +13075,7 @@ c     <delta wavelength in A> <1 excitation or 2 recombination> npec
           itmp=ipop(istack,iistack)
           stmp2=spop(sstack,isstack)
           stmp1=spop(sstack,isstack)
-          call mvf_push(itmp,stmp1,stmp2,istart,iend,.false.)
+          call mvf_push(itmp,stmp1,stmp2,istart,iend,1,.false.)
         case('guiwfld')  ! send and drop the top wall stack field
           stack_req=(/0,0,0,0,0,1,0/)
           if(bad_args(stack_req)) return

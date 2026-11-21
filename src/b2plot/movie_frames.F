@@ -210,22 +210,15 @@ c per file, then MOVIEVAR per variable)
       return
       end subroutine gui_send_movieinfo
 
-c Mean (or, with std, standard deviation) over the frames k1 to k2 of
-c variable varid of file ifile, at the location of the file; running
-c sums per variable add and remove only the frames that changed since
-c the last request
-      subroutine mvf_mean(ifile,varid,vname,k1,k2,n,ncol,nd,std,mean,
-     . ok)
+c Frame k of variable varid of file ifile
+      subroutine mvf_read(ifile,varid,vname,k,n,ncol,nd,frame,ok)
       use b2mod_types
       use b2mod_b2plot_py
       implicit none
-      integer, intent(in) :: ifile, varid, k1, k2, n, ncol, nd
+      integer, intent(in) :: ifile, varid, k, n, ncol, nd
       character*(*), intent(in) :: vname
-      logical, intent(in) :: std
-      real (kind=R8), intent(out) :: mean(n,ncol)
+      real (kind=R8), intent(out) :: frame(n,ncol)
       logical, intent(out) :: ok
-      real (kind=R8), allocatable :: frame(:,:)
-      integer :: islot, i, k, lo, hi, nmean, nover, nadd, nrem
       integer :: kstart(3), kcount(3)
 #ifndef NO_CDF
 #     include <netcdf.inc>
@@ -233,7 +226,70 @@ c the last request
 #endif
 
       ok = .false.
+      frame = 0.0_R8
+#ifndef NO_CDF
+      kstart = 1
+      kcount(1) = n
+      kcount(2) = ncol
+      kcount(3) = 1
+      if (nd.eq.3) then
+        kstart(3) = k
+      else
+        kstart(2) = k
+        kcount(2) = 1
+      end if
+      iret = nf_get_vara_double(mvf_ncid(ifile),varid,kstart,kcount,
+     . frame)
+      if (iret.ne.NF_NOERR) then
+        write(*,*) 'mvf_mean: cannot read ',trim(vname),' frame ',k
+        return
+      end if
+      ok = .true.
+#endif
+      return
+      end subroutine mvf_read
+
+c Mean (or, with std, standard deviation) over the frames k1 to k2 of
+c variable varid of file ifile, at the location of the file; running
+c sums per variable add and remove only the frames that changed since
+c the last request; with step > 1 only the frames k1, k1+step, ... up
+c to k2, summed directly
+      subroutine mvf_mean(ifile,varid,vname,k1,k2,step,n,ncol,nd,std,
+     . mean,ok)
+      use b2mod_types
+      use b2mod_b2plot_py
+      implicit none
+      integer, intent(in) :: ifile, varid, k1, k2, step, n, ncol, nd
+      character*(*), intent(in) :: vname
+      logical, intent(in) :: std
+      real (kind=R8), intent(out) :: mean(n,ncol)
+      logical, intent(out) :: ok
+      real (kind=R8), allocatable :: frame(:,:), sq(:,:)
+      integer :: islot, i, k, lo, hi, nmean, nover, nadd, nrem
+      external mvf_read
+
+      ok = .false.
       mean = 0.0_R8
+      if (step.gt.1) then
+        allocate(frame(n,ncol), sq(n,ncol))
+        sq = 0.0_R8
+        nmean = 0
+        do k = k1, k2, step
+          call mvf_read(ifile,varid,vname,k,n,ncol,nd,frame,ok)
+          if (.not.ok) then
+            mean = 0.0_R8
+            deallocate(frame, sq)
+            return
+          end if
+          mean = mean+frame
+          sq = sq+frame**2
+          nmean = nmean+1
+        end do
+        mean = mean/nmean
+        if (std) mean = sqrt(max(0.0_R8,sq/nmean-mean**2))
+        deallocate(frame, sq)
+        return
+      end if
       islot = 0
       do i = 1, mvf_nslot
         if (mvf_c(i)%ifile.eq.ifile.and.
@@ -265,10 +321,6 @@ c the last request
       nadd = nmean-nover
       nrem = max(0,hi-lo+1)-nover
       allocate(frame(n,ncol))
-      kstart = 1
-      kcount(1) = n
-      kcount(2) = ncol
-      kcount(3) = 1
 #ifndef NO_CDF
       if (hi.lt.lo.or.nadd+nrem.ge.nmean.or.
      . mvf_c(islot)%nupd.ge.mvf_maxupd) then
@@ -288,17 +340,8 @@ c the last request
         else
           cycle
         end if
-        if (nd.eq.3) then
-          kstart(3) = k
-        else
-          kstart(2) = k
-          kcount(2) = 1
-        end if
-        iret = nf_get_vara_double(mvf_ncid(ifile),varid,kstart,
-     .   kcount,frame)
-        if (iret.ne.NF_NOERR) then
-          write(*,*) 'mvf_mean: cannot read ',trim(vname),
-     .     ' frame ',k
+        call mvf_read(ifile,varid,vname,k,n,ncol,nd,frame,ok)
+        if (.not.ok) then
           mvf_c(islot)%hi = 0
           mvf_c(islot)%lo = 1
           deallocate(frame)
@@ -317,11 +360,12 @@ c the last request
       return
       end subroutine mvf_mean
 
-c Push the mean (std: the standard deviation) of frames k1 to k2 of a
-c movie variable on the matrix stack (files 1 and 3, at the cells) or
-c on the Eirene stack (file 2, at the triangles); with yname also its
-c partner on top, both or none
-      subroutine mvf_push(ifile,xname,yname,k1,k2,std)
+c Push the mean (std: the standard deviation) of frames k1 to k2 (with
+c step > 1 the frames k1, k1+step, ... up to k2) of a movie variable on
+c the matrix stack (files 1 and 3, at the cells) or on the Eirene stack
+c (file 2, at the triangles); with yname also its partner on top, both
+c or none
+      subroutine mvf_push(ifile,xname,yname,k1,k2,step,std)
       use b2mod_types
       use b2us_data
       use b2mod_b2plot
@@ -334,7 +378,7 @@ c partner on top, both or none
      , , only: ncltal
 #endif
       implicit none
-      integer, intent(in) :: ifile, k1, k2
+      integer, intent(in) :: ifile, k1, k2, step
       character*(*), intent(in) :: xname, yname
       logical, intent(in) :: std
       real (kind=R8), allocatable :: mean(:,:,:), cell(:,:)
@@ -374,6 +418,10 @@ c partner on top, both or none
      .   ' <= ',mvf_nt(ifile)
         return
       end if
+      if (step.lt.1) then
+        write(*,*) 'mvfrstep: the step must be at least 1, not ',step
+        return
+      end if
 #ifndef NO_CDF
       do iv = 1, nv
         iret = nf_inq_varid(mvf_ncid(ifile),vname(iv),varid(iv))
@@ -394,7 +442,7 @@ c partner on top, both or none
       end if
       allocate(mean(n(1),ncol(1),nv), clab(ncol(1)))
       do iv = 1, nv
-        call mvf_mean(ifile,varid(iv),vname(iv),k1,k2,n(1),
+        call mvf_mean(ifile,varid(iv),vname(iv),k1,k2,step,n(1),
      .   ncol(1),nd(iv),std,mean(1,1,iv),ok)
         if (.not.ok) then
           deallocate(mean, clab)
@@ -422,6 +470,9 @@ c partner on top, both or none
         if (k1.eq.k2) then
           write(label,'(a,i0,a)') trim(long)//', frame ',k1,
      .     ' ('//trim(units)//')'
+        else if (step.gt.1) then
+          write(label,'(a,i0,a,i0,a,i0,a)') trim(long)//trim(what)//' ',
+     .     k1,' to ',k2,' every ',step,' ('//trim(units)//')'
         else
           write(label,'(a,i0,a,i0,a)') trim(long)//trim(what)//' ',k1,
      .     ' to ',k2,' ('//trim(units)//')'
