@@ -324,8 +324,8 @@ cwdk    related to (fluctuations in diamagnetic current) * (fluctuations in pote
 
 #ifndef FIXED_POINT
 *   ..components of fhi, each with the sign of the total convective
-*     velocity in calcflow, so that they add up to fhi when mdf_fhi = 0
-*     and to fhi_mdf + fhiPSch otherwise
+*     velocity in calcflow, so that they add up to fhi, and without the
+*     diamagnetic part to fhi_mdf + fhiPSch
         dumm1 = 0.0_R8
         dumm2 = 0.0_R8
         dumm3 = 0.0_R8
@@ -336,12 +336,8 @@ cwdk    related to (fluctuations in diamagnetic current) * (fluctuations in pote
         dv%fhi_conv = sign(dv%fhi_conv,dv%fni_he)
         call calcflow(nCv,nFc,nVx,meth,geo,mpg,pl%ti,floi0_mdf,
      &    co%chci,dumm1,dumm2,dv%fhi_cond)
-        if (switch%mdf_fhi.eq.0) then
-          dv%fhi_dia(:,0) = flidia(:,0)*tif
-          dv%fhi_dia(:,1) = flidia(:,1)*tif
-        else
-          dv%fhi_dia = 0.0_R8
-        endif
+        dv%fhi_dia(:,0) = flidia(:,0)*tif
+        dv%fhi_dia(:,1) = flidia(:,1)*tif
         dumm1 = 0.0_R8
         dumm4(:,0) = co%chvi(:,0)*nif
         dumm4(:,1) = co%chvi(:,1)*nif
@@ -399,10 +395,11 @@ cwdk    related to (fluctuations in diamagnetic current) * (fluctuations in pote
         fhi_32 = dv%fhi_conv
         fhi_52 = 0.0_R8
         fhi_cond = dv%fhi_cond
-        fhi_dia = dv%fhi_dia
         if (switch%mdf_fhi.eq.0) then
+          fhi_dia = dv%fhi_dia
           fhi_pschused = 0.0_R8
         else
+          fhi_dia = 0.0_R8
           fhi_pschused = -dv%fhiPSch
         endif
         fhi_ecrb = 0.0_R8

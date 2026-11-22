@@ -237,8 +237,8 @@ c       call ipgeti ('b2trcl_conductive_limit', conductive_limit)         !srv 1
 
 #ifndef FIXED_POINT
 *   ..components of fhe, each with the sign of the total convective
-*     velocity in calcflow, so that they add up to fhe when mdf_fhe = 0
-*     and to fhe_mdf + fhePSch otherwise
+*     velocity in calcflow, so that they add up to fhe, and without the
+*     diamagnetic part to fhe_mdf + fhePSch
         dumm1 = 0.0_R8
         dumm2 = 0.0_R8
         dumm3 = 0.0_R8
@@ -259,12 +259,8 @@ c       call ipgeti ('b2trcl_conductive_limit', conductive_limit)         !srv 1
      &    switch%alfTeEh*co%calf(:,1)*tefh*ehy
         call calcflow(nCv,nFc,nVx,switch%b2tfhe_discr_meth,geo,mpg,
      &    pl%te,floe0_mdf,co%chce,dumm1,dumm2,dv%fhe_cond)
-        if (switch%mdf_fhe.eq.0) then
-          dv%fhe_dia(:,0) = 2.5_R8*fledia(:,0)*nef*tef
-          dv%fhe_dia(:,1) = 2.5_R8*fledia(:,1)*nef*tef
-        else
-          dv%fhe_dia = 0.0_R8
-        endif
+        dv%fhe_dia(:,0) = 2.5_R8*fledia(:,0)*nef*tef
+        dv%fhe_dia(:,1) = 2.5_R8*fledia(:,1)*nef*tef
         dumm4(:,0) = co%chve(:,0)*nef
         dumm4(:,1) = co%chve(:,1)*nef
         wrkf = sign(dumm4,floe0_mdf)
@@ -277,10 +273,11 @@ c       call ipgeti ('b2trcl_conductive_limit', conductive_limit)         !srv 1
         fhe_52 = 0.0_R8
         fhe_thermj = dv%fhe_thermj
         fhe_cond = dv%fhe_cond
-        fhe_dia = dv%fhe_dia
         if (switch%mdf_fhe.eq.0) then
+          fhe_dia = dv%fhe_dia
           fhe_pschused = 0.0_R8
         else
+          fhe_dia = 0.0_R8
           fhe_pschused = -dv%fhePSch
         endif
         fhe_ecrb = 0.0_R8
