@@ -35,6 +35,8 @@ c 2002-09-11: logic revised
       use b2mod_neoclassical
       use b2mod_b2cmfs
       use b2mod_b2cmpa
+      use b2mod_b2cmrc
+     & , only : fix_recomb, zmax_recomb
       use b2mod_b2mrel
      & , only : alloc_b2mod_mrel, dealloc_b2mod_mrel
       use b2mod_b2zhco
@@ -162,6 +164,7 @@ c
      *   balance(0:DEF_NATM-1)
       real (kind=R8) ::
      *   mass, vel, vth, press
+      real (kind=R8) :: qfix, qrest, qion, qrec
       integer ispecies(0:nsd_local-1), ismain, ismain0,
      *   boundary_namelist, neutrals_namelist,
      *   sput_frac_flag, use_eirene, geometryType
@@ -2816,6 +2819,43 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
           description='Bremsstrahlung radiation rate (W)'
           nz=ns
           call copy(state%srw%rqbrm,1.0_R8,nz,textpl)
+        case ('b2iz', 'b2rc')
+!         electron cooling (rqae) without line radiation and
+!         bremsstrahlung, split as in b2stel into ionisation and
+!         recombination energy, with the rates of the run
+          if (cval.eq.'b2iz') then
+            description='Ionisation energy (W)'
+          else
+            description='Recombination energy (W)'
+          endif
+          nz=ns
+          mach(:,0:nz-1)=0.0_R8
+          do is=0,ns-1
+            do iCv=1,mpg%nCi
+              if (mpg%cvReg(iCv).eq.0) cycle
+              qfix=0.0_R8
+              if (is.gt.0) then
+                if (lnext(is-1,is).and.fix_recomb.ne.0.and.
+     &              nint(zn(is)).le.zmax_recomb)
+     &           qfix=state%srw%rrana(iCv,is)*state%rt%rpi(iCv,is)*ev
+              endif
+              qrest=state%srw%rqahe(iCv,is)+qfix-
+     &         state%srw%rqrad(iCv,is)-state%srw%rqbrm(iCv,is)
+              qion=state%rtw%rqa(iCv,is)-state%rtw%rrd(iCv,is)-
+     &         state%rtw%rbr(iCv,is)
+              qrec=0.0_R8
+              if (state%rtw%rqr(iCv,is).gt.0.0_R8.and.
+     &            qion+state%rtw%rqr(iCv,is).gt.0.0_R8)
+     &         qrec=qrest*state%rtw%rqr(iCv,is)/
+     &          (qion+state%rtw%rqr(iCv,is))
+              if (cval.eq.'b2iz') then
+                mach(iCv,is)=qrest-qrec
+              else
+                mach(iCv,is)=qrec-qfix
+              endif
+            enddo
+          enddo
+          call copy(mach,1.0_R8,nz,textpl)
         case ('rsai')
           description='Ionisation ion energy losses (W) [rsahi]'
           nz=ns
