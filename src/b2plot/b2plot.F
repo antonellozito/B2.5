@@ -152,6 +152,8 @@ c
       real (kind=R8), allocatable :: emach(:,:)
 #endif
       real (kind=R8), parameter :: eps = 1.0e-60_R8
+*   ..atomic mass unit (kg), for the EIRENE species masses
+      real (kind=R8), parameter :: amu = 1.66053906892e-27_R8
       real (kind=R8) ::
      1   vappr_a, vappr_b, sput_frc, sput_phys,
      2   stick_coef, plate_kb, plate_ka,
@@ -589,7 +591,7 @@ c 0 15 30 45 55 65 75 80 85 degree impact
       end do
       call alloc_b2mod_elements(ns, zn, am)
       call alloc_b2mod_tallies(mpg%nnreg, ns)
-c calculate additional fluxes (fhj, fhp, fht)
+c calculate additional fluxes (fhj, fhp), fht as read from b2fplasma
       call ipgetr ('b2news_BoRiS', switch%BoRiS)
       call b2xpni (mpg%nCv, ns, state%pl%na, state%dv%ni)
       call b2xpen (mpg%nCv, mpg%nFc, ns, mpg, switch,
@@ -597,7 +599,7 @@ c calculate additional fluxes (fhj, fhp, fht)
      2 state%dv%fch, state%dv%fhe, state%dv%fhi, state%dv%fhn,
      3 state%rt%rpt, state%pl%te, state%pl%ti, state%pl%tn,
      4 state%pl%po, state%dv%fhm, state%dv%fhp,
-     5 state%dv%fhj, state%dv%fht)
+     5 state%dv%fhj, wrkf2)
 c calculate divergences of the various fluxes
       do is=0,ns-1
         call div(mpg%nCv, mpg%nFc, mpg, state%dv%fna(1,0,is),
@@ -794,7 +796,7 @@ c alternative (failed) calculation of energy balance (elegant, but flawed)
       do is = 0, state%ns-1
         call calcflow(mpg%nCv,mpg%nFc,mpg%nVx,switch%b2npmo_discr_meth,
      &   geo,mpg,state%pl%ua(:,is),state%dv%fna_fcor(:,:,is),
-     &   state%co%cvsahz(:,:,is),state%dv%fmo(:,:,is),flf,flv)
+     &   state%co%cvsahz(:,:,is),wrkf2,flf,flv)
         call diff(mpg%nCv, mpg%nFc, mpg%nVx, 0, geo, mpg,
      &   state%pl%ua(:,is), wrkv, wrkf2)
         state%co%cvsahz_eff(:,:,is)  = -flv/(wrkf2 + eps)
@@ -1172,11 +1174,11 @@ c
             DO IS = 1, NATMI
               IF (pdena(IS,I).gt.0.0_R8) then
                 vxa(IS,I) = vxdena(IS,I)/pdena(IS,I)/
-     .                      (nmassa(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassa(IS)*amu*1000.0_R8)/100.0_R8
                 vya(IS,I) = vydena(IS,I)/pdena(IS,I)/
-     .                      (nmassa(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassa(IS)*amu*1000.0_R8)/100.0_R8
                 vza(IS,I) = vzdena(IS,I)/pdena(IS,I)/
-     .                      (nmassa(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassa(IS)*amu*1000.0_R8)/100.0_R8
               ELSE
                 vxa(IS,I) = 0.0_R8
                 vya(IS,I) = 0.0_R8
@@ -1196,11 +1198,11 @@ c
             DO IS = 1, NMOLI
               IF (pdenm(IS,I).gt.0.0_R8) then
                 vxm(IS,I) = vxdenm(IS,I)/pdenm(IS,I)/
-     .                      (nmassm(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassm(IS)*amu*1000.0_R8)/100.0_R8
                 vym(IS,I) = vydenm(IS,I)/pdenm(IS,I)/
-     .                      (nmassm(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassm(IS)*amu*1000.0_R8)/100.0_R8
                 vzm(IS,I) = vzdenm(IS,I)/pdenm(IS,I)/
-     .                      (nmassm(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassm(IS)*amu*1000.0_R8)/100.0_R8
               ELSE
                 vxm(IS,I) = 0.0_R8
                 vym(IS,I) = 0.0_R8
@@ -1216,11 +1218,11 @@ c
             DO IS = 1, NIONI
               IF (pdeni(IS,I).gt.0.0_R8) then
                 vxi(IS,I) = vxdeni(IS,I)/pdeni(IS,I)/
-     .                      (nmassi(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassi(IS)*amu*1000.0_R8)/100.0_R8
                 vyi(IS,I) = vydeni(IS,I)/pdeni(IS,I)/
-     .                      (nmassi(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassi(IS)*amu*1000.0_R8)/100.0_R8
                 vzi(IS,I) = vzdeni(IS,I)/pdeni(IS,I)/
-     .                      (nmassi(IS)*mp*1000.0_R8)/100.0_R8
+     .                      (nmassi(IS)*amu*1000.0_R8)/100.0_R8
               ELSE
                 vxi(IS,I) = 0.0_R8
                 vyi(IS,I) = 0.0_R8
@@ -1419,14 +1421,21 @@ c
      .  naf)
       wrkcs = state%pl%na*state%pl%ua
       call intflux1(mpg%nFc,mpg%nCv,ns,mpg,geo,
-     .  state%dv%fhm,wrkcs,wrkc2s)
+     .  state%dv%fmo,wrkcs,wrkc2s)
       fmox(:,:) = wrkc2s(:,0,:)
       fmoy(:,:) = wrkc2s(:,1,:)
-      wrkcs = state%pl%na*state%pl%ua**2
+      wrkc = state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
+      do is=0,ns-1
+        wrkcs(:,is) = wrkc
+      end do
       call intflux1(mpg%nFc,mpg%nCv,ns,mpg,geo,
      .  state%dv%fhm,wrkcs,wrkc2s)
       fhmx(:,:) = wrkc2s(:,0,:)
       fhmy(:,:) = wrkc2s(:,1,:)
+      call intflux1(mpg%nFc,mpg%nCv,ns,mpg,geo,
+     .  state%dv%fhp,wrkcs,wrkc2s)
+      fhpx(:,:) = wrkc2s(:,0,:)
+      fhpy(:,:) = wrkc2s(:,1,:)
       ro_ch = 0.0_R8
       do is=0,ns-1
         ro(:,is)=am(is)*mp*state%pl%na(:,is)
@@ -1443,8 +1452,6 @@ c
      .    wrkf2s(1,1,is),vv(1,is))
         fnax(:,is) = up(:,is)*state%pl%na(:,is)*geo%cvHy(:)*geo%cvHz(:)
         fnay(:,is) = vv(:,is)*state%pl%na(:,is)*geo%cvHx(:)*geo%cvHz(:)
-        fhpx(:,is) = fnax(:,is)*state%rt%rpt(:,is)*ev
-        fhpy(:,is) = fnay(:,is)*state%rt%rpt(:,is)*ev
         call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellP,
      .    state%co%cvsa_cl(1,0,is),cvsa_cl_x(1,is))
         call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellR,
@@ -2241,13 +2248,13 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
         case('fhex')
           description='Poloidal electron energy flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,state%dv%fhe,wrkc,wrkc2)
           call copy(wrkc2(1,0),1.0_R8,nz,textbl)
         case('fhey')
           description='Radial electron energy flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,state%dv%fhe,wrkc,wrkc2)
           call copy(wrkc2(1,1),1.0_R8,nz,textbl)
         case('fhetx')
@@ -2265,13 +2272,13 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
         case('fhix')
           description='Poloidal ion energy flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,state%dv%fhi,wrkc,wrkc2)
           call copy(wrkc2(1,0),1.0_R8,nz,textbl)
         case('fhiy')
           description='Radial ion energy flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,state%dv%fhi,wrkc,wrkc2)
           call copy(wrkc2(1,1),1.0_R8,nz,textbl)
         case('fhitx')
@@ -2289,13 +2296,13 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
         case('fhnx')
           description='Poloidal fluid neutral energy flux (W)'
           nz=1
-          wrkc=state%dv%nn*state%pl%tn
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,state%dv%fhn,wrkc,wrkc2)
           call copy(wrkc2(1,0),1.0_R8,nz,textbl)
         case('fhny')
           description='Radial fluid neutral energy flux (W)'
           nz=1
-          wrkc=state%dv%nn*state%pl%tn
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,state%dv%fhn,wrkc,wrkc2)
           call copy(wrkc2(1,1),1.0_R8,nz,textbl)
         case('fhmx')
@@ -2317,14 +2324,16 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
         case('fhjx')
           description='Poloidal electrostatic energy flux (W)'
           nz=1
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fhj,state%dv%ne,wrkc2)
+     .      state%dv%fhj,wrkc,wrkc2)
           call copy(wrkc2(1,0),1.0_R8,nz,textbl)
         case('fhjy')
           description='Radial electrostatic energy flux (W)'
           nz=1
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fhj,state%dv%ne,wrkc2)
+     .      state%dv%fhj,wrkc,wrkc2)
           call copy(wrkc2(1,1),1.0_R8,nz,textbl)
         case('fhtx')
           description='Poloidal total energy flux (W)'
@@ -2338,6 +2347,26 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
           wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,state%dv%fht,wrkc,wrkc2)
           call copy(wrkc2(1,1),1.0_R8,nz,textbl)
+        case('fntx','fnty')
+          description='Poloidal pressure work energy flux (W)'
+          if (cval.eq.'fnty') description=
+     .     'Radial pressure work energy flux (W)'
+          nz=1
+          wrkf2=state%dv%fht-state%dv%fhe-state%dv%fhi-state%dv%fhn-
+     .      state%dv%fhj
+          do is=0,ns-1
+            wrkf2=wrkf2-state%dv%fhp(:,:,is)-
+     .        state%dv%fhm(:,:,is)*(1.0_R8-switch%BoRiS)
+          end do
+          if (switch%BoRiS.ne.1.0_R8) then
+            wrkf2=wrkf2/(1.0_R8-switch%BoRiS)
+          else
+            wrkf2=0.0_R8
+          end if
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
+          call intflux(mpg%nFc,mpg%nCv,mpg,geo,wrkf2,wrkc,wrkc2)
+          if (cval.eq.'fntx') call copy(wrkc2(1,0),1.0_R8,nz,textbl)
+          if (cval.eq.'fnty') call copy(wrkc2(1,1),1.0_R8,nz,textbl)
         case('fktx')
           description='Poloidal E\mU\dB turbulent energy flux (W)'
           nz=1
@@ -4701,6 +4730,20 @@ c     assumes that bb is OK for 1d cases
           call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellR,
      *      state%dv%vedia(1,1),mach)
           call copy(mach,1.0_R8,nz,textbl)
+        case ('wedia.x')
+          description='pol comp of the total ' //
+     *     'electron diamagnetic velocity [wedia.x] (m.s^{-1})'
+          nz=1
+          call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellP,
+     *      state%dv%wedia(1,0),mach)
+          call copy(mach,1.0_R8,nz,textbl)
+        case ('wedia.y')
+          description='rad comp of the total ' //
+     *     'electron diamagnetic velocity [wedia.y] (m.s^{-1})'
+          nz=1
+          call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellR,
+     *      state%dv%wedia(1,1),mach)
+          call copy(mach,1.0_R8,nz,textbl)
         case ('veexb.x')
           description='pol comp of the ' //
      *          'electron E\mU\dB velocity [veecrb.x] (m.s^{-1})'
@@ -5310,37 +5353,37 @@ c     assumes that bb is OK for 1d cases
           description='Pol comp of fchvispar (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchvispar,ro_ch,mach)
+     .      state%dv%fchvispar,state%dv%ne,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fchyvspa')
           description='Rad comp of fchvispar (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchvispar,ro_ch,mach)
+     .      state%dv%fchvispar,state%dv%ne,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
         case ('fchxvspe')
           description='Pol comp of fchvisper (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchvisper,ro_ch,mach)
+     .      state%dv%fchvisper,state%dv%ne,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fchyvspe')
           description='Rad comp of fchvisper (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchvisper,ro_ch,mach)
+     .      state%dv%fchvisper,state%dv%ne,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
         case ('fchxn')
           description='Pol comp of fchin (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchin,ro_ch,mach)
+     .      state%dv%fchin,state%dv%ne,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fchyn')
           description='Rad comp of fchin (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchin,ro_ch,mach)
+     .      state%dv%fchin,state%dv%ne,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
         case ('fnaxmdf')
           description='Modified poloidal particle flux (s^{-1})'
@@ -5359,28 +5402,28 @@ c     assumes that bb is OK for 1d cases
         case ('fhexmdf')
           description='Modified poloidal electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_mdf,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fheymdf')
           description='Modified radial electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_mdf,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
         case ('fhixmdf')
           description='Modified poloidal ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_mdf,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fhiymdf')
           description='Modified radial ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_mdf,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5388,7 +5431,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Pfirsch-Schlueter poloidal electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhePSch,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5396,21 +5439,21 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Pfirsch-Schlueter radial electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhePSch,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
         case ('fhixps')
           description='Pfirsch-Schlueter poloidal ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhiPSch,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fhiyps')
           description='Pfirsch-Schlueter radial ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhiPSch,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5467,42 +5510,66 @@ c     assumes that bb is OK for 1d cases
      .     'Poloidal current due to heat flux viscosity tensor (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchvisq,ro_ch,mach)
+     .      state%dv%fchvisq,state%dv%ne,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fchyvisq')
           description=
      .     'Radial current due to heat flux viscosity tensor (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchvisq,ro_ch,mach)
+     .      state%dv%fchvisq,state%dv%ne,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
         case ('fcxviskt')
           description=
      .     'Poloidal current due to Reynolds stress of kt-model (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchviskt,state%pl%kt,mach)
+     .      state%dv%fchviskt,state%dv%ne,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fcyviskt')
           description=
      .     'Radial current due to Reynolds stress of kt-model (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchviskt,state%pl%kt,mach)
+     .      state%dv%fchviskt,state%dv%ne,mach)
+          call copy(mach(1,1),1.0_R8,nz,textbl)
+        case ('fchxdia')
+          description='Poloidal diamagnetic current (A)'
+          nz=1
+          call intflux(mpg%nFc,mpg%nCv,mpg,geo,
+     .      state%dv%fchdia,state%dv%ne,mach)
+          call copy(mach(1,0),1.0_R8,nz,textbl)
+        case ('fchydia')
+          description='Radial diamagnetic current (A)'
+          nz=1
+          call intflux(mpg%nFc,mpg%nCv,mpg,geo,
+     .      state%dv%fchdia,state%dv%ne,mach)
+          call copy(mach(1,1),1.0_R8,nz,textbl)
+        case ('fchxanml')
+          description='Poloidal anomalous current (A)'
+          nz=1
+          call intflux(mpg%nFc,mpg%nCv,mpg,geo,
+     .      state%dv%fchanml,state%dv%ne,mach)
+          call copy(mach(1,0),1.0_R8,nz,textbl)
+        case ('fchyanml')
+          description='Radial anomalous current (A)'
+          nz=1
+          call intflux(mpg%nFc,mpg%nCv,mpg,geo,
+     .      state%dv%fchanml,state%dv%ne,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
         case ('fchxinrt')
           description=
      .     'Poloidal current due to inertia and gyroviscosity (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchinert,ro_ch,mach)
+     .      state%dv%fchinert,state%dv%ne,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
         case ('fchyinrt')
           description=
      .     'Radial current due to inertia and gyroviscosity (A)'
           nz=1
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
-     .      state%dv%fchinert,ro_ch,mach)
+     .      state%dv%fchinert,state%dv%ne,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
         case ('fnaxpll')
           description=
@@ -5674,7 +5741,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal convective electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_conv,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5682,7 +5749,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial convective electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_conv,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5690,7 +5757,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal conductive electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_cond,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5698,7 +5765,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial conductive electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_cond,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5706,7 +5773,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal thermoelectric electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_thermj,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5714,7 +5781,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial thermoelectric electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_thermj,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5722,7 +5789,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal diamagnetic electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_dia,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5730,7 +5797,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial diamagnetic electron heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_dia,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5738,7 +5805,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal anomalous convective el. heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_strange,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5746,7 +5813,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial anomalous convective el. heat flux (W)'
           nz=1
-          wrkc=state%dv%ne*state%pl%te
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhe_strange,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5754,7 +5821,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal convective ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_conv,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5762,7 +5829,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial convective ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_conv,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5770,7 +5837,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal conductive ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_cond,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5778,7 +5845,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial conductive ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_cond,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5786,7 +5853,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal diamagnetic ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_dia,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5794,7 +5861,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial diamagnetic ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_dia,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5802,7 +5869,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal anomalous convective ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_strange,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5810,7 +5877,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial anomalous convective ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_strange,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5818,7 +5885,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal ion heat flux by inertia current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_inert,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5826,7 +5893,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial ion heat flux by inertia current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_inert,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5834,7 +5901,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal ion heat flux by par. viscosity current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_vispar,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5842,7 +5909,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial ion heat flux by par. viscosity current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_vispar,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5850,7 +5917,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal ion heat flux by perp. viscosity current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_visper,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5858,7 +5925,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial ion heat flux by perp. viscosity current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_visper,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5866,7 +5933,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal ion heat flux by q viscosity current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_visq,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5874,7 +5941,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial ion heat flux by q viscosity current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_visq,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5882,7 +5949,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal ion heat flux by anomalous current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_anml,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5890,7 +5957,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial ion heat flux by anomalous current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_anml,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5898,7 +5965,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal ion heat flux by kt-model current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_viskt,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5906,7 +5973,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial ion heat flux by kt-model current (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_viskt,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -5914,7 +5981,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Poloidal Zhdanov viscous ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_vzh,wrkc,mach)
           call copy(mach(1,0),1.0_R8,nz,textbl)
@@ -5922,7 +5989,7 @@ c     assumes that bb is OK for 1d cases
           description=
      .     'Radial Zhdanov viscous ion heat flux (W)'
           nz=1
-          wrkc=state%dv%ni(:,0)*state%pl%ti
+          wrkc=state%dv%ne*state%pl%te+state%dv%ni(:,0)*state%pl%ti
           call intflux(mpg%nFc,mpg%nCv,mpg,geo,
      .      state%dv%fhi_vzh,wrkc,mach)
           call copy(mach(1,1),1.0_R8,nz,textbl)
@@ -8297,7 +8364,7 @@ cdpc still in testing phase
             nz=natmi
             do is = 1, nz
               do i = 1, ntrii
-                emach(is,i) = nmassa(is)*mp
+                emach(is,i) = nmassa(is)*amu
               end do
             end do
             call eirene_copy(emach(1:nz,1:ntrii),1.0_R8,nz,textan)
@@ -8312,7 +8379,7 @@ cdpc still in testing phase
             nz=nmoli
             do is = 1, nz
               do i = 1, ntrii
-                emach(is,i) = nmassm(is)*mp
+                emach(is,i) = nmassm(is)*amu
               end do
             end do
             call eirene_copy(emach(1:nz,1:ntrii),1.0_R8,nz,textmn)
@@ -8327,7 +8394,7 @@ cdpc still in testing phase
             nz=nioni
             do is = 1, nz
               do i = 1, ntrii
-                emach(is,i) = nmassi(is)*mp
+                emach(is,i) = nmassi(is)*amu
               end do
             end do
             call eirene_copy(emach(1:nz,1:ntrii),1.0_R8,nz,textin)
@@ -8556,6 +8623,69 @@ cdpc still in testing phase
           description='PVY'
           nz=1
           call eirene_coarse_copy(pvy,1.0_R8,mpg%nCv,nz,textbl)
+        case('tempa')
+          description='Atoms temperature (eV)'
+          call eirene_neutral_label(1,natmi,pdena,edena,nmassa,textan)
+        case('presa')
+          description='Atoms pressure (Pa)'
+          call eirene_neutral_label(2,natmi,pdena,edena,nmassa,textan)
+        case('fxdena')
+          description=
+     .     'Atoms Cartesian X-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,natmi,pdena,vxdena,nmassa,
+     .     textan)
+        case('fydena')
+          description=
+     .     'Atoms Cartesian Y-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,natmi,pdena,vydena,nmassa,
+     .     textan)
+        case('fzdena')
+          description=
+     .     'Atoms Cartesian Z-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,natmi,pdena,vzdena,nmassa,
+     .     textan)
+        case('tempm')
+          description='Molecules temperature (eV)'
+          call eirene_neutral_label(1,nmoli,pdenm,edenm,nmassm,textmn)
+        case('presm')
+          description='Molecules pressure (Pa)'
+          call eirene_neutral_label(2,nmoli,pdenm,edenm,nmassm,textmn)
+        case('fxdenm')
+          description=
+     .     'Molecules Cartesian X-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,nmoli,pdenm,vxdenm,nmassm,
+     .     textmn)
+        case('fydenm')
+          description=
+     .     'Molecules Cartesian Y-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,nmoli,pdenm,vydenm,nmassm,
+     .     textmn)
+        case('fzdenm')
+          description=
+     .     'Molecules Cartesian Z-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,nmoli,pdenm,vzdenm,nmassm,
+     .     textmn)
+        case('tempi')
+          description='Test ions temperature (eV)'
+          call eirene_neutral_label(1,nioni,pdeni,edeni,nmassi,textin)
+        case('presi')
+          description='Test ions pressure (Pa)'
+          call eirene_neutral_label(2,nioni,pdeni,edeni,nmassi,textin)
+        case('fxdeni')
+          description=
+     .     'Test ions Cartesian X-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,nioni,pdeni,vxdeni,nmassi,
+     .     textin)
+        case('fydeni')
+          description=
+     .     'Test ions Cartesian Y-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,nioni,pdeni,vydeni,nmassi,
+     .     textin)
+        case('fzdeni')
+          description=
+     .     'Test ions Cartesian Z-particle flux density (m^{-2}.s^{-1})'
+          call eirene_neutral_label(3,nioni,pdeni,vzdeni,nmassi,
+     .     textin)
         case('tindex')
           description='Triangle index'
           nz=1
@@ -8576,6 +8706,42 @@ cdpc still in testing phase
       return
 #endif
       end subroutine select_eirene_stack
+
+#ifdef B25_EIRENE
+      subroutine eirene_neutral_label(what,n,pden,eden,nmass,text)
+*     temperature 2/3 eden/pden (what 1, eV), pressure 2/3 eden e
+*     (what 2, Pa) or particle flux density eden/(nmass amu) (what 3,
+*     eden then a momentum density) of the n EIRENE atoms, molecules or
+*     test ions on the triangles, from the fort.46 arrays (pden in
+*     cm^-3, energy density in eV.cm^-3, momentum in g.cm^-2.s^-1)
+      integer what, n, nmass(*)
+      real (kind=R8) :: pden(:,:), eden(:,:)
+      character*(*) text(0:*)
+      integer i, is
+      if (n.le.0) then
+        nz=1
+        emach(1,1:ntrii)=0.0_R8
+        call eirene_copy(emach(1:nz,1:ntrii),1.0_R8,nz,textbl)
+        return
+      end if
+      nz=n
+      do is = 1, n
+        do i = 1, ntrii
+          if (what.eq.1) then
+            emach(is,i)=0.0_R8
+            if (pden(is,i).gt.0.0_R8)
+     .        emach(is,i)=2.0_R8/3.0_R8*eden(is,i)/pden(is,i)
+          else if (what.eq.2) then
+            emach(is,i)=2.0_R8/3.0_R8*eden(is,i)*1.0e6_R8*qe
+          else
+            emach(is,i)=eden(is,i)*10.0_R8/(nmass(is)*amu)
+          end if
+        end do
+      end do
+      call eirene_copy(emach(1:nz,1:ntrii),1.0_R8,nz,text)
+      return
+      end subroutine eirene_neutral_label
+#endif
 
       subroutine select_eirene_command
 #ifdef B25_EIRENE

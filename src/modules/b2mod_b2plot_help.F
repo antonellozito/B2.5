@@ -4,7 +4,7 @@
 
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
-      parameter(nlabels=499,nfns=240,nsparameters=34,nelabels=36,
+      parameter(nlabels=507,nfns=240,nsparameters=34,nelabels=51,
      *     nconstants=10,nefns=50,nwfns=62,nwlabels=97,ntrgfns=89)
 
       integer, save ::
@@ -134,6 +134,12 @@
      2  'snapppl'  , 'snacore'  , 'smomapl'  , 'smommpl'  , 'smomipl'  ,
      3  'smomppl'  , 'sheeael'  , 'sheemel'  , 'sheeiel'  , 'sheepel'  ,
      4  'shieapl'  , 'shiempl'  , 'shieipl'  , 'shieppl'  , 'shei'     /
+      data labels(500:501) /
+     1  'wedia.x'  , 'wedia.y'  /
+      data labels(502:503) /
+     1  'fntx'     , 'fnty'     /
+      data labels(504:507) /
+     1  'fchxdia'  , 'fchydia'  , 'fchxanml' , 'fchyanml' /
       data descriptions(1:10) /
      1    'Pitch',
      2    'b_{x} (T) (poloidal)',
@@ -683,6 +689,17 @@
      8    'Eirene ion energy source, test ions (W)',
      9    'Eirene ion energy source, recombination (W)',
      *    'Electron-ion equipartition power (W)'/
+      data descriptions(500:501) /
+     1    'pol comp of the total el diamag vel [wedia.x] (m.s^{-1})',
+     2    'rad comp of the total el diamag vel [wedia.y] (m.s^{-1})'/
+      data descriptions(502:503) /
+     1    'Poloidal pressure work energy flux (W)',
+     2    'Radial pressure work energy flux (W)'/
+      data descriptions(504:507) /
+     1    'Poloidal diamagnetic current (A)',
+     2    'Radial diamagnetic current (A)',
+     3    'Poloidal anomalous current (A)',
+     4    'Radial anomalous current (A)'/
       data dimensions(1:50) /
      1    1,      1,      1,      1,      1,
      2    2,      2,      2,      2,      2,
@@ -796,6 +813,12 @@
      2    2,      2,      2,      2,      2,
      3    2,      1,      1,      1,      1,
      4    1,      1,      1,      1,      1/
+      data dimensions(500:501) /
+     1    1,      1/
+      data dimensions(502:503) /
+     1    1,      1/
+      data dimensions(504:507) /
+     1    1,      1,      1,      1/
       data fns(1:50) /
      1 'sumx', 'sumy', 'f.x' , 'f.y' , 'intx',
      2 'inty', 'f.lx', 'f.ly', 'cont', 'surf',
@@ -1049,7 +1072,10 @@
      5 'vxa'     , 'vxm'     , 'vxi'     , 'vya'     , 'vym'     ,
      6 'vyi'     , 'vza'     , 'vzm'     , 'vzi'     , 'massa'   ,
      7 'massm'   , 'massi'   , 'pux'     , 'puy'     , 'pvx'     ,
-     8 'pvy'     /
+     8 'pvy'     , 'tempa'   , 'tempm'   , 'tempi'   , 'presa'   ,
+     9 'presm'   , 'presi'   , 'fxdena'  , 'fxdenm'  , 'fxdeni'  ,
+     * 'fydena'  , 'fydenm'  , 'fydeni'  , 'fzdena'  , 'fzdenm'  ,
+     1 'fzdeni'  /
       data edimensions /
      1     2, 2, 2, 2, 2,
      2     2, 2, 2, 2, 2,
@@ -1058,7 +1084,10 @@
      5     2, 2, 2, 2, 2,
      6     2, 2, 2, 2, 2,
      7     2, 2, 1, 1, 1,
-     8     1/
+     8     1, 2, 2, 2, 2,
+     9     2, 2, 2, 2, 2,
+     *     2, 2, 2, 2, 2,
+     1     2/
       data edescriptions(1:10) /
      1 'Atoms particle density (m^{-3})',
      2 'Molecules particle density (m^{-3})',
@@ -1099,6 +1128,22 @@
      4 'PUY',
      5 'PVX',
      6 'PVY'/
+      data edescriptions(37:51) /
+     1 'Atoms temperature (eV)',
+     2 'Molecules temperature (eV)',
+     3 'Test ions temperature (eV)',
+     4 'Atoms pressure (Pa)',
+     5 'Molecules pressure (Pa)',
+     6 'Test ions pressure (Pa)',
+     7 'Atoms Cartesian X-particle flux density (m^{-2}.s^{-1})',
+     8 'Molecules Cartesian X-particle flux density (m^{-2}.s^{-1})',
+     9 'Test ions Cartesian X-particle flux density (m^{-2}.s^{-1})',
+     * 'Atoms Cartesian Y-particle flux density (m^{-2}.s^{-1})',
+     1 'Molecules Cartesian Y-particle flux density (m^{-2}.s^{-1})',
+     2 'Test ions Cartesian Y-particle flux density (m^{-2}.s^{-1})',
+     3 'Atoms Cartesian Z-particle flux density (m^{-2}.s^{-1})',
+     4 'Molecules Cartesian Z-particle flux density (m^{-2}.s^{-1})',
+     5 'Test ions Cartesian Z-particle flux density (m^{-2}.s^{-1})'/
       data sparameters /
      1 'extl'    , 'cltb' , 'chor', 'chpl'    , 'cmd' ,
      2 'cmdcdf'  , 'chbx' , 'chvl', 'flux'    , 'chmp',
