@@ -99,8 +99,8 @@ c components ax and ay (used by plot_arrows and the GUI)
 
       s= geo%cvEb(iCv,0)
       t= geo%cvEb(iCv,1)
-      u= geo%cvEb(iCv,1)*geo%signmf
-      v=-geo%cvEb(iCv,0)*geo%signmf
+      u=-geo%cvEb(iCv,1)*geo%signmf
+      v= geo%cvEb(iCv,0)*geo%signmf
       rmagst=sqrt(s**2+t**2)
       rmaguv=sqrt(u**2+v**2)
       ur=ax*s/rmagst+ay*u/rmaguv
