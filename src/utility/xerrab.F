@@ -17,6 +17,7 @@
       integer nprt
       logical lwf, lbot
       character fform*12, srname*8
+      procedure (xerhook_routine), pointer :: hook
       logical streql
       external streql, b25_mpi_stop
 *     ------------------------------------------------------------------
@@ -24,6 +25,8 @@
 *     directly or indirectly. Routines xerget and streql are trivial
 *     and should have no need for error handling, but routine subxnd
 *     is more elaborate. It must not call xerrab.
+*     The routine of xerhook is the exception: xerrab clears xerhook
+*     before calling it, so that an error in there stops the program.
 *     ------------------------------------------------------------------
 *   ..determine the output file
       call xerget (nprt)
@@ -65,6 +68,15 @@
        call subxnd (lbot, srname)
        goto 3
       endif
+*   ..call the routine of xerhook, once (one thread: the others wait
+*     here until it has finished, then find xerhook cleared)
+!$omp critical (xerrab_hook)
+      if (associated(xerhook)) then
+       hook => xerhook
+       xerhook => null()
+       call hook ()
+      endif
+!$omp end critical (xerrab_hook)
       call b25_mpi_stop
       stop 'xerrab--error'
 *     ------------------------------------------------------------------

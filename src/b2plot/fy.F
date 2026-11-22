@@ -170,15 +170,15 @@ c
             iCv=cvlist(iy)
             wrk(iy)=y_transform(geo%cvX(iCv),geo%cvY(iCv))
             write(*,*) wrk(iy),geo%cvY(iCv)
-            lmin=min(lmin,work(iCv,is,iwrk))
-            lmax=max(lmax,work(iCv,is,iwrk))
+            lmin=minfin(lmin,work(iCv,is,iwrk))
+            lmax=maxfin(lmax,work(iCv,is,iwrk))
           enddo
           do iy=icsepomp,nlist
             iCv=cvlist(iy)
             wrk(iy)=y_transform(geo%cvX(iCv),geo%cvY(iCv))
             write(*,*) wrk(iy),geo%cvY(iCv)
-            lmin=min(lmin,work(iCv,is,iwrk))
-            lmax=max(lmax,work(iCv,is,iwrk))
+            lmin=minfin(lmin,work(iCv,is,iwrk))
+            lmax=maxfin(lmax,work(iCv,is,iwrk))
           enddo
         else if (plot_vs_norm_psi.or.plot_vs_full_psi.or.
      &           plot_vs_root_psi) then
@@ -228,8 +228,8 @@ c
                 wrk(iy)=(xmin+xmax)/2.0_R8
               end if
               if (plot_vs_root_psi) wrk(iy)=sqrt(wrk(iy))
-              lmin=min(lmin,work(iCv,is,iwrk))
-              lmax=max(lmax,work(iCv,is,iwrk))
+              lmin=minfin(lmin,work(iCv,is,iwrk))
+              lmax=maxfin(lmax,work(iCv,is,iwrk))
             end do
           endif
         else if (plot_vs_rmaj) then
@@ -249,16 +249,16 @@ c
             do iy=iystart,iyend
               iCv=mpg%imapCv(ix,iy)
               wrk(iy)=geo%cvX(iCv)
-              lmin=min(lmin,work(iCv,is,iwrk))
-              lmax=max(lmax,work(iCv,is,iwrk))
+              lmin=minfin(lmin,work(iCv,is,iwrk))
+              lmax=maxfin(lmax,work(iCv,is,iwrk))
             end do
           endif
         else
           do iy=iystart,iyend
             wrk(iy)=ds(iy-iystart+1)
             iCv=mpg%imapCv(ix,iy)
-            lmin=min(lmin,work(iCv,is,iwrk))
-            lmax=max(lmax,work(iCv,is,iwrk))
+            lmin=minfin(lmin,work(iCv,is,iwrk))
+            lmax=maxfin(lmax,work(iCv,is,iwrk))
           enddo
         endif
         if(values(9) .ne. values(10)) then
@@ -344,9 +344,9 @@ c
             iCn=mpg%imapCv(ix,iy+1)
             call lined_d(
      1       wrk(iy),
-     2       min(lmax,max(lmin,work(iCv,is,iwrk))),
+     2       clipfin(work(iCv,is,iwrk),lmin,lmax),
      3       wrk(iy+1),
-     4       min(lmax,max(lmin,work(iCn,is,iwrk))))
+     4       clipfin(work(iCn,is,iwrk),lmin,lmax))
             if(cvIy(iCn).ne.cvIy(iCv)+1) then
 #ifndef PLPLOT
               call lastd
@@ -403,8 +403,8 @@ c
           do iy=iystart,iyend
             iCv=mpg%imapCv(ix,iy)
             wrk(iy)=yy(iCv,2)
-            lmin=min(lmin,work(iCv,is,iwrk))
-            lmax=max(lmax,work(iCv,is,iwrk))
+            lmin=minfin(lmin,work(iCv,is,iwrk))
+            lmax=maxfin(lmax,work(iCv,is,iwrk))
           enddo
           if(values(9) .ne. values(10)) then
             lmin=values(9)
@@ -474,9 +474,9 @@ c
             iCn=mpg%imapCv(ix,iy+1)
             call lined_d(
      1       wrk(iy),
-     2       min(lmax,max(lmin,work(iCv,is,iwrk))),
+     2       clipfin(work(iCv,is,iwrk),lmin,lmax),
      3       wrk(iy+1),
-     4       min(lmax,max(lmin,work(iCn,is,iwrk))))
+     4       clipfin(work(iCn,is,iwrk),lmin,lmax))
             if(cvIy(iCn).ne.cvIy(iCv)+1) then
 #ifndef PLPLOT
               call lastd
@@ -598,20 +598,20 @@ c
               wrk(j)=(xmin+xmax)/2.0_R8
             end if
             if (plot_vs_root_psi) wrk(j)=sqrt(wrk(j))
-            lmin=min(lmin,work(iCv,is,iwrk))
-            lmax=max(lmax,work(iCv,is,iwrk))
+            lmin=minfin(lmin,work(iCv,is,iwrk))
+            lmax=maxfin(lmax,work(iCv,is,iwrk))
           end do
         else if (plot_vs_rmaj) then
           do i=1,nimp
             wrk(i)=geo%cvX(imp(i))
-            lmin=min(lmin,work(imp(i),is,iwrk))
-            lmax=max(lmax,work(imp(i),is,iwrk))
+            lmin=minfin(lmin,work(imp(i),is,iwrk))
+            lmax=maxfin(lmax,work(imp(i),is,iwrk))
           end do
         else
           do i=1,nimp
             wrk(i)=dsimp(i)
-            lmin=min(lmin,work(imp(i),is,iwrk))
-            lmax=max(lmax,work(imp(i),is,iwrk))
+            lmin=minfin(lmin,work(imp(i),is,iwrk))
+            lmax=maxfin(lmax,work(imp(i),is,iwrk))
           enddo
         end if
         if(values(9) .ne. values(10)) then
@@ -691,9 +691,9 @@ c
           do i=1,nimp-1
             call lined_d(
      1       wrk(i),
-     2       min(lmax,max(lmin,work(imp(i),is,iwrk))),
+     2       clipfin(work(imp(i),is,iwrk),lmin,lmax),
      3       wrk(i+1),
-     4       min(lmax,max(lmin,work(imp(i+1),is,iwrk))))
+     4       clipfin(work(imp(i+1),is,iwrk),lmin,lmax))
           end do
           if (plotting_sep.and.icsepimp.gt.1) then
 #ifndef PLPLOT
@@ -724,8 +724,8 @@ c
         if(typeofplot/2 .eq. 1) then
           do i=1,nimp
             wrk(i)=real(i,R8)
-            lmin=min(lmin,work(imp(i),is,iwrk))
-            lmax=max(lmax,work(imp(i),is,iwrk))
+            lmin=minfin(lmin,work(imp(i),is,iwrk))
+            lmax=maxfin(lmax,work(imp(i),is,iwrk))
           end do
           if(values(9) .ne. values(10)) then
             lmin=values(9)
@@ -791,9 +791,9 @@ c
             if(wrk(i).gt.xmax) cycle
             call lined_d(
      1       wrk(i),
-     2       min(lmax,max(lmin,work(imp(i),is,iwrk))),
+     2       clipfin(work(imp(i),is,iwrk),lmin,lmax),
      3       wrk(i+1),
-     4       min(lmax,max(lmin,work(imp(i+1),is,iwrk))))
+     4       clipfin(work(imp(i+1),is,iwrk),lmin,lmax))
           end do
           if (plotting_sep.and.icsepimp.gt.1) then
 #ifndef PLPLOT
@@ -887,20 +887,20 @@ c
               wrk(j)=(xmin+xmax)/2.0_R8
             end if
             if (plot_vs_root_psi) wrk(j)=sqrt(wrk(j))
-            lmin=min(lmin,work(iCv,is,iwrk))
-            lmax=max(lmax,work(iCv,is,iwrk))
+            lmin=minfin(lmin,work(iCv,is,iwrk))
+            lmax=maxfin(lmax,work(iCv,is,iwrk))
           end do
         else if (plot_vs_rmaj) then
           do i=1,nomp
             wrk(i)=geo%cvX(omp(i))
-            lmin=min(lmin,work(omp(i),is,iwrk))
-            lmax=max(lmax,work(omp(i),is,iwrk))
+            lmin=minfin(lmin,work(omp(i),is,iwrk))
+            lmax=maxfin(lmax,work(omp(i),is,iwrk))
           end do
         else
           do i=1,nomp
             wrk(i)=dsomp(i)
-            lmin=min(lmin,work(omp(i),is,iwrk))
-            lmax=max(lmax,work(omp(i),is,iwrk))
+            lmin=minfin(lmin,work(omp(i),is,iwrk))
+            lmax=maxfin(lmax,work(omp(i),is,iwrk))
           enddo
         end if
         if(values(9) .ne. values(10)) then
@@ -980,9 +980,9 @@ c
           do i=1,nomp-1
             call lined_d(
      1       wrk(i),
-     2       min(lmax,max(lmin,work(omp(i),is,iwrk))),
+     2       clipfin(work(omp(i),is,iwrk),lmin,lmax),
      3       wrk(i+1),
-     4       min(lmax,max(lmin,work(omp(i+1),is,iwrk))))
+     4       clipfin(work(omp(i+1),is,iwrk),lmin,lmax))
           end do
           if (plotting_sep.and.icsepomp.gt.1) then
 #ifndef PLPLOT
@@ -1013,8 +1013,8 @@ c
         if(typeofplot/2 .eq. 1) then
           do i=1,nomp
             wrk(i)=real(i,R8)
-            lmin=min(lmin,work(omp(i),is,iwrk))
-            lmax=max(lmax,work(omp(i),is,iwrk))
+            lmin=minfin(lmin,work(omp(i),is,iwrk))
+            lmax=maxfin(lmax,work(omp(i),is,iwrk))
           end do
           if(values(9) .ne. values(10)) then
             lmin=values(9)
@@ -1080,9 +1080,9 @@ c
             if(wrk(i).gt.xmax) cycle
             call lined_d(
      1       wrk(i),
-     2       min(lmax,max(lmin,work(omp(i),is,iwrk))),
+     2       clipfin(work(omp(i),is,iwrk),lmin,lmax),
      3       wrk(i+1),
-     4       min(lmax,max(lmin,work(omp(i+1),is,iwrk))))
+     4       clipfin(work(omp(i+1),is,iwrk),lmin,lmax))
           end do
           if (plotting_sep.and.icsepomp.gt.1) then
 #ifndef PLPLOT

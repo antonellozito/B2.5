@@ -15,8 +15,8 @@ c
         do iCv=1,mpg%nCv
           work(iCv,is,iwrk)=work(iCv,is,iwrk)/
      .     geo%cvHx(iCv)/geo%cvHz(iCv)
-          values(9)=min(values(9),work(iCv,is,iwrk))
-          values(10)=max(values(10),work(iCv,is,iwrk))
+          values(9)=minfin(values(9),work(iCv,is,iwrk))
+          values(10)=maxfin(values(10),work(iCv,is,iwrk))
         enddo
       enddo
       stmp=trim(graphlabel(iwrk))//'/(m^{2})'

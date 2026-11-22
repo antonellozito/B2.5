@@ -53,7 +53,9 @@
 *   ..open files
       call cfopen (ninp(1),'b2fgmtry','old','un*formatted')
 !      call cfopen (ninp(2),'b2fparam','old','un*formatted')
-      call cfopen (ninp(3),'b2fstate','old','un*formatted')
+*     (b2fstati when b2fstate is empty or absent: an error stopped the
+*     run, and b2fplasma holds the plasma of that moment)
+      call open_b2fstate (ninp(3))
       call cfopen (ninp(4),'b2fplasma','old','unformatted')
       call cfopen (nout(0),'b2uf.prt','new','formatted')
       call cfopen (nout(7),'b2fplasmf','new','un*formatted')
@@ -134,9 +136,11 @@
        call cfruch (ninp(3), 120, lblps, 'label')
        call b2ruzd (ninp(3), b2fstate_version, ns, 
      &  zamin, zamax, zn, am, .false.)
-*    ..read full b2fstate and b2fgmtry files
+*    ..read full b2fstate and b2fgmtry files (not b2fstati, whose
+*      plasma b2fplasma replaces)
        call read_b2fgmtry (ninp(1), mpg, geo)
-       call read_b2fstate (ninp(3), mpg%nCv, mpg%nFc, ns, state)
+       if (.not.b2fstate_initial)
+     &   call read_b2fstate (ninp(3), mpg%nCv, mpg%nFc, ns, state)
 *    ..convert to structured format and write b2fstate_st, b2fplasmf_st
        call to_struct_plasma (ns, geo, mpg, state)
       endif

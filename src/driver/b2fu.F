@@ -47,7 +47,9 @@
 *   ..open files
       call cfopen (ninp(1),'b2fgmtry','old','un*formatted')
       call cfopen (ninp(2),'b2fparam','old','un*formatted')
-      call cfopen (ninp(3),'b2fstate','old','un*formatted')
+*     (b2fstati when b2fstate is empty or absent: an error stopped the
+*     run, and b2fplasmf holds the plasma of that moment)
+      call open_b2fstate (ninp(3))
       call cfopen (ninp(4),'b2fplasmf','old','formatted')
       call cfopen (nout(0),'b2fu.prt','new','formatted')
       call cfopen (nout(7),'b2fplasma','new','unformatted')

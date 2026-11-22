@@ -37,14 +37,21 @@ C =====================================================================
 
       zlo=real(zlod,R4)
       zhi=real(zhid,R4)
-      RLO=real(work(1),R4)
-      RHI=real(work(1),R4)
+*     (range of the finite values: NaN of an error left out, its cells
+*     not filled)
+      RLO=huge(RLO)
+      RHI=-huge(RHI)
       do iCv=1,mpg%nCv
-        if(.not.physical.or.mpg%cvReg(iCv).ne.0) then
+        if((.not.physical.or.mpg%cvReg(iCv).ne.0).and.
+     &     abs(work(iCv)).le.huge(work(iCv))) then
           RLO=MIN(RLO,REAL(work(iCv),R4))
           RHI=MAX(RHI,REAL(work(iCv),R4))
         endif
       end do
+      if(RLO.gt.RHI) then
+        RLO=0.0_R4
+        RHI=0.0_R4
+      end if
       if(ZLO.EQ.ZHI) then
         ZLO=RLO
         ZHI=RHI
@@ -186,6 +193,7 @@ C =====================================================================
       allocate(ybox(1:max(4,maxval(mpg%cvVxP(:,2)))))
       if(physical) allocate(done(1:maxval(mpg%cvFcP(:,2))))
       do iCv=1,mpg%nCv
+        if(.not.(abs(work(iCv)).le.huge(work(iCv)))) cycle
         if(.not.physical.or.mpg%cvReg(iCv).ne.0) then
 cxpb Do not plot dead cells in physical domain
           if(physical) then
