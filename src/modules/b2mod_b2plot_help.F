@@ -4,7 +4,7 @@
 
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
-      parameter(nlabels=507,nfns=240,nsparameters=34,nelabels=51,
+      parameter(nlabels=509,nfns=240,nsparameters=34,nelabels=51,
      *     nconstants=10,nefns=50,nwfns=62,nwlabels=97,ntrgfns=89)
 
       integer, save ::
@@ -140,6 +140,8 @@
      1  'fntx'     , 'fnty'     /
       data labels(504:507) /
      1  'fchxdia'  , 'fchydia'  , 'fchxanml' , 'fchyanml' /
+      data labels(508:509) /
+     1  'b2iz'     , 'b2rc'     /
       data descriptions(1:10) /
      1    'Pitch',
      2    'b_{x} (T) (poloidal)',
@@ -700,6 +702,9 @@
      2    'Radial diamagnetic current (A)',
      3    'Poloidal anomalous current (A)',
      4    'Radial anomalous current (A)'/
+      data descriptions(508:509) /
+     1    'Ionisation energy (W)',
+     2    'Recombination energy (W)'/
       data dimensions(1:50) /
      1    1,      1,      1,      1,      1,
      2    2,      2,      2,      2,      2,
@@ -819,6 +824,8 @@
      1    1,      1/
       data dimensions(504:507) /
      1    1,      1,      1,      1/
+      data dimensions(508:509) /
+     1    2,      2/
       data fns(1:50) /
      1 'sumx', 'sumy', 'f.x' , 'f.y' , 'intx',
      2 'inty', 'f.lx', 'f.ly', 'cont', 'surf',
