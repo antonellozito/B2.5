@@ -70,7 +70,7 @@
      .       (geo%cvHx(iCv)/geo%cvBb(iCv,0)+
      .        geo%cvHx(iCp)/geo%cvBb(iCp,0))
           qsum=qsum+0.5_R8*geo%cvHx(iCv)/geo%cvBb(iCv,0)*
-     .       (0.5_R8*(qm+quant(iCv))+0.5_R8*(quant(iCv)+qp))
+     .       (0.5_R8*(qm+quantn(iCv))+0.5_R8*(quantn(iCv)+qp))
           wsum=wsum+geo%cvHx(iCv)/geo%cvBb(iCv,0)
         endif
       enddo

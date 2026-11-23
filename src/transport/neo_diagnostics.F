@@ -294,7 +294,7 @@
         if(mpg%cvOnClosedSurface(iCv)) then
           iCm=iCv
           thet=0.5_R8*geo%cvBb(iCv,3)/geo%cvBb(iCv,0)*geo%cvHx(iCv)
-          ilp(iFt)=geo%cvBb(iCv,0)*geo%cvHx(iCv)
+          ilp(iFt)=geo%cvHx(iCv)/geo%cvBb(iCv,0)
           do i=2,mpg%ftCvP(iFt,2)
             iCv=mpg%ftCv(mpg%ftCvP(iFt,1)+i-1)
             iCn=mpg%ftCv(mpg%ftCvP(iFt,1)+i-2)
@@ -303,7 +303,7 @@
      .       +0.5_R8*geo%cvBb(iCn,3)/geo%cvBb(iCn,0)*geo%cvHx(iCn)
      .       +0.5_R8*geo%cvBb(iCv,3)/geo%cvBb(iCv,0)*geo%cvHx(iCv)
             theta(iCv)=thet
-            ilp(iFt)=ilp(iFt)+geo%cvBb(iCv,0)*geo%cvHx(iCv)
+            ilp(iFt)=ilp(iFt)+geo%cvHx(iCv)/geo%cvBb(iCv,0)
           enddo
           thet=thet
      .       +0.5_R8*geo%cvBb(iCv,3)/geo%cvBb(iCv,0)*geo%cvHx(iCv)
@@ -428,8 +428,11 @@
               if (mpg%cvFt(iCn).eq.iFt) cycle
               if (mpg%cvFt(iCn).eq.iFm) cycle
               if (mpg%cvFt(iCn).eq.iFp) cycle
+*   ..inner neighbour: a closed flux tube (rho_ is zero on the others,
+*     whose flux averages are zero)
               if (iFm.eq.0) then
-                if (rho_(mpg%cvFt(iCn)).lt.rho_(iFt)) iFm=mpg%cvFt(iCn)
+                if (rho_(mpg%cvFt(iCn)).gt.0.0_R8 .and.
+     &              rho_(mpg%cvFt(iCn)).lt.rho_(iFt)) iFm=mpg%cvFt(iCn)
               end if
               if (iFp.eq.0) then
                 if (rho_(mpg%cvFt(iCn)).ne.0.0_R8) then
@@ -451,7 +454,8 @@
      &                  (1.0e3_R8*ev)
             tl(ispecies)=fluxav(state%pl%ti,mpg,geo,iFm)/
      &                  (1.0e3_R8*ev)
-            tr(ispecies)=tfluxav(state%pl%ti,mpg,geo,iFp)/
+            tr(ispecies)=0.0_R8
+            if (iFp.gt.0) tr(ispecies)=tfluxav(state%pl%ti,mpg,geo,iFp)/
      &                  (1.0e3_R8*ev)
             do istate=0,ncl(ispecies)-1
               quant(:)=state%pl%na(:,isort(ispecies,istate))
@@ -460,7 +464,8 @@
               denl(ispecies,istate)=
      &          fluxav(quant,mpg,geo,iFm)/
      &          1.0e19_R8
-              denr(ispecies,istate)=
+              denr(ispecies,istate)=0.0_R8
+              if (iFp.gt.0) denr(ispecies,istate)=
      &          tfluxav(quant,mpg,geo,iFp)/1.0e19_R8
               quant(:)=state%rt%rza(:,isort(ispecies,istate))
               zsp(ispecies,istate)=fluxav(quant,mpg,geo,iFt)
@@ -470,14 +475,33 @@
           den(nsl-1,0)=fluxav(state%dv%ne,mpg,geo,iFt)/1.0e19_R8
           tl(nsl-1)=fluxav(state%pl%te,mpg,geo,iFm)/(1.e3_R8*ev)
           denl(nsl-1,0)=fluxav(state%dv%ne,mpg,geo,iFm)/1.e19_R8
-          tr(nsl-1)=tfluxav(state%pl%te,mpg,geo,iFp)/(1.0e3_R8*ev)
-          denr(nsl-1,0)=tfluxav(state%dv%ne,mpg,geo,iFp)/1.0e19_R8
+          tr(nsl-1)=0.0_R8
+          denr(nsl-1,0)=0.0_R8
+          if (iFp.gt.0) then
+            tr(nsl-1)=tfluxav(state%pl%te,mpg,geo,iFp)/(1.0e3_R8*ev)
+            denr(nsl-1,0)=tfluxav(state%dv%ne,mpg,geo,iFp)/1.0e19_R8
+          end if
 
-*   ..thermodynamic forces
+*   ..thermodynamic forces: central differences with the outer flux
+*     tube, for the last closed tube with the part of the outer tube next
+*     to the closed surfaces taken at the separatrix (rhomax); where that
+*     average is not positive (no such part, as for a divertor leg tube,
+*     or no outer tube found), one-sided with the tube itself
           do ispecies=0,nsl-1
             do istate=0,ncl(ispecies)-1
-              if (mpg%cvOnClosedSurface(mpg%ftCv(mpg%ftCvP(iFp,1))))
-     >         then
+              if (denr(ispecies,istate).le.0.0_R8 .or.
+     &            tr(ispecies).le.0.0_R8) then
+                ds(ispecies,istate,1)=0.0_R8
+                ds(ispecies,istate,2)=0.0_R8
+                if (rho_(iFt).ne.rho_(iFm)) then
+                  ds(ispecies,istate,1)=(log(den(ispecies,istate)*
+     &             t(ispecies))-log(denl(ispecies,istate)*
+     &             tl(ispecies)))/(rho_(iFt)-rho_(iFm))
+                  ds(ispecies,istate,2)=(log(t(ispecies))-
+     &             log(tl(ispecies)))/(rho_(iFt)-rho_(iFm))
+                end if
+              else if (mpg%cvOnClosedSurface(
+     &                 mpg%ftCv(mpg%ftCvP(iFp,1)))) then
                 ds(ispecies,istate,1)=(log(denr(ispecies,istate)*
      &           tr(ispecies))-log(denl(ispecies,istate)*
      &           tl(ispecies)))/(rho_(iFp)-rho_(iFm))

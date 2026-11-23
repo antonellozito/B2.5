@@ -112,6 +112,7 @@
      &  wldpm_s(:,:,:), wldpeb_s(:,:),
      &  wldspt_s(:,:), wldspta_s(:,:,:), wldsptm_s(:,:,:),
      &  eneutrad_s(:,:,:), emolrad_s(:,:,:), eionrad_s(:,:,:),
+     &  erecrad_s(:,:,:),
      &  wlabsrp_s(:,:), wldna_res_s(:,:), wldnm_res_s(:,:),
      &  ewlda_res_s(:,:), ewldm_res_s(:,:), ewldt_res_s(:),
      &  ewldea_res_s(:,:), ewldem_res_s(:,:), ewldrp_res_s(:),
@@ -4916,6 +4917,7 @@ c!###}
       allocate(eneutrad_s(size(eneutrad,1),size(eneutrad,2),0:nstra+1))
       allocate(emolrad_s(size(emolrad,1),size(emolrad,2),0:nstra+1))
       allocate(eionrad_s(size(eionrad,1),size(eionrad,2),0:nstra+1))
+      allocate(erecrad_s(size(erecrad,1),size(erecrad,2),0:nstra+1))
       allocate(wlabsrp_s(size(wlabsrp,1),size(wlabsrp,2)))
       allocate(wldna_res_s(natm,size(wldna_res,2)))
       allocate(wldnm_res_s(nmol,size(wldnm_res,2)))
@@ -5024,6 +5026,7 @@ c!###}
       deallocate(eneutrad_s)
       deallocate(emolrad_s)
       deallocate(eionrad_s)
+      deallocate(erecrad_s)
       deallocate(wlabsrp_s)
       deallocate(wldna_res_s)
       deallocate(wldnm_res_s)
@@ -5137,6 +5140,7 @@ c!###}
       eneutrad_s = eneutrad_s + eneutrad
       emolrad_s = emolrad_s + emolrad
       eionrad_s = eionrad_s + eionrad
+      erecrad_s = erecrad_s + erecrad
       wlabsrp_s = wlabsrp_s + wlabsrp
       wldna_res_s = wldna_res_s + wldna_res
       wldnm_res_s = wldnm_res_s + wldnm_res
@@ -5254,6 +5258,7 @@ c!###}
       eneutrad = eneutrad_s/dble(n_avg_repeat)
       emolrad = emolrad_s/dble(n_avg_repeat)
       eionrad = eionrad_s/dble(n_avg_repeat)
+      erecrad = erecrad_s/dble(n_avg_repeat)
       wlabsrp = wlabsrp_s/dble(n_avg_repeat)
       wldna_res = wldna_res_s/dble(n_avg_repeat)
       wldnm_res = wldnm_res_s/dble(n_avg_repeat)
@@ -5358,6 +5363,7 @@ c!###}
       eneutrad_s = 0.0_R8
       emolrad_s = 0.0_R8
       eionrad_s = 0.0_R8
+      erecrad_s = 0.0_R8
       wlabsrp_s = 0.0_R8
       wldna_res_s = 0.0_R8
       wldnm_res_s = 0.0_R8

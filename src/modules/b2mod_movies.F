@@ -254,19 +254,19 @@
       endif
       if (switch%write_b25_transport.ge.1) then
         call create_cdf_field3(ncid, 'dna', 1, 1,
-     1   'Particle density-driven diffusivity', 'm^-2 s^-1')
+     1   'Particle density-driven diffusivity', 'm^2 s^-1')
         call create_cdf_field3(ncid, 'dpa', 1, 1,
-     1   'Particle pressure-driven diffusivity', 'm^-2 s^-1')
+     1   'Particle pressure-driven diffusivity', 'm^2 s^-1')
         call create_cdf_field2(ncid, 'hci', 1,
-     1   'Ion thermal anomalous diffusivity', 'm^-2 s^-1')
+     1   'Ion thermal anomalous diffusivity', 'm^2 s^-1')
         call create_cdf_field2(ncid, 'hce', 1,
-     1   'Electron thermal anomalous diffusivity', 'm^-2 s^-1')
+     1   'Electron thermal anomalous diffusivity', 'm^2 s^-1')
         call create_cdf_field3(ncid, 'vlax', 1, 1,
      1   'Poloidal anomalous pinch velocity', 'm s^-1')
         call create_cdf_field3(ncid, 'vlay', 1, 1,
      1   'Radial anomalous pinch velocity', 'm s^-1')
         call create_cdf_field3(ncid, 'vsa', 1, 1,
-     1   'Anomalous viscosity', 'm kg^-1 s^-1')
+     1   'Anomalous viscosity', 'm^2 s^-1')
       endif
       if (eirene) then
         if (switch%write_eirene_state_variables.ge.1) then

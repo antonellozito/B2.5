@@ -21,6 +21,7 @@
      &  wldpm(:,:,:), wldpeb(:,:),
      &  wldspt(:,:), wldspta(:,:,:), wldsptm(:,:,:),
      &  eneutrad(:,:,:), emolrad(:,:,:), eionrad(:,:,:),
+     &  erecrad(:,:,:),
      &  wlarea(:), wlabsrp(:,:),
      &  wldna_res(:,:),     !incident atom flux
      &  wldnm_res(:,:),     !incident molecule flux
@@ -78,6 +79,7 @@ c***    isrftype:   surface type (iliin in Eirene)
 c***    eneutrad:   power radiated due to neutrals (only atoms at the moment)
 c***    emolrad :   power radiated due to molecules
 c***    eionrad :   power radiated due to molecular ions
+c***    erecrad :   power radiated by volume recombination of bulk ions
 c
 
       contains
@@ -128,6 +130,7 @@ c
       allocate(eneutrad(nCv,max(1,natmd),0:nstrad))
       allocate(emolrad(nCv,max(1,nmold),0:nstrad))
       allocate(eionrad(nCv,max(1,niond),0:nstrad))
+      allocate(erecrad(nCv,max(1,nplsd),0:nstrad))
       allocate(wlarea(nlimps))
       allocate(wlabsrp(max(1,natmd+nmold+niond+nplsd),nlimps))
       allocate(wldna_res(max(1,natmd),nsgmx))
@@ -199,6 +202,7 @@ c
       deallocate(eneutrad)
       deallocate(emolrad)
       deallocate(eionrad)
+      deallocate(erecrad)
       deallocate(wlarea)
       deallocate(wlabsrp)
       deallocate(wldna_res)

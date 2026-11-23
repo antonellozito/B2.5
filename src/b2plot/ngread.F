@@ -468,6 +468,7 @@ cank
         read (44,'(18i4)') (isrftype(nlim+i),i=1,min(nstsi,nstsi_in))
         if (nstsi_in.eq.nstsi+1 .and. mod(nstsi,18).eq.0) read(44,1028)
       end if
+      erecrad(:,:,0)=0.0_R8
       if (NLWRMSH) then
         if(jvft44_in .ge. 20051115) then
           call read_title(44)
@@ -910,6 +911,12 @@ cank
             end do
           end if
         end if
+
+        if(jvft44_in .ge. 20261122) then
+          do is = 1, nplsi_in
+            call gfsub2(44,mpg%nCv,nCvp,erecrad(:,is,0))
+          end do
+        end if
   999   continue
       else  ! NLWRMSH
         if(jvft44_in .ge. 20071209) then
@@ -923,6 +930,11 @@ cank
           end do
           do is = 1, nioni
             call gfsub2(44,mpg%nCv,nCvp,eionrad(:,is,0))
+          end do
+        end if
+        if(jvft44_in .ge. 20261122) then
+          do is = 1, nplsi_in
+            call gfsub2(44,mpg%nCv,nCvp,erecrad(:,is,0))
           end do
         end if
       end if
