@@ -39,7 +39,7 @@ c***  ssrc    corresponding source intensity
 c***  jb      index of the base segment
 c***  jc      index of the current segment
 c***  jcb     index of the current segment in the boundary list
-c***  jm      mode of the corner point (see rlshdw.F)
+c***  jm      mode of the corner point
 c***  jsc     sector of the corner point
 c***  xb,yb   coordinates of the beginning of the base segment
 c***  xc,yc   coordinates of the corner point

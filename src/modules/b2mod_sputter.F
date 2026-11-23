@@ -511,7 +511,10 @@ c Sputter yields of the wall elements, in the format read at start-up
           iss = 0
           do while (.not.found .and. iss.lt.nsd)
             if (is_neutral(iss)) then
+c a constituent that is a plasma species has its data as a sputtering
+c target only if it is one
               found = nint(zn(iss)).eq.matsurf_nzconstituents(ibnd,is)
+     .          .and. target_index(matsurf_nzconstituents(ibnd,is)).gt.0
               iss = iss + 1
             else
               iss = iss + nint(zn(iss))
@@ -802,37 +805,53 @@ c      write(*,*) 'sputter called',is,te
      *              ntargsp,issput,target_intcode(ntargsp)
         call xerrab('sputter: wrong issput')
       endif
+      sputter=sputter_t(is,zb,itargsp,zn(issput),am(issput),te)
+      return
+      end function sputter
+
+c  Physical sputtering yield of species is of charge zb at energy te (J)
+c  on target itargsp of nuclear charge z2 and mass am2 (amu): TRIM data
+c  of the angle chosen, out of their range scaled with physput
+      function sputter_t(is,zb,itargsp,z2,am2,te)
+      use b2mod_b2cmpa
+      implicit none
+      integer is, itargsp
+      real (kind=R8) ::
+     *   sputter_t, zb, z2, am2, te, yldphy_lowlim, yldphy_hilim,
+     *   yldphy_te, f
+      integer iss, ib, it, ih, lng
+      iss=sputter_index(is)
       lng=sputter_length(iss,itargsp)
       if(lng.eq.0) then
-        call physput(te/ev,zb,zn(is),zn(issput),
-     *    am(is),am(issput),itargsp,sputter)
+        call physput(te/ev,zb,zn(is),z2,
+     *    am(is),am2,itargsp,sputter_t)
         return
       endif
       if(lng.eq.-1.or.te.le.0.0_R8) then
-        sputter = 0.0_R8
+        sputter_t = 0.0_R8
         return
       endif
 
       if(te.le.sputter_energy(1,iss,itargsp)) then
 c       write(*,*) 'te <= lower limit'
         call physput(sputter_energy(1,iss,itargsp)/ev,zb,zn(is),
-     &   zn(issput),am(is),am(issput),itargsp,yldphy_lowlim)
+     &   z2,am(is),am2,itargsp,yldphy_lowlim)
         call physput(te/ev,zb,zn(is),
-     &   zn(issput),am(is),am(issput),itargsp,yldphy_te)
+     &   z2,am(is),am2,itargsp,yldphy_te)
         if (yldphy_lowlim.gt.0.0_R8.and.Yldphy_te.gt.0.0_R8) then
-          sputter=sputter_coefficient(1,iss,itargsp)/
+          sputter_t=sputter_coefficient(1,iss,itargsp)/
      1     yldphy_lowlim*yldphy_te
         else
-          sputter = 0.0_R8
+          sputter_t = 0.0_R8
         endif
         return
       elseif(te.ge.sputter_energy(lng,iss,itargsp)) then
 c       write(*,*) 'te >= upper limit'
         call physput(sputter_energy(lng,iss,itargsp)/ev,zb,zn(is),
-     &   zn(issput),am(is),am(issput),itargsp,yldphy_hilim)
+     &   z2,am(is),am2,itargsp,yldphy_hilim)
         call physput(te/ev,zb,zn(is),
-     &   zn(issput),am(is),am(issput),itargsp,yldphy_te)
-        sputter=sputter_coefficient(lng,iss,itargsp)/
+     &   z2,am(is),am2,itargsp,yldphy_te)
+        sputter_t=sputter_coefficient(lng,iss,itargsp)/
      1   yldphy_hilim*yldphy_te
         return
       else
@@ -846,7 +865,7 @@ c   10  ih=(ib+it)/2
           elseif(te.gt.sputter_energy(ih,iss,itargsp)) then
             ib=ih
           else
-            sputter=sputter_coefficient(ih,iss,itargsp)
+            sputter_t=sputter_coefficient(ih,iss,itargsp)
             return
           endif
 c       write(*,*) it-ib
@@ -858,19 +877,19 @@ c                  sputter_energy(it,iss,itargsp)
      1       (sputter_energy(it,iss,itargsp)-
      2        sputter_energy(ib,iss,itargsp))
         if(jagged_rates.eq.0) then
-          sputter=f*
+          sputter_t=f*
      1     (sputter_coefficient(it,iss,itargsp)-
      2     sputter_coefficient(ib,iss,itargsp))+
      1     sputter_coefficient(ib,iss,itargsp)
         else
-          sputter=f*
+          sputter_t=f*
      1     (sputter_coefficient(it,iss,itargsp)-
      2     sputter_coefficient(ib,iss,itargsp))+
      1     sputter_coefficient(it,iss,itargsp)
         endif
         return
       endif
-      end function sputter
+      end function sputter_t
 c
 c  Function to evaluate the sputtered energy from TRIM data.
       function sputter2(is,issput,te)
@@ -890,19 +909,32 @@ c      write(*,*) 'sputter2 called',is,te
       else
         call xerrab('sputter2: wrong issput')
       endif
+      sputter2=sputter2_t(is,itargsp,te)
+      return
+      end function sputter2
+
+c  Sputtered energy yield of species is at energy te (J) on target
+c  itargsp, TRIM data of the angle chosen
+      function sputter2_t(is,itargsp,te)
+      use b2mod_b2cmpa
+      implicit none
+      real (kind=R8) ::
+     *   sputter2_t, te, f
+      integer is, itargsp, iss, ib, it, ih, lng
+      iss=sputter_index(is)
       lng=sputter_length2(iss,itargsp)
       if(lng.eq.0) then
-        sputter2 = 0.0_R8
+        sputter2_t = 0.0_R8
         return
       endif
 
       if(te.le.sputter_energy2(1,iss,itargsp)) then
 c       write(*,*) 'te <= lower limit'
-        sputter2 = 0.0_R8
+        sputter2_t = 0.0_R8
         return
       elseif(te.ge.sputter_energy2(lng,iss,itargsp)) then
 c       write(*,*) 'te >= upper limit'
-        sputter2=sputter_coefficient2(lng,iss,itargsp)
+        sputter2_t=sputter_coefficient2(lng,iss,itargsp)
         return
       else
         ib=1
@@ -915,7 +947,7 @@ c   10  ih=(ib+it)/2
           elseif(te.gt.sputter_energy2(ih,iss,itargsp)) then
             ib=ih
           else
-            sputter2=sputter_coefficient2(ih,iss,itargsp)
+            sputter2_t=sputter_coefficient2(ih,iss,itargsp)
             return
           endif
 c       write(*,*) it-ib
@@ -927,17 +959,17 @@ c     @     sputter_energy2(it,iss,itargsp)
      1       (sputter_energy2(it,iss,itargsp)-
      2        sputter_energy2(ib,iss,itargsp))
         if(jagged_rates.eq.0) then
-          sputter2=f*(sputter_coefficient2(it,iss,itargsp)-
+          sputter2_t=f*(sputter_coefficient2(it,iss,itargsp)-
      1     sputter_coefficient2(ib,iss,itargsp))+
      1     sputter_coefficient2(ib,iss,itargsp)
         else
-          sputter2=f*(sputter_coefficient2(it,iss,itargsp)-
+          sputter2_t=f*(sputter_coefficient2(it,iss,itargsp)-
      1     sputter_coefficient2(ib,iss,itargsp))+
      1     sputter_coefficient2(it,iss,itargsp)
         endif
         return
       endif
-      end function sputter2
+      end function sputter2_t
 
       function reflect(is,te,ibnd)
       use b2mod_b2cmpa
@@ -1401,6 +1433,22 @@ c  es   -> surface binding energy (heat of sublimation) of target (eV).
       else
         call xerrab('ressput: wrong issput')
       endif
+      call ressput_t(eo,zb,z1,z2,am1,am2,tp,gamma_in,itargsp,yldres)
+      return
+      end subroutine ressput
+
+c  RES yield on target itargsp (see ressput)
+      subroutine ressput_t(eo,zb,z1,z2,am1,am2,tp,gamma_in,itargsp,
+     @  yldres)
+
+      implicit none
+      real (kind=R8) :: eo, zb, z1, z2, am1, am2, tp, gamma_in,
+     @  yldres
+
+      real (kind=R8) :: pwr2by3, z123z223sum,
+     @  tpev, am2byam1, stoppwr, stoppwr1, stoppwr2,
+     @  yldparres, eobyetf, ethbyeo, eth, etf, gamma
+      integer itargsp
 
       gamma = gamma_in
       if (eo.le.0.0_R8 .or. gamma.le.0.0_R8 .or. nint(z2).ne.6) then
@@ -1452,7 +1500,7 @@ c       write(*,*) 'Radiation Enhanced Sublimation < 0, Ei = ', eo
       endif
 
       return
-      end subroutine ressput
+      end subroutine ressput_t
 
 
 C   Subroutine to evaluate thermal evaporation.

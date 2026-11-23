@@ -66,6 +66,7 @@
      *  wall_flux(:,:),
      *  wall_area(:),
      *  incident_energy(:,:),
+     *  implant_depth(:,:),
      *  wall_heatflux(:),
      *  wall_temp(:),
      *  target_stack(:,:,:)
@@ -131,6 +132,12 @@ cank 960511
       integer, save ::
      *  nlimi,nstsi,natmi,nmoli,nioni,nphoti,nlim1,nsts1
 cank
+c EIRENE wall (eirene_wall.F): the strata of fort.44, the number of
+c elements and, for each, its resolved segment of fort.44 and its EIRENE
+c surface (zero when it has none), and the element of each additional
+c surface (additional surfaces with the same ends share one element)
+      integer, save :: nstrai_eir = 1, n_ewall = 0
+      integer, allocatable, save :: ew_res(:), ew_srf(:), ew_add(:)
       integer, save ::
      *  mcol,scol,vcol,ocol,ecol,fcol,acol,zcol,y_transform_l,
      *  dcol,wcol,tcol,hcol,gcol,bcol,xcol,lfsz,expsymbol
@@ -315,6 +322,8 @@ cank
       allocate(wall_flux(1:nwall,0:nsd-1+natmd+nmold+niond))
       allocate(wall_area(1:nwall))
       allocate(incident_energy(1:nwall,0:nsd-1+natmd+nmold+niond))
+      allocate(implant_depth(1:nwall,0:nsd-1))
+      implant_depth = 0.0_R8
       allocate(wall_heatflux(1:nwall))
       allocate(wall_temp(1:nwall))
       allocate(targetx(1:nwall,2))
@@ -415,6 +424,7 @@ cank
       deallocate(wall_flux)
       deallocate(wall_area)
       deallocate(incident_energy)
+      if (allocated(implant_depth)) deallocate(implant_depth)
       deallocate(wall_heatflux)
       deallocate(wall_temp)
       deallocate(targetx)

@@ -635,17 +635,23 @@ c Eirene versions (kind 2), for the GUI (LEVELS)
       return
       end subroutine gui_send_levels
 
-c Wall elements of b2plot (init_wall_elements), one LINE each in element
-c order, as OVERLAY role 5: the segments of the guiwfld values
+c Wall elements of b2plot (init_wall_elements, and those of the EIRENE
+c wall after them), one LINE each in element order, as OVERLAY role 5:
+c the segments of the guiwfld values
       subroutine gui_send_wall
       use b2mod_types
       use b2mod_wall, only : r1, r2, z1, z2, nbnd
+      use b2mod_b2plot, only : n_ewall
       use b2mod_b2plot_py
       implicit none
       integer :: i
+      external eirene_wall_init
       if (.not.allocated(r1)) return
+c with EIRENE, the elements of the EIRENE wall (the B2.5 wall elements
+c first): the B2.5 wall fields take the first nbnd ones
+      call eirene_wall_init
       call gui_overlay_begin(5,'Wall elements')
-      do i = 1, min(nbnd,size(r1))
+      do i = 1, min(max(nbnd,n_ewall),size(r1))
         call b2py_begin(40)
         call b2py_put_r4(real(r1(i),R4))
         call b2py_put_r4(real(z1(i),R4))
