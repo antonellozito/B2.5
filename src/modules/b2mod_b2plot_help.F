@@ -5,7 +5,7 @@
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
       parameter(nlabels=525,nfns=240,nsparameters=34,nelabels=51,
-     *     nconstants=10,nefns=50,nwfns=62,nwlabels=97,ntrgfns=89)
+     *     nconstants=10,nefns=50,nwfns=62,nwlabels=126,ntrgfns=89)
 
       integer, save ::
      * dimensions(nlabels), wdimensions(nwlabels), edimensions(nelabels)
@@ -920,7 +920,7 @@
      6 'guiefld', 'guivect', 'guievect', 'guiclv', 'guieclv',
      7 'guimvinf', 'mvframe', 'mvframev', 'mvfrstd', 'guiwfld',
      8 'guitraj', 'samju', 'npec', 'chmf', 'mvfrstep' /
-      data wlabels /
+      data wlabels(1:97) /
      1 'wallarea', 'ei'      , 'wallflux', 'wallhflx', 'r1'      ,
      2 'r2'      , 'z1'      , 'z2'      , 'walltemp', 'plathick',
      3 'cooltemp', 'vaprtemp', 'north'   , 'south'   , 'west'    ,
@@ -941,7 +941,7 @@
      8 'iwle'    , 'iwge'    , 'iswle'   , 'iswge'   , 'c_cp_b4' ,
      9 'cp_b4'   , 'kappa_a5', 'kappapa5', 'ckappaa5', 'ckapppa5',
      * 'iwne'    , 'iswne'   /
-      data wdimensions /
+      data wdimensions(1:97) /
      1 1,       2,      2,      1,      1,
      2 1,       1,      1,      1,      1,
      3 1,       1,      1,      1,      1,
@@ -965,8 +965,8 @@
       data wdescriptions(1:10) /
      1 'Wall area (m^{2})',
      2 'Incident energy (eV)',
-     3 'Wall particle flux (s^{-1})',
-     4 'Wall heat flux (W/m^{2})',
+     3 'Wall particle flux (m^{-2}.s^{-1})',
+     4 'Wall total energy flux (W.m^{-2})',
      5 'Wall start R position (m)',
      6 'Wall end R position (m)',
      7 'Wall start Z position (m)',
@@ -1068,6 +1068,55 @@
      5 'Coating Kappa_perp A5 polynomial factor (W/m/K^{5})',
      6 'iwne',
      7 'iswne'/
+      data wlabels(98:110) /
+     1 'wallfne' , 'wallfmo' , 'wallfhe' , 'wallfhi' , 'wallfhn' ,
+     2 'wallfhj' , 'wallfhp' , 'wallfhm' , 'wallfnt' , 'wallfkt' ,
+     3 'wallfch' , 'wallrad' , 'impdepth' /
+      data wdescriptions(98:110) /
+     1 'Wall electron flux (m^{-2}.s^{-1})',
+     2 'Wall flux of parallel momentum (N.m^{-2})',
+     3 'Wall electron energy flux (W.m^{-2})',
+     4 'Wall ion energy flux (W.m^{-2})',
+     5 'Wall fluid neutral energy flux (W.m^{-2})',
+     6 'Wall electrostatic energy flux (W.m^{-2})',
+     7 'Wall potential energy flux (W.m^{-2})',
+     8 'Wall parallel kinetic energy flux (W.m^{-2})',
+     9 'Wall pressure work energy flux (W.m^{-2})',
+     * 'Wall E\mU\dB turbulent energy flux (W.m^{-2})',
+     1 'Wall current density (A.m^{-2})',
+     2 'Wall radiation load (W.m^{-2})',
+     3 'Mean implantation depth (m)'/
+      data wdimensions(98:110) /
+     1 1,       2,      1,      1,      1,
+     2 1,       2,      2,      1,      1,
+     3 1,       1,      2/
+      data wlabels(111:126) /
+     1 'wldna'   , 'wldnm'   , 'wldra'   , 'wldrm'   , 'ewlda'   ,
+     2 'ewldm'   , 'ewldea'  , 'ewldem'  , 'ewldt'   , 'wldpa'   ,
+     3 'wldpm'   , 'ewldrp'  , 'wldspta' , 'wldsptm' , 'wlpump'  ,
+     4 'walldep' /
+      data wdescriptions(111:126) /
+     1 'Incident atom flux (m^{-2}.s^{-1})',
+     2 'Incident molecule flux (m^{-2}.s^{-1})',
+     3 'Backscattered atom flux (m^{-2}.s^{-1})',
+     4 'Backscattered molecule flux (m^{-2}.s^{-1})',
+     5 'Incident atom energy flux (W.m^{-2})',
+     6 'Incident molecule energy flux (W.m^{-2})',
+     7 'Energy re-emitted by backscattered atoms (W.m^{-2})',
+     8 'Energy re-emitted by backscattered molecules (W.m^{-2})',
+     9 'Net neutral energy load (W.m^{-2})',
+     * 'Atoms from backscattered and re-emitted ions (m^{-2}.s^{-1})',
+     1 'Molecules from backscattered, re-emitted ions (m^{-2}.s^{-1})',
+     2 'Energy from backscattered and re-emitted ions (W.m^{-2})',
+     3 'Sputtered atoms (m^{-2}.s^{-1})',
+     4 'Sputtered molecules (m^{-2}.s^{-1})',
+     5 'Pumped flux (m^{-2}.s^{-1})',
+     6 'Net deposited energy flux (W.m^{-2})'/
+      data wdimensions(111:126) /
+     1 2,       2,      2,      2,      2,
+     2 2,       2,      2,      1,      2,
+     3 2,       1,      2,      2,      2,
+     4 1/
       data efns /
      1 'edims', 'sumt' , 'esurf', 'eabs' , 'esumz',
      2 'em+'  , 'em-'  , 'em*'  , 'em/'  , 'rem+' ,

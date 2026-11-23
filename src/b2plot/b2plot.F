@@ -1102,9 +1102,10 @@ cxpb  Western boundary
         iCv = max(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
         isign = merge(1,-1,mpg%fcCv(iFc,2).eq.iCv)
         Phi_app = get_phi_applied(boundary_namelist,mpg,iFc)
-        wall_heatflux(ibnd)=max(0.0_R8,
-     .    isign*(state%dv%fht(iFc,0)+state%dv%fht(iFc,1)+
-     .           state_ext%fhi(iFc,0)+state_ext%fhi(iFc,1)))/
+        wall_heatflux(ibnd)=
+     .    isign*(state%dv%fht(iFc,0)+state%dv%fht(iFc,1)-
+     .           state%dv%fhj(iFc,0)-state%dv%fhj(iFc,1)+
+     .           state_ext%fhi(iFc,0)+state_ext%fhi(iFc,1))/
      .                                 geo%fcS(iFc)
 *    ..compute cell-faced quantities
         do is = 0, ns-1
@@ -1118,16 +1119,17 @@ cxpb  Western boundary
         do is = 0, ns-1
           incident_energy(ibnd,is)=
      .     max(0.0_R8,tif/ev+(state%pl%po(iCv)-Phi_app)*zaf(is))
-          wall_flux(ibnd,is)=max(0.0_R8,
-     .     isign*(state%dv%fna(iFc,0,is)+state%dv%fna(iFc,1,is)))
+          wall_flux(ibnd,is)=
+     .     isign*(state%dv%fna(iFc,0,is)+state%dv%fna(iFc,1,is))/
+     .     geo%fcS(iFc)
         enddo
         do is = 0, state_ext%ns-1
           pxf = (state_ext%pt(mpg%fcCv(iFc,1),is)*geo%fcHc(iFc,2)+
      &           state_ext%pt(mpg%fcCv(iFc,2),is)*geo%fcHc(iFc,1))/
      &          (geo%fcHc(iFc,1)+geo%fcHc(iFc,2))
           wall_heatflux(ibnd)=wall_heatflux(ibnd)+
-     &     max(0.0_R8,isign*(state_ext%fa(iFc,0,is)+
-     &                       state_ext%fa(iFc,1,is)))/geo%fcS(iFc)*
+     &     isign*(state_ext%fa(iFc,0,is)+
+     &            state_ext%fa(iFc,1,is))/geo%fcS(iFc)*
      &         ((0.5_R8*mp*state_ext%am(is)*state_ext%ua(iCv,is)**2+
      &           state_ext%ta(iCv,is))*(1.0_R8-switch%BoRiS) + pxf*ev)
         enddo
@@ -2284,9 +2286,12 @@ c gyro-frequencies, banana widths and gradient lengths of the module.
             wrkfs(:,is)=state%dv%vaecrb(:,0,is)+state%dv%wadia(:,0,is)
             call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellP,
      .        wrkfs(1,is),wrkcs(1,is))
-            ww(:,is)=sign(state%pl%ua(:,is)*geo%cvBb(:,2)/geo%cvBb(:,3)-
-     .                          wrkcs(:,is)*geo%cvBb(:,0)/geo%cvBb(:,2),
-     .                    geo%cvEb(:,2))
+!           along the field line towards positive x, then signed by the
+!           directions of the toroidal field and of the poloidal field
+!           (signmf: clockwise as x) (cvBb is not signed)
+            ww(:,is)=(state%pl%ua(:,is)*geo%cvBb(:,2)/geo%cvBb(:,3)-
+     .                wrkcs(:,is)*geo%cvBb(:,0)/geo%cvBb(:,2))*
+     .               sign(1.0_R8,geo%cvEb(:,2))*geo%signmf
           end do
           call copy(ww,1.0_R8,nz,textpl)
         case('te')
@@ -9996,11 +10001,47 @@ c
 
       end subroutine select_eirene_command
 
+c A face flux f(nFc,0:1,0:nz-1) on the wall elements: the flux through
+c the boundary face of each element, positive out of the plasma, over the
+c face area (as the target fluxes of b2time.nc over dsLT, dsRT)
+      subroutine wall_face_flux(f,nz,text)
+      integer, intent(in) :: nz
+      real (kind=R8), intent(in) :: f(mpg%nFc,0:1,0:nz-1)
+      character*(*), intent(in) :: text(0:nz-1)
+      real (kind=R8), allocatable :: w(:,:)
+      real (kind=R8) :: sg
+      integer ibnd, iFc, iCv, is
+      external wall_copy
+
+      allocate(w(nwall,0:nz-1))
+      w = 0.0_R8
+      do ibnd = 1, nbnd
+        iFc = imapfc(ibnd)
+        iCv = max(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+        sg = merge(1.0_R8,-1.0_R8,mpg%fcCv(iFc,2).eq.iCv)
+        do is = 0, nz-1
+          w(ibnd,is) = sg*(f(iFc,0,is)+f(iFc,1,is))/geo%fcS(iFc)
+        enddo
+      enddo
+      call wall_copy(w,1.0_R8,nz,text)
+      deallocate(w)
+      return
+
+      end subroutine wall_face_flux
+
       subroutine select_wall_stack
       integer i
       integer ibnd, itrack
+      integer k, igrp
+      external wall_estimates, eirene_wall_init, eirene_wall_field,
+     .  eirene_wall_copy
 
       cflag=.true.
+      select case(cval)
+        case('walltemp','sput','sput2','sputchem','sputres',
+     .       'backscat','backscae','impdepth')
+          call wall_estimates(mpg,geo,ns,state%rt%rza)
+      end select
       WVALUE: select case(cval)
         case('wallarea')
           description='Wall area (m^{2})'
@@ -10008,16 +10049,78 @@ c
           call wall_copy(wall_area,1.0_R8,nz,textbl)
         case('ei')
           description='Incident energy (eV)'
-          nz=nsw
-          call wall_copy(incident_energy,1.0_R8,nz,textwl)
+          nz=ns
+          call wall_copy(incident_energy,1.0_R8,nz,textpl)
         case('wallflux')
-          description='Wall particle flux (s^{-1})'
-          nz=nsw
-          call wall_copy(wall_flux,1.0_R8,nz,textwl)
+          description='Wall particle flux (m^{-2}.s^{-1})'
+          nz=ns
+          call wall_copy(wall_flux,1.0_R8,nz,textpl)
         case('wallhflx')
-          description='Wall heat flux (W/m^{2})'
+          description='Wall total energy flux (W.m^{-2})'
           nz=1
           call wall_copy(wall_heatflux,1.0_R8,nz,textbl)
+        case('wallfne')
+          description='Wall electron flux (m^{-2}.s^{-1})'
+          nz=1
+          call wall_face_flux(state%dv%fne(1,0),nz,textbl)
+        case('wallfmo')
+          description='Wall flux of parallel momentum (N.m^{-2})'
+          nz=ns
+          call wall_face_flux(state%dv%fmo(1,0,0),nz,textpl)
+        case('wallfhe')
+          description='Wall electron energy flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhe(1,0),nz,textbl)
+        case('wallfhi')
+          description='Wall ion energy flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi(1,0),nz,textbl)
+        case('wallfhn')
+          description='Wall fluid neutral energy flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhn(1,0),nz,textbl)
+        case('wallfhj')
+          description='Wall electrostatic energy flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhj(1,0),nz,textbl)
+        case('wallfhp')
+          description='Wall potential energy flux (W.m^{-2})'
+          nz=ns
+          call wall_face_flux(state%dv%fhp(1,0,0),nz,textpl)
+        case('wallfhm')
+          description='Wall parallel kinetic energy flux (W.m^{-2})'
+          nz=ns
+          call wall_face_flux(state%dv%fhm(1,0,0),nz,textpl)
+        case('wallfnt')
+          description='Wall pressure work energy flux (W.m^{-2})'
+          nz=1
+!         as fntx: the part of fht not in the other terms
+          wrkf2=state%dv%fht-state%dv%fhe-state%dv%fhi-state%dv%fhn-
+     .      state%dv%fhj
+          do i=0,ns-1
+            wrkf2=wrkf2-state%dv%fhp(:,:,i)-
+     .        state%dv%fhm(:,:,i)*(1.0_R8-switch%BoRiS)
+          end do
+          if (switch%BoRiS.ne.1.0_R8) then
+            wrkf2=wrkf2/(1.0_R8-switch%BoRiS)
+          else
+            wrkf2=0.0_R8
+          end if
+          call wall_face_flux(wrkf2(1,0),nz,textbl)
+        case('wallfkt')
+          description='Wall E\mU\dB turbulent energy flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fkt(1,0),nz,textbl)
+        case('wallfch')
+          description='Wall current density (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fch(1,0),nz,textbl)
+        case('wallrad')
+          description='Wall radiation load (W.m^{-2})'
+          nz=1
+          data=0.0_R8
+          call b2pwrdwl(nbnd,r1,z1,r2,z2,data)
+          call wall_copy(data,1.0_R8,nz,textbl)
         case('r1')
           description='Wall start R position (m)'
           nz=1
@@ -10283,46 +10386,130 @@ c
           call wall_copy(data,1.0_R8,nz,textbl)
         case('sput')
           description='Physical sputtering yield'
-          if (sput_frac_flag.eq.0) then
-            if (sput_dst.lt.0 .or. sput_dst.ge.ns) return
+          if (sput_dst.lt.0) then
+            description=trim(description)//' of the wall by'
+          else if (sput_frac_flag.eq.0) then
+            if (sput_dst.ge.ns) return
             description=trim(description)//' of'//
      .       trim(textpl(sput_dst))//' by'
           else
             description=trim(description)//' of wall materials by'
           endif
-          nz=nsw
-          call wall_copy(physical_sputtering,1.0_R8,nz,textwl)
+          nz=ns
+          call wall_copy(physical_sputtering,1.0_R8,nz,textpl)
         case('sput2')
           description='Physical sputtering energy yield'
-          if (sput_frac_flag.eq.0) then
-            if (sput_dst.lt.0 .or. sput_dst.ge.ns) return
+          if (sput_dst.lt.0) then
+            description=trim(description)//' of the wall by'
+          else if (sput_frac_flag.eq.0) then
+            if (sput_dst.ge.ns) return
             description=trim(description)//' of' //
      .       trim(textpl(sput_dst)) //' by'
           else
             description=trim(description)//' of wall materials by'
           endif
-          nz=nsw
-          call wall_copy(physical_sputtering_energy,1.0_R8,nz,textwl)
+          nz=ns
+          call wall_copy(physical_sputtering_energy,1.0_R8,nz,textpl)
         case('sputchem')
           description='Chemical sputtering yield'
-          nz=nsw
-          call wall_copy(chemical_sputtering,1.0_R8,nz,textwl)
+          nz=ns
+          call wall_copy(chemical_sputtering,1.0_R8,nz,textpl)
         case('thermev')
           description='Thermal evaporation fluxes (/m^{2}/s)'
-          nz=nsw
-          call wall_copy(thermal_evaporation,1.0_R8,nz,textwl)
+          nz=ns
+          call wall_copy(thermal_evaporation,1.0_R8,nz,textpl)
         case('sputres')
           description='RES sputtering yield'
-          nz=nsw
-          call wall_copy(RES_sputtering,1.0_R8,nz,textwl)
+          nz=ns
+          call wall_copy(RES_sputtering,1.0_R8,nz,textpl)
         case('backscat')
           description='Backscattering fraction'
-          nz=nsw
-          call wall_copy(backscattering,1.0_R8,nz,textwl)
+          nz=ns
+          call wall_copy(backscattering,1.0_R8,nz,textpl)
         case('backscae')
           description='Backscattering energy fraction'
-          nz=nsw
-          call wall_copy(backscattering_energy,1.0_R8,nz,textwl)
+          nz=ns
+          call wall_copy(backscattering_energy,1.0_R8,nz,textpl)
+        case('impdepth')
+          description='Mean implantation depth (m)'
+          nz=ns
+          call wall_copy(implant_depth,1.0_R8,nz,textpl)
+        case('wldna','wldnm','wldra','wldrm','ewlda','ewldm','ewldea',
+     .       'ewldem','ewldt','wldpa','wldpm','ewldrp','wldspta',
+     .       'wldsptm','wlpump')
+          select case(cval)
+          case('wldna')
+            description='Incident atom flux (m^{-2}.s^{-1})'
+          case('wldnm')
+            description='Incident molecule flux (m^{-2}.s^{-1})'
+          case('wldra')
+            description='Backscattered atom flux (m^{-2}.s^{-1})'
+          case('wldrm')
+            description='Backscattered molecule flux (m^{-2}.s^{-1})'
+          case('ewlda')
+            description='Incident atom energy flux (W.m^{-2})'
+          case('ewldm')
+            description='Incident molecule energy flux (W.m^{-2})'
+          case('ewldea')
+            description='Energy re-emitted by backscattered atoms'//
+     .       ' (W.m^{-2})'
+          case('ewldem')
+            description='Energy re-emitted by backscattered '//
+     .       'molecules (W.m^{-2})'
+          case('ewldt')
+            description='Net neutral energy load (W.m^{-2})'
+          case('wldpa')
+            description='Atoms released by backscattered and '//
+     .       'thermally re-emitted ions (m^{-2}.s^{-1})'
+          case('wldpm')
+            description='Molecules released by backscattered and '//
+     .       'thermally re-emitted ions (m^{-2}.s^{-1})'
+          case('ewldrp')
+            description='Energy released by backscattered and '//
+     .       'thermally re-emitted ions (W.m^{-2})'
+          case('wldspta')
+            description='Sputtered atoms (m^{-2}.s^{-1})'
+          case('wldsptm')
+            description='Sputtered molecules (m^{-2}.s^{-1})'
+          case('wlpump')
+            description='Pumped flux (m^{-2}.s^{-1})'
+          end select
+          call eirene_wall_init
+          if (n_ewall.le.0) then
+            write(*,*) 'No EIRENE wall data (fort.44)'
+            return
+          end if
+          call eirene_wall_field(cval,wall_tmp,nz,igrp)
+          if (nz.le.0) then
+            write(*,*) 'No EIRENE species for ',trim(cval)
+            return
+          end if
+          select case(igrp)
+          case(1)
+            call eirene_wall_copy(wall_tmp,nz,textan)
+          case(2)
+            call eirene_wall_copy(wall_tmp,nz,textmn)
+          case(4)
+            call eirene_wall_copy(wall_tmp,nz,textwl(ns))
+          case default
+            call eirene_wall_copy(wall_tmp,nz,textbl)
+          end select
+        case('walldep')
+          description='Net deposited energy flux (W.m^{-2})'
+          nz=1
+          data=0.0_R8
+          call b2pwrdwl(nbnd,r1,z1,r2,z2,data)
+          data(1:nbnd)=data(1:nbnd)+wall_heatflux(1:nbnd)
+          call eirene_wall_init
+          if (n_ewall.gt.0) then
+            call eirene_wall_field('ewldt',wall_tmp,k,igrp)
+            data(1:nbnd)=data(1:nbnd)+wall_tmp(1:nbnd,0)
+            call eirene_wall_field('ewldrp',wall_tmp,k,igrp)
+            data(1:nbnd)=data(1:nbnd)-wall_tmp(1:nbnd,0)
+          else
+            write(*,*) 'No EIRENE wall data: neutral terms left out'
+          end if
+          call wall_copy(data,1.0_R8,nz,textbl)
         case('erosion')
           description='Gross erosion'
           nz=ntargsp

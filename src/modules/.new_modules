@@ -14,3 +14,6 @@ Added gui_movies.F (b2plot), the GUI movie commands guimvinf, guimovie and guimv
 Added b2mod_heatdiff_common, the data of the plate heat diffusion model shared by heatdiff1D and its routines
 Renamed b2mod_b2plot_gui to b2mod_b2plot_py, gui_movies.F to movie_frames.F and b2plot/gui/ncar_gui.F to b2plot/py/ncar_py.F (shared by the b2plot.py command line and GUI)
 Added conv_history_cdf.F (convert), the conversion of the history files by b2us; b2mod_movies uses b2mod_switches (create_cdf_b2movies_fields and create_cdf_eirenemovies_fields, the fields of b2movies.nc and eirenemovies.nc shared by cdfmovie, b2co_movies_cdf and b2us)
+Removed rlshdw.F (b2plot), the planar shadowing of the radiation load, no longer called: rlcomp computes the load in toroidal geometry with its own line of sight test (rad3d)
+Added wall_yields.F (b2plot), the wall interaction of each incident species estimated by b2plot for runs without the B2.5 wall model, on the EIRENE wall materials; b2mod_sputter gives its yields also for a target index (sputter_t, sputter2_t, ressput_t)
+Added eirene_wall.F (b2plot), the EIRENE wall: the wall stack elements extended beyond the B2.5 wall elements with the other faces of the EIRENE standard surfaces and the additional surfaces, and its wall quantities from fort.44

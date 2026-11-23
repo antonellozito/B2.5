@@ -292,6 +292,7 @@ cank 960511
       end if
       if(jvft44_in .ge. 960513) then
         read(44,'(3i6)') nlimi,nstsi_in,nstrai_in
+        nstrai_eir = max(1,nstrai_in)
         allocate(idum(0:nstsi_in+1))
         if (nsts.eq.0) then
           nstsi = nstsi_in
