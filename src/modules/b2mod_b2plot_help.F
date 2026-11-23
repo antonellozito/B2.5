@@ -4,7 +4,7 @@
 
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
-      parameter(nlabels=509,nfns=240,nsparameters=34,nelabels=51,
+      parameter(nlabels=525,nfns=240,nsparameters=34,nelabels=51,
      *     nconstants=10,nefns=50,nwfns=62,nwlabels=97,ntrgfns=89)
 
       integer, save ::
@@ -142,6 +142,16 @@
      1  'fchxdia'  , 'fchydia'  , 'fchxanml' , 'fchyanml' /
       data labels(508:509) /
      1  'b2iz'     , 'b2rc'     /
+      data labels(510:510) /
+     1  'recrad'   /
+      data labels(511:515) /
+     1  'kpe'      , 'kpi'      , 'sigpar'   , 'alfpar'   , 'vispar'   /
+      data labels(516:519) /
+     1  'taue'     , 'taui'     , 'taueq'    , 'nustarc'  /
+      data labels(520:521) /
+     1  'deltabc'  , 'deltparc' /
+      data labels(522:525) /
+     1  'wpi'      , 'ldebye'   , 'betae'    , 'beta'     /
       data descriptions(1:10) /
      1    'Pitch',
      2    'b_{x} (T) (poloidal)',
@@ -705,6 +715,27 @@
       data descriptions(508:509) /
      1    'Ionisation energy (W)',
      2    'Recombination energy (W)'/
+      data descriptions(510:510) /
+     1    'Power loss due to recombination radiation (W)'/
+      data descriptions(511:515) /
+     1    'Parallel electron heat diffusivity (m^{2}.s^{-1})',
+     2    'Parallel ion heat diffusivity (m^{2}.s^{-1})',
+     3    'Parallel electrical conductivity (mho.m^{-1})',
+     4    'Parallel thermo-electric coefficient (A.m^{-1}.eV^{-1})',
+     5    'Parallel viscosity (m^{2}.s^{-1})'/
+      data descriptions(516:519) /
+     1    'Electron collision time (electron-ion) (s)',
+     2    'Ion collision time (ion-ion) (s)',
+     3    'Electron-ion temperature equilibration time (s)',
+     4    'Normalized collisionality from the collision times'/
+      data descriptions(520:521) /
+     1    'Collision to gyro-frequency ratio from the collision times',
+     2    'Radial to parallel dynamics ratio from the collision times'/
+      data descriptions(522:525) /
+     1    '\Gx\R_{pi} (rad/s)',
+     2    'Debye length (m)',
+     3    'Electron plasma beta',
+     4    'Plasma beta'/
       data dimensions(1:50) /
      1    1,      1,      1,      1,      1,
      2    2,      2,      2,      2,      2,
@@ -826,6 +857,16 @@
      1    1,      1,      1,      1/
       data dimensions(508:509) /
      1    2,      2/
+      data dimensions(510:510) /
+     1    2/
+      data dimensions(511:515) /
+     1    1,      1,      1,      1,      2/
+      data dimensions(516:519) /
+     1    1,      2,      1,      2/
+      data dimensions(520:521) /
+     1    2,      2/
+      data dimensions(522:525) /
+     1    2,      1,      1,      1/
       data fns(1:50) /
      1 'sumx', 'sumy', 'f.x' , 'f.y' , 'intx',
      2 'inty', 'f.lx', 'f.ly', 'cont', 'surf',

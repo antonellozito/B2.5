@@ -381,11 +381,14 @@ c or none
       integer, intent(in) :: ifile, k1, k2, step
       character*(*), intent(in) :: xname, yname
       logical, intent(in) :: std
-      real (kind=R8), allocatable :: mean(:,:,:), cell(:,:)
+      real (kind=R8), allocatable :: mean(:,:,:), cell(:,:), face(:)
+      real (kind=R8), allocatable :: dens(:,:), ff(:,:), cf(:,:)
+      real (kind=R8) :: area
+      logical :: weighted
       character*32, allocatable :: clab(:)
       character*256 :: vname(2), dname(2), long, units, label
       integer :: varid(2), loc(2), n(2), ncol(2), nd(2), nv, iv, is
-      integer :: ic, ir
+      integer :: ic, ir, iFc, idir
       character*16 :: what
 #ifdef B25_EIRENE
       real (kind=R8), allocatable :: ext(:,:)
@@ -397,7 +400,7 @@ c or none
       integer :: iret
 #endif
       external mvf_open, mvf_var, mvf_mean,
-     . mvf_text, copy, eirene_copy, intcell
+     . mvf_text, copy, eirene_copy, intcell, intflux, mvf_weight
 
       call mvf_open
       nv = 1
@@ -481,20 +484,49 @@ c or none
           call copy(mean(1,1,iv),1.0_R8,ncol(1),clab)
           graphlabel(iwrk) = label
         else if (loc(1).eq.2) then
-          allocate(cell(mpg%nCv,ncol(1)))
+*   ..face fluxes to the cells as in the final state (intflux), weighted
+*     with the mean of the same frames of the density b2plot uses there
+*     (mvf_weight); a standard deviation, or a flux without its density
+*     in the file: uniform density, per projected face area (with its
+*     sign, as the face orientation can reverse across cuts; its size
+*     for a standard deviation), to the cell centres, times the
+*     projected cell area
+          allocate(cell(mpg%nCv,ncol(1)),face(mpg%nFc))
+          idir = 0
+          if (vname(iv)(len_trim(vname(iv)):len_trim(vname(iv)))
+     .     .eq.'y') idir = 1
+          allocate(dens(mpg%nCv,ncol(1)),ff(mpg%nFc,0:1),
+     .     cf(mpg%nCv,0:1))
+          weighted = .false.
+          if (.not.std) call mvf_weight(ifile,vname(iv),k1,k2,step,
+     .     ncol(1),dens,weighted)
           do is = 1, ncol(1)
-            if (vname(iv)(len_trim(vname(iv)):len_trim(vname(iv)))
-     .       .eq.'y') then
+            if (weighted) then
+              ff = 0.0_R8
+              ff(:,idir) = mean(1:mpg%nFc,is,iv)
+              call intflux(mpg%nFc,mpg%nCv,mpg,geo,ff,dens(1,is),cf)
+              cell(:,is) = cf(:,idir)
+              cycle
+            end if
+            do iFc = 1, mpg%nFc
+              area = geo%fcS(iFc)*geo%fcQalf(iFc,idir)
+              if (std) area = abs(area)
+              face(iFc) = 0.0_R8
+              if (area.ne.0.0_R8) face(iFc) = mean(iFc,is,iv)/area
+            end do
+            if (idir.eq.1) then
               call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellR,
-     .         mean(1,is,iv),cell(1,is))
+     .         face,cell(1,is))
+              cell(:,is) = cell(:,is)*geo%cvHx(:)*geo%cvHz(:)
             else
               call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellP,
-     .         mean(1,is,iv),cell(1,is))
+     .         face,cell(1,is))
+              cell(:,is) = cell(:,is)*geo%cvHy(:)*geo%cvHz(:)
             end if
           end do
           call copy(cell,1.0_R8,ncol(1),clab)
           graphlabel(iwrk) = label
-          deallocate(cell)
+          deallocate(cell,face,dens,ff,cf)
         else if (loc(1).eq.4) then
           allocate(cell(mpg%nCv,ncol(1)))
           do ic = 1, mpg%nCv
@@ -528,3 +560,86 @@ c or none
 #endif
       return
       end subroutine mvf_push
+
+c Density weighting the face flux fname of b2movies.nc on its way to
+c the cells, as in the final state of b2plot: na of the species for
+c fna, ne te + ni ti for fhe and fhi (ni the sum of na), ne for fch;
+c the mean of the frames k1 to k2 (step); ok false for other fluxes or
+c without these variables in the file
+      subroutine mvf_weight(ifile,fname,k1,k2,step,ncol,dens,ok)
+      use b2mod_types
+      use b2us_data
+      use b2mod_b2plot
+     , , only: work
+      implicit none
+      integer, intent(in) :: ifile, k1, k2, step, ncol
+      character*(*), intent(in) :: fname
+      real (kind=R8), intent(out) :: dens(mpg%nCv,ncol)
+      logical, intent(out) :: ok
+      real (kind=R8), allocatable :: na(:,:), ne(:,:), te(:,:), ti(:,:)
+      integer :: is, nna, nmax
+      external mvf_cellmean
+      dens = 1.0_R8
+      ok = .false.
+      nmax = size(work,2)
+      allocate(na(mpg%nCv,nmax),ne(mpg%nCv,nmax),te(mpg%nCv,nmax),
+     . ti(mpg%nCv,nmax))
+      select case (fname(1:3))
+      case ('fna')
+        call mvf_cellmean(ifile,'na',k1,k2,step,nmax,na,nna,ok)
+        if (ok) ok = nna.eq.ncol
+        if (ok) dens = na(:,1:ncol)
+      case ('fhe', 'fhi')
+        call mvf_cellmean(ifile,'na',k1,k2,step,nmax,na,nna,ok)
+        if (ok) call mvf_cellmean(ifile,'ne',k1,k2,step,nmax,ne,is,ok)
+        if (ok) call mvf_cellmean(ifile,'te',k1,k2,step,nmax,te,is,ok)
+        if (ok) call mvf_cellmean(ifile,'ti',k1,k2,step,nmax,ti,is,ok)
+        if (ok) then
+          do is = 1, ncol
+            dens(:,is) = ne(:,1)*te(:,1)+sum(na(:,1:nna),2)*ti(:,1)
+          end do
+        end if
+      case ('fch')
+        call mvf_cellmean(ifile,'ne',k1,k2,step,nmax,ne,is,ok)
+        if (ok) then
+          do is = 1, ncol
+            dens(:,is) = ne(:,1)
+          end do
+        end if
+      end select
+      deallocate(na,ne,te,ti)
+      return
+      end subroutine mvf_weight
+
+c Mean of the frames k1 to k2 (step) of the cell variable vname of file
+c ifile (at most nmax columns), with its number of columns; ok false if
+c it is not in the file
+      subroutine mvf_cellmean(ifile,vname,k1,k2,step,nmax,mean,ncol,ok)
+      use b2mod_types
+      use b2us_data
+      use b2mod_b2plot_py
+      implicit none
+      integer, intent(in) :: ifile, k1, k2, step, nmax
+      character*(*), intent(in) :: vname
+      real (kind=R8), intent(out) :: mean(mpg%nCv,nmax)
+      integer, intent(out) :: ncol
+      logical, intent(out) :: ok
+      character*256 :: name, dname
+      integer :: varid, loc, n, nd
+#ifndef NO_CDF
+#     include <netcdf.inc>
+      integer :: iret
+#endif
+      external mvf_var, mvf_mean
+      ok = .false.
+      ncol = 0
+#ifndef NO_CDF
+      iret = nf_inq_varid(mvf_ncid(ifile),vname,varid)
+      if (iret.ne.NF_NOERR) return
+      call mvf_var(ifile,varid,name,loc,n,ncol,dname,nd)
+      if (loc.ne.1.or.ncol.gt.nmax) return
+      call mvf_mean(ifile,varid,vname,k1,k2,step,n,ncol,nd,.false.,
+     . mean,ok)
+#endif
+      return
+      end subroutine mvf_cellmean

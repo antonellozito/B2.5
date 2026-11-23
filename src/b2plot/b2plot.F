@@ -2027,6 +2027,179 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
 
       end subroutine zhdanov_coefficients
 
+c Classical (collisional) parallel transport coefficients of the plasma
+c state as B2.5 computes them in b2trcl (b2tqca, then b2tqce), without
+c the flux limiters: their poloidal projections (pitx**2) divided by the
+c squared pitch, the heat diffusivities divided by ne (electrons) or by
+c the sum of the ion densities (ions), the viscosity of each ion species
+c by its mass density, the thermo-electric coefficient per eV; zero
+c where the pitch is zero. The Coulomb logarithm the two routines set is
+c put back afterwards.
+      subroutine classical_parallel(what,out,nz)
+      character*(*), intent(in) :: what
+      integer, intent(in) :: nz
+      real (kind=R8), intent(out) :: out(mpg%nCv,0:nz-1)
+      real (kind=R8), allocatable :: vsc(:,:,:), hic(:,:), hcc(:,:),
+     &  sgc(:,:), alc(:,:), lnl(:)
+      real (kind=R8) :: p2, ni
+      integer iCv, is
+      external b2tqca, b2tqce
+
+      allocate(vsc(mpg%nCv,0:1,0:ns-1), hic(mpg%nCv,0:1),
+     &  hcc(mpg%nCv,0:1), sgc(mpg%nCv,0:1), alc(mpg%nCv,0:1),
+     &  lnl(mpg%nCv))
+      lnl = state%dv%lnlam
+      call b2tqca (mpg%nCv, ns, switch, geo, state%pl, state%dv,
+     &  state%rt, state_ext, vsc, hic)
+      call b2tqce (mpg%nCv, switch, geo, mpg, state%pl, state%dv,
+     &  hcc, sgc, alc)
+      state%dv%lnlam = lnl
+      out = 0.0_R8
+      do iCv = 1, mpg%nCv
+        p2 = (geo%cvBb(iCv,0)/geo%cvBb(iCv,3))**2
+        if (p2.le.0.0_R8) cycle
+        select case (what)
+        case ('kpe')
+          if (state%dv%ne(iCv).gt.0.0_R8)
+     &     out(iCv,0) = hcc(iCv,0)/p2/state%dv%ne(iCv)
+        case ('kpi')
+          ni = 0.0_R8
+          do is = 0, ns-1
+            if (.not.is_neutral(is)) ni = ni + state%pl%na(iCv,is)
+          enddo
+          if (ni.gt.0.0_R8) out(iCv,0) = hic(iCv,0)/p2/ni
+        case ('sigpar')
+          out(iCv,0) = sgc(iCv,0)/p2
+        case ('alfpar')
+          out(iCv,0) = alc(iCv,0)/p2*ev
+        case ('vispar')
+          do is = 0, ns-1
+            if (.not.is_neutral(is) .and. state%pl%na(iCv,is).gt.0.0_R8)
+     &       out(iCv,is) = vsc(iCv,0,is)/p2/
+     &        (mp*am(is)*state%pl%na(iCv,is))
+          enddo
+        end select
+      enddo
+      deallocate(vsc, hic, hcc, sgc, alc, lnl)
+      return
+
+      end subroutine classical_parallel
+
+c Collision times of the plasma state as B2.5 defines them for its
+c classical transport coefficients, each with the Coulomb logarithm of
+c its routine: electrons on all ions (b2tqce, b2txnce), each ion species
+c on all ions (b2ttia, as b2tqca; zero for neutral species). The
+c electron-ion temperature equilibration time: 1.5*ne*(te-ti) divided by
+c the energy exchange rate density of b2npht, with the coefficient of
+c b2treq. The normalized collisionality q*R/((1-fc)**3*lambda) of the
+c neoclassical module (R the mean of the smallest and largest major
+c radius of the flux surface, as there) with the mean free paths
+c lambda = vth*tau of these times (vth = sqrt(t/m)), on closed flux
+c surfaces only (zero elsewhere). The ratios of the neoclassical module
+c with these times instead of its collision frequencies: of collision
+c frequency to gyro-frequency, 1/(omega*tau), and of radial to parallel
+c dynamics, (1-fc)**4*nustar*wb*R/(tau*min(lnn,ltt)**2*omega), with the
+c gyro-frequencies, banana widths and gradient lengths of the module.
+      subroutine collision_times(what,nz)
+      character*(*), intent(in) :: what
+      integer, intent(in) :: nz
+      real (kind=R8), allocatable :: lnl(:), tau(:,:), ceq(:), ne2m(:),
+     &  out(:,:)
+      real (kind=R8) :: t0, t1, ctaue, vt, rmin, rmax, rmaj, nu, lmin
+      integer iCv, iFt, is, i
+      external b2tlnl, b2ttia, b2xpnm, b2treq
+
+      allocate(lnl(mpg%nCv), tau(mpg%nCv,0:ns), ceq(mpg%nCv),
+     &  ne2m(mpg%nCv), out(mpg%nCv,0:ns))
+      out = 0.0_R8
+      tau = 0.0_R8
+      if (what.eq.'taueq') then
+        call b2xpnm (mpg%nCv, ns, state%rt%rz2, am, state%pl%na, ne2m)
+        call b2treq (mpg%nCv, switch, geo%cvVol, state%pl%te,
+     &    state%pl%ti, state%dv%ne, state%dv%ni, ne2m, lnl, state_ext,
+     &    ceq)
+        do iCv = 1, mpg%nCv
+          if (ceq(iCv)*state%dv%ni(iCv,0).gt.0.0_R8)
+     &     out(iCv,0) = 1.5_R8*state%pl%te(iCv)*sqrt(state%pl%te(iCv))*
+     &      geo%cvVol(iCv)/(ceq(iCv)*state%dv%ni(iCv,0))
+        enddo
+      else
+        call b2tlnl (mpg%nCv, switch, switch%icase_ee, state%pl%te,
+     &    state%pl%ti, state%dv%ne, lnl)
+        t1 = (4.0_R8*pi*eps0/qe)/qe
+        t0 = (3.0_R8/(4.0_R8*sqrt(2.0_R8*pi)))*t1*(t1*ev*sqrt(ev))
+        ctaue = t0*sqrt(me)
+        if (switch%b2tqce_model.eq.2) ctaue = 3.5e11_R8
+        do iCv = 1, mpg%nCv
+          t0 = state%pl%te(iCv)/ev
+          tau(iCv,ns) = (ctaue/lnl(iCv))*t0*sqrt(t0)/state%dv%ne2(iCv)
+        enddo
+        call b2tlnl (mpg%nCv, switch, switch%icase_ii, state%pl%te,
+     &    state%pl%ti, state%dv%ne, lnl)
+        call b2ttia (mpg%nCv, ns, state%pl%ti, state%rt%rz2,
+     &    state%dv%ne2, lnl, tau(:,0:ns-1))
+        select case (what)
+        case ('taue')
+          out(:,0) = tau(:,ns)
+        case ('taui')
+          out(:,0:ns-1) = tau(:,0:ns-1)
+        case ('deltabc')
+          if (first_neoclassical) call initialize_neoclassical(neo_ic)
+          do is = 0, ns
+            do iCv = 1, mpg%nCv
+              if (tau(iCv,is)*omega(iCv,is).gt.0.0_R8)
+     &         out(iCv,is) = 1.0_R8/(omega(iCv,is)*tau(iCv,is))
+            enddo
+          enddo
+        case ('nustarc', 'deltparc')
+          if (first_neoclassical) call initialize_neoclassical(neo_ic)
+          do iCv = 1, mpg%nCv
+            iFt = mpg%cvFt(iCv)
+            if (iFt.le.0) cycle
+            if (.not.mpg%cvOnClosedSurface(iCv)) cycle
+            if (fc_(iFt).ge.1.0_R8) cycle
+!           major radius of the flux surface as in neo_validity
+            rmin = geo%cvX(mpg%ftCv(mpg%ftCvP(iFt,1)))
+            rmax = rmin
+            do i = 2, mpg%ftCvP(iFt,2)
+              rmin = min(rmin, geo%cvX(mpg%ftCv(mpg%ftCvP(iFt,1)+i-1)))
+              rmax = max(rmax, geo%cvX(mpg%ftCv(mpg%ftCvP(iFt,1)+i-1)))
+            enddo
+            rmaj = 0.5_R8*(rmin+rmax)
+            do is = 0, ns
+              if (tau(iCv,is).le.0.0_R8) cycle
+              if (is.lt.ns) then
+                vt = sqrt(state%pl%ti(iCv)/(am(is)*mp))
+              else
+                vt = sqrt(state%pl%te(iCv)/me)
+              endif
+              nu = safetyfactor(iFt)*rmaj/
+     &          ((1.0_R8-fc_(iFt))**3*vt*tau(iCv,is))
+              if (what.eq.'nustarc') then
+                out(iCv,is) = nu
+              else
+                lmin = min(lnn(iCv,is), ltt(iCv,is))
+                if (lmin.ne.0.0_R8 .and. omega(iCv,is).gt.0.0_R8)
+     &           out(iCv,is) = (1.0_R8-fc_(iFt))**4*nu*wb(iCv,is)*
+     &            rmaj/(tau(iCv,is)*lmin**2*omega(iCv,is))
+              endif
+            enddo
+          enddo
+        end select
+      endif
+      if (what.eq.'taui') then
+        call copy(out,1.0_R8,nz,textpl)
+      else if (what.eq.'nustarc' .or. what.eq.'deltabc' .or.
+     &         what.eq.'deltparc') then
+        call copy(out,1.0_R8,nz,textplel)
+      else
+        call copy(out,1.0_R8,nz,textbl)
+      endif
+      deallocate(lnl, tau, ceq, ne2m, out)
+      return
+
+      end subroutine collision_times
+
       subroutine select_matrix
       integer i, j, is, ix, iy, ibc, iCv, iFc, iFt
 #ifdef WG_TODO
@@ -2807,6 +2980,18 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
             mach(:,0:nz-1)=0.0_R8
             call copy(mach,1.0_R8,nz,textbl)
           endif
+        case ('recrad')
+!         power radiated by the volume recombination of each Eirene
+!         bulk ion, on the B2.5 species of that ion
+          description='Power loss due to recombination radiation (W)'
+          nz=ns
+          mach(:,0:nz-1)=0.0_R8
+          do is=0,ns-1
+            if (fluids_list(is).ge.1 .and.
+     &          fluids_list(is).le.size(erecrad,2))
+     &       mach(:,is)=erecrad(:,fluids_list(is),0)
+          enddo
+          call copy(mach,-1.0_R8,nz,textpl)
         case ('rqae')
           description='Electron cooling rate (W) [rqahe]'
           nz=ns
@@ -3226,6 +3411,34 @@ c Zhdanov coefficients from b2trzh as in b2tral, outputs kept local
           description='\Gx\R_{pe} (rad/s)'
           nz=1
           mach(:,0)=sqrt(state%dv%ne(:)*qe**2/me/eps0)
+          call copy(mach,1.0_R8,nz,textbl)
+        case ('wpi')
+          description='\Gx\R_{pi} (rad/s)'
+          nz=ns
+          do is=0,ns-1
+            if (is_neutral(is)) then
+              mach(:,is)=0.0_R8
+            else
+              mach(:,is)=sqrt(state%pl%na(:,is)*
+     &         (state%rt%rza(:,is)*qe)**2/(eps0*am(is)*mp))
+            end if
+          enddo
+          call copy(mach,1.0_R8,nz,textpl)
+        case ('ldebye')
+          description='Debye length (m)'
+          nz=1
+          mach(:,0)=sqrt(eps0*state%pl%te(:)/(state%dv%ne(:)*qe**2))
+          call copy(mach,1.0_R8,nz,textbl)
+        case ('betae')
+          description='Electron plasma beta'
+          nz=1
+          mach(:,0)=2.0_R8*mu0*state%dv%ne(:)*state%pl%te(:)/
+     &     geo%cvBb(:,3)**2
+          call copy(mach,1.0_R8,nz,textbl)
+        case ('beta')
+          description='Plasma beta'
+          nz=1
+          mach(:,0)=2.0_R8*mu0*pz(:)/geo%cvBb(:,3)**2
           call copy(mach,1.0_R8,nz,textbl)
         case ('wce')
           description='\Gx\R_{ce} (rad/s)'
@@ -4670,6 +4883,60 @@ c     assumes that bb is OK for 1d cases
           nz=1
           mach(:,0)=state%co%dkt0(:)
           call copy(mach,1.0_R8,nz,textbl)
+        case ('kpe', 'kpi', 'sigpar', 'alfpar', 'vispar')
+!         classical (collisional) parallel transport coefficients of the
+!         plasma state, without flux limiters (classical_parallel)
+          nz=1
+          if (cval.eq.'vispar') nz=ns
+          call classical_parallel(cval,mach(:,0:nz-1),nz)
+          select case (cval)
+          case ('kpe')
+            description=
+     .       'Parallel electron heat diffusivity (m^{2}.s^{-1})'
+          case ('kpi')
+            description='Parallel ion heat diffusivity (m^{2}.s^{-1})'
+          case ('sigpar')
+            description='Parallel electrical conductivity (mho.m^{-1})'
+          case ('alfpar')
+            description=
+     .       'Parallel thermo-electric coefficient (A.m^{-1}.eV^{-1})'
+          case ('vispar')
+            description='Parallel viscosity (m^{2}.s^{-1})'
+          end select
+          if (nz.eq.1) then
+            call copy(mach,1.0_R8,nz,textbl)
+          else
+            call copy(mach,1.0_R8,nz,textpl)
+          endif
+        case ('taue', 'taui', 'taueq', 'nustarc', 'deltabc',
+     &        'deltparc')
+!         collision times and normalized collisionality with the
+!         definitions of the classical transport (collision_times)
+          nz=1
+          if (cval.eq.'taui') nz=ns
+          if (cval.eq.'nustarc' .or. cval.eq.'deltabc' .or.
+     &        cval.eq.'deltparc') nz=ns+1
+          call collision_times(cval,nz)
+          select case (cval)
+          case ('taue')
+            description='Electron collision time (electron-ion) (s)'
+          case ('taui')
+            description='Ion collision time (ion-ion) (s)'
+          case ('taueq')
+            description=
+     .       'Electron-ion temperature equilibration time (s)'
+          case ('nustarc')
+            description=
+     .       'Normalized collisionality from the collision times'
+          case ('deltabc')
+            description=
+     .       'Collision to gyro-frequency ratio from the ' //
+     .       'collision times'
+          case ('deltparc')
+            description=
+     .       'Radial to parallel dynamics ratio from the ' //
+     .       'collision times'
+          end select
         case ('dzt')
           description=
      .     'E\mU\dB turbulent enstrophy diffusivity (m^{2}.s^{-1})'

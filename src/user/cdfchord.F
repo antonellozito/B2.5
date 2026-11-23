@@ -666,19 +666,19 @@ c     Define all b2chords fields (selected by the switches) in group g.
       endif
       if (switch%write_chord_b25_transport.ge.1) then
         call create_cdf_chord_field3(g, 'dna', 1,
-     1   'Particle density-driven diffusivity', 'm^-2 s^-1')
+     1   'Particle density-driven diffusivity', 'm^2 s^-1')
         call create_cdf_chord_field3(g, 'dpa', 1,
-     1   'Particle pressure-driven diffusivity', 'm^-2 s^-1')
+     1   'Particle pressure-driven diffusivity', 'm^2 s^-1')
         call create_cdf_chord_field2(g, 'hci',
-     1   'Ion thermal anomalous diffusivity', 'm^-2 s^-1')
+     1   'Ion thermal anomalous diffusivity', 'm^2 s^-1')
         call create_cdf_chord_field2(g, 'hce',
-     1   'Electron thermal anomalous diffusivity', 'm^-2 s^-1')
+     1   'Electron thermal anomalous diffusivity', 'm^2 s^-1')
         call create_cdf_chord_field3(g, 'vlax', 1,
      1   'Poloidal anomalous pinch velocity', 'm s^-1')
         call create_cdf_chord_field3(g, 'vlay', 1,
      1   'Radial anomalous pinch velocity', 'm s^-1')
         call create_cdf_chord_field3(g, 'vsa', 1,
-     1   'Anomalous viscosity', 'm kg^-1 s^-1')
+     1   'Anomalous viscosity', 'm^2 s^-1')
       endif
 #ifdef B25_EIRENE
       if (switch%write_chord_eirene_state_variables.ge.1) then
