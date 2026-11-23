@@ -99,6 +99,9 @@ cxpb Data file material properties
 
       integer, allocatable, save :: imapw(:),
      *  imapreg(:), imapfc(:), wall_begin(:), wall_end(:)
+      integer, save :: xymap_tmp(-1:DEF_NXD,-1:DEF_NYD)
+c Wall element of each guard cell, 0 for guard cells of the core
+      integer, allocatable, save :: cvwall(:)
 
 cxpb Data file material properties
       character*32, allocatable, save :: surface_long_name(:)
@@ -394,6 +397,7 @@ cxpb Data file material properties
       deallocate(imapw, imapreg, imapfc, wall_begin, wall_end)
       deallocate(r1, r2, z1, z2)
       deallocate(itrack_0)
+      if(allocated(cvwall)) deallocate(cvwall)
 
       return
       end subroutine dealloc_b2mod_wall_init
@@ -1140,7 +1144,7 @@ cxpb Normalise surface constituents
           endif
           filename='Surface_properties/'//trim(layer_alloys(ifile))
           if(open_file(99,filename,
-     .       'data.local|imodules/B2.5/Database')) then
+     .       'data.local|modules/B2.5/Database')) then
             read(99,*) adum
             read(99,*) alloy_nconstituents(ifile)
             read(99,*) alloy_nzconstituents

@@ -1,26 +1,26 @@
 C.....................................................................
 c Program to solve the heat diffusion equation in 2 dimensions
 
-      subroutine prehd2D(ns,isize,list_x,list_y,dt,isign,
-     1  ixf,iyf,idir,area,BoRiS)
+      subroutine prehd2D(ns,isize,bndx,dt,BoRiS,mpg,geo,dv,st_ext)
       use b2mod_types
       use b2mod_wall
-      use b2mod_rates
-      use b2mod_plasma
       use b2mod_constants
-      use b2mod_external
       use b2mod_subsys
+      use b2us_map
+      use b2us_geo
+      use b2us_plasma
       implicit none
 
-      integer ns,isize,isign,idir
-      integer list_x(isize),list_y(isize)
-      real (kind=R8) :: dt,BoRiS
-      integer ixf(isize),iyf(isize)
-      real (kind=R8) :: area(isize)
-
-      integer iwall, is
+      integer ns,isize
       integer bndx(isize)
-      real (kind=R8) :: qin, qel
+      real (kind=R8) :: dt,BoRiS
+      type (mapping), intent(in) :: mpg
+      type (geometry), intent(in) :: geo
+      type (B2Derivatives), intent(in) :: dv
+      type (B2StateExt), intent(in) :: st_ext
+
+      integer iwall, is, iFc, iCv, isign
+      real (kind=R8) :: qpl, qex
       real (kind=R8) :: Q(isize), Tp(isize,ndepth_nml)
 
       external xertst
@@ -29,36 +29,29 @@ c Program to solve the heat diffusion equation in 2 dimensions
       call subini ('prehd2D')
       call xertst (isize.ge.1, 'faulty input isize')
 
+c Heat load through the face of each wall element; the potential
+c energy of external species at the cell owning the face
       do iwall = 1, isize
-        bndx(iwall) = xymap(list_x(iwall),list_y(iwall))
-        qin = 
-     .   max(0.0_R8,isign*(fhi(ixf(iwall),iyf(iwall),idir,idir)+
-     .                     fhi_ext(ixf(iwall),iyf(iwall),idir,idir)))/
-     .   area(iwall)
-        do is=0,ns-1
-         qin=qin+max(0.0_R8,isign
-     &        *fna(ixf(iwall),iyf(iwall),idir,idir,is))
-     &        *((kinrgy(list_x(iwall),list_y(iwall),is)+
-     &           ti(list_x(iwall),list_y(iwall)))*(1.0_R8-BoRiS) +
-     &          rpt(ixf(iwall),iyf(iwall),is)*ev)
-     &        /area(iwall)
+        iFc = imapfc(bndx(iwall))
+        iCv = max(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+        isign = merge(1,-1,mpg%fcCv(iFc,2).eq.iCv)
+        qpl =
+     .   max(0.0_R8,isign*(dv%fht(iFc,0)+dv%fht(iFc,1)))/
+     .   geo%fcS(iFc)
+        qex =
+     .   max(0.0_R8,isign*(st_ext%fhi(iFc,0)+st_ext%fhi(iFc,1)))/
+     .   geo%fcS(iFc)
+        do is=0,st_ext%ns-1
+         qex = qex +
+     &    max(0.0_R8,isign*(st_ext%fa(iFc,0,is)+st_ext%fa(iFc,1,is)))
+     &    *((0.5_R8*st_ext%am(is)*mp*
+     &       st_ext%ua(iCv,is)**2+
+     &       st_ext%ta(iCv,is))*(1.0_R8-BoRiS) +
+     &      st_ext%pt(mpg%fcCv(iFc,2),is)*ev)
+     &    /geo%fcS(iFc)
         enddo
-        do is=0,ns_ext-1
-         qin=qin+max(0.0_R8,isign
-     &    *fa_ext(ixf(iwall),iyf(iwall),idir,idir,is))
-     &    *((0.5_R8*am_ext(is)*mp*
-     &       ua_ext(list_x(iwall),list_y(iwall),is)**2+
-     &       ta_ext(list_x(iwall),list_y(iwall),is))*(1.0_R8-BoRiS) +
-     &      pt_ext(ixf(iwall),iyf(iwall),is)*ev)
-     &    /area(iwall)
-        enddo
-        qel =
-     .   max(0.0_R8,isign*(fhe(ixf(iwall),iyf(iwall),idir,idir)+
-     .                     fne(ixf(iwall),iyf(iwall),idir,idir)*
-     .                     te(list_x(iwall),list_y(iwall))*
-     .                    (1.0_R8-BoRiS)))/area(iwall)
-        Q(iwall)=qin+qel
-        Tp(iwall,1:ndepth_nml) = target_temp(bndx(iwall),1:ndepth_nml)    
+        Q(iwall)=qpl+qex
+        Tp(iwall,1:ndepth_nml) = target_temp(bndx(iwall),1:ndepth_nml)
       enddo
 
       call heatdiff2D(isize,ns,bndx,Q,dt,Tp)
