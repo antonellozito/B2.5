@@ -1349,7 +1349,7 @@
         do j = mpg%divFcP(i,1), mpg%divFcP(i,1)+mpg%divFcP(i,2)-1
           iVx1 = mpg%fcVx(mpg%divFc(j),1)
           iVx2 = mpg%fcVx(mpg%divFc(j),2)
-          do k = 1, mpg%nXpt
+          do k = 1, max(1,mpg%nXpt) ! to handle limiter cases
             do l = mpg%strVxP(k,1), mpg%strVxP(k,1)+mpg%strVxP(k,2)-1
               if (iVx1.eq.mpg%strVx(l)) then
                 if((gm%psi_increasing .and.
