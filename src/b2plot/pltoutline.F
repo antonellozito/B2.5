@@ -86,7 +86,9 @@ c init_geometry, with the core cells (region 1) as the closed surfaces
       end subroutine plot_signmf
 
 c (R,Z) direction of the arrow of cell iCv for the poloidal and radial
-c components ax and ay (used by plot_arrows and the GUI)
+c components ax and ay (used by plot_arrows and the GUI): x along the
+c poloidal field, y along it turned by +90 degrees times the sign of
+c the toroidal field (the frame of fcQalf)
       subroutine arrow_rz(iCv,ax,ay,ur,uz)
       use b2mod_types
       use b2us_data
@@ -95,12 +97,12 @@ c components ax and ay (used by plot_arrows and the GUI)
       real (kind=R8), intent(in) :: ax, ay
       real (kind=R8), intent(out) :: ur, uz
       real (kind=R8) :: s, t, u, v, rmagst, rmaguv
-      intrinsic sqrt
+      intrinsic sqrt, sign
 
       s= geo%cvEb(iCv,0)
       t= geo%cvEb(iCv,1)
-      u=-geo%cvEb(iCv,1)*geo%signmf
-      v= geo%cvEb(iCv,0)*geo%signmf
+      u=-geo%cvEb(iCv,1)*sign(1.0_R8,geo%cvEb(iCv,2))
+      v= geo%cvEb(iCv,0)*sign(1.0_R8,geo%cvEb(iCv,2))
       rmagst=sqrt(s**2+t**2)
       rmaguv=sqrt(u**2+v**2)
       ur=ax*s/rmagst+ay*u/rmaguv

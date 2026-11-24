@@ -2286,12 +2286,14 @@ c gyro-frequencies, banana widths and gradient lengths of the module.
             wrkfs(:,is)=state%dv%vaecrb(:,0,is)+state%dv%wadia(:,0,is)
             call intcell(mpg%nFc,mpg%nCv,mpg,mpg%intcellP,
      .        wrkfs(1,is),wrkcs(1,is))
-!           along the field line towards positive x, then signed by the
-!           directions of the toroidal field and of the poloidal field
-!           (signmf: clockwise as x) (cvBb is not signed)
+!           x is along the poloidal field (cvBb is not signed): the
+!           parallel velocity and the drifts in the flux surface
+!           projected on the toroidal direction, signed by the direction
+!           of the toroidal field (Cartesian Z), as the toroidal velocity
+!           given to EIRENE (eirene_f30f31)
             ww(:,is)=(state%pl%ua(:,is)*geo%cvBb(:,2)/geo%cvBb(:,3)-
      .                wrkcs(:,is)*geo%cvBb(:,0)/geo%cvBb(:,2))*
-     .               sign(1.0_R8,geo%cvEb(:,2))*geo%signmf
+     .               sign(1.0_R8,geo%cvEb(:,2))
           end do
           call copy(ww,1.0_R8,nz,textpl)
         case('te')
@@ -10115,6 +10117,160 @@ c face area (as the target fluxes of b2time.nc over dsLT, dsRT)
           description='Wall current density (A.m^{-2})'
           nz=1
           call wall_face_flux(state%dv%fch(1,0),nz,textbl)
+        case('wnapll')
+          description='Wall parallel particle flux (m^{-2}.s^{-1})'
+          nz=ns
+          call wall_face_flux(state%dv%fna_pll(1,0,0),nz,textpl)
+        case('wnananm')
+          description=
+     .     'Wall density diffusion particle flux (m^{-2}.s^{-1})'
+          nz=ns
+          call wall_face_flux(state%dv%fna_nanom(1,0,0),nz,textpl)
+        case('wnapanm')
+          description=
+     .     'Wall pressure diffusion particle flux (m^{-2}.s^{-1})'
+          nz=ns
+          call wall_face_flux(state%dv%fna_panom(1,0,0),nz,textpl)
+        case('wnapnch')
+          description='Wall pinch particle flux (m^{-2}.s^{-1})'
+          nz=ns
+          call wall_face_flux(state%dv%fna_pinch(1,0,0),nz,textpl)
+        case('wnaecrb')
+          description='Wall ExB drift particle flux (m^{-2}.s^{-1})'
+          nz=ns
+          call wall_face_flux(state%dv%fna_ecrb(1,0,0),nz,textpl)
+        case('wnadia')
+          description='Wall grad-B drift particle flux (m^{-2}.s^{-1})'
+          nz=ns
+          call wall_face_flux(state%dv%fna_dia(1,0,0),nz,textpl)
+        case('wnach')
+          description=
+     .     'Wall particle flux carried by currents (m^{-2}.s^{-1})'
+          nz=ns
+          call wall_face_flux(state%dv%fna_ch(1,0,0),nz,textpl)
+        case('wmoflua')
+          description='Wall convected momentum flux (N.m^{-2})'
+          nz=ns
+          call wall_face_flux(state%dv%fmo_flua(1,0,0),nz,textpl)
+        case('wmocvsa')
+          description='Wall viscous momentum flux (N.m^{-2})'
+          nz=ns
+          call wall_face_flux(state%dv%fmo_cvsa(1,0,0),nz,textpl)
+        case('wmohybr')
+          description=
+     .     'Wall hybrid correction of momentum flux (N.m^{-2})'
+          nz=ns
+          call wall_face_flux(state%dv%fmo_hybr(1,0,0),nz,textpl)
+        case('wheconv')
+          description='Wall convective electron heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhe_conv(1,0),nz,textbl)
+        case('whecond')
+          description='Wall conductive electron heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhe_cond(1,0),nz,textbl)
+        case('whethj')
+          description=
+     .     'Wall thermoelectric electron heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhe_thermj(1,0),nz,textbl)
+        case('whedia')
+          description='Wall diamagnetic electron heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhe_dia(1,0),nz,textbl)
+        case('whestr')
+          description=
+     .     'Wall anomalous convective el. heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhe_strange(1,0),nz,textbl)
+        case('whiconv')
+          description='Wall convective ion heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_conv(1,0),nz,textbl)
+        case('whicond')
+          description='Wall conductive ion heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_cond(1,0),nz,textbl)
+        case('whidia')
+          description='Wall diamagnetic ion heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_dia(1,0),nz,textbl)
+        case('whistr')
+          description=
+     .     'Wall anomalous convective ion heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_strange(1,0),nz,textbl)
+        case('whiinrt')
+          description='Wall ion heat flux by inertia current (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_inert(1,0),nz,textbl)
+        case('whivspa')
+          description=
+     .     'Wall ion heat flux by par. visc. current (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_vispar(1,0),nz,textbl)
+        case('whivspe')
+          description=
+     .     'Wall ion heat flux by perp. visc. current (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_visper(1,0),nz,textbl)
+        case('whivisq')
+          description='Wall ion heat flux by q visc. current (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_visq(1,0),nz,textbl)
+        case('whianml')
+          description=
+     .     'Wall ion heat flux by anomalous current (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_anml(1,0),nz,textbl)
+        case('whivskt')
+          description=
+     .     'Wall ion heat flux by kt-model current (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_viskt(1,0),nz,textbl)
+        case('whivzh')
+          description='Wall Zhdanov viscous ion heat flux (W.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fhi_vzh(1,0),nz,textbl)
+        case('wchp')
+          description='Wall parallel current, poloidal part (A.m^{-2})'
+          nz=1
+          wrkf2=0.0_R8
+          wrkf2(:,0)=state%dv%fch_p(:,0)
+          call wall_face_flux(wrkf2(1,0),nz,textbl)
+        case('wchdia')
+          description='Wall diamagnetic current (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fchdia(1,0),nz,textbl)
+        case('wchanml')
+          description='Wall anomalous current (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fchanml(1,0),nz,textbl)
+        case('wchinrt')
+          description=
+     .     'Wall inertia and gyroviscosity current (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fchinert(1,0),nz,textbl)
+        case('wchvspa')
+          description='Wall parallel viscosity current (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fchvispar(1,0),nz,textbl)
+        case('wchvspe')
+          description='Wall perpendicular viscosity current (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fchvisper(1,0),nz,textbl)
+        case('wchvisq')
+          description='Wall heat flux viscosity current (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fchvisq(1,0),nz,textbl)
+        case('wchvskt')
+          description='Wall kt-model Reynolds stress current (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fchviskt(1,0),nz,textbl)
+        case('wchn')
+          description='Wall current of the neutrals (A.m^{-2})'
+          nz=1
+          call wall_face_flux(state%dv%fchin(1,0),nz,textbl)
         case('wallrad')
           description='Wall radiation load (W.m^{-2})'
           nz=1
