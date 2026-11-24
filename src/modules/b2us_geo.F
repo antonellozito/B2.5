@@ -1248,6 +1248,27 @@
             if (.not.match_found) mpg%ivdiv(i) = divStrVx(1)
           end if
 
+!   ..the face list from the private flux region to the SOL in the psi
+!     of the flux surfaces nearest its ends (iVx1, iVx2), as for the
+!     other topologies below
+          j = mpg%divFcP(i,1)
+          k = j + mpg%divFcP(i,2) - 1
+          iVx1 = 0
+          iVx2 = 0
+          do l = j, k
+            if (iVx1.eq.0)
+     &        iVx1 = maxval(mpg%vxFs(mpg%fcVx(mpg%divFc(l),:)))
+            if (iVx2.eq.0)
+     &        iVx2 = maxval(mpg%vxFs(mpg%fcVx(mpg%divFc(j+k-l),:)))
+          end do
+          if (iVx1.gt.0 .and. iVx2.gt.0) then
+            Psi1 = gm%fsPsi(iVx1)
+            Psi2 = gm%fsPsi(iVx2)
+            if ((gm%psi_increasing .and. Psi1.gt.Psi2) .or.
+     &          (.not.gm%psi_increasing .and. Psi2.gt.Psi1))
+     &        mpg%divFc(j:k) = mpg%divFc(k:j:-1)
+          end if
+
           tdivFc = mpg%divFc(mpg%divFcP(i,1):
      &      mpg%divFcP(i,1)+mpg%divFcP(i,2)-1)
           tdivFcVx1 = mpg%fcVx(tdivFc,1)
