@@ -1248,27 +1248,6 @@
             if (.not.match_found) mpg%ivdiv(i) = divStrVx(1)
           end if
 
-!   ..the face list from the private flux region to the SOL in the psi
-!     of the flux surfaces nearest its ends (iVx1, iVx2), as for the
-!     other topologies below
-          j = mpg%divFcP(i,1)
-          k = j + mpg%divFcP(i,2) - 1
-          iVx1 = 0
-          iVx2 = 0
-          do l = j, k
-            if (iVx1.eq.0)
-     &        iVx1 = maxval(mpg%vxFs(mpg%fcVx(mpg%divFc(l),:)))
-            if (iVx2.eq.0)
-     &        iVx2 = maxval(mpg%vxFs(mpg%fcVx(mpg%divFc(j+k-l),:)))
-          end do
-          if (iVx1.gt.0 .and. iVx2.gt.0) then
-            Psi1 = gm%fsPsi(iVx1)
-            Psi2 = gm%fsPsi(iVx2)
-            if ((gm%psi_increasing .and. Psi1.gt.Psi2) .or.
-     &          (.not.gm%psi_increasing .and. Psi2.gt.Psi1))
-     &        mpg%divFc(j:k) = mpg%divFc(k:j:-1)
-          end if
-
           tdivFc = mpg%divFc(mpg%divFcP(i,1):
      &      mpg%divFcP(i,1)+mpg%divFcP(i,2)-1)
           tdivFcVx1 = mpg%fcVx(tdivFc,1)
@@ -1417,17 +1396,6 @@
        call xertst (match_found .or. mpg%nXpt.eq.0,
      &   'No matching face found for strike point !')
        end do
-      end if
-!   ..no X-point (limiter): the face of each target at the last closed
-!     flux surface as its strike point face
-      if (mpg%nXpt.eq.0 .and. mpg%iFssep.gt.0) then
-        do i = 1, mpg%nDiv
-          do j = mpg%divFcP(i,1), mpg%divFcP(i,1)+mpg%divFcP(i,2)-1
-            if (mpg%ifdiv(i).eq.0 .and.
-     &          any(mpg%vxFs(mpg%fcVx(mpg%divFc(j),:)).eq.mpg%iFssep))
-     &        mpg%ifdiv(i) = j - mpg%divFcP(i,1) + 1
-          end do
-        end do
       end if
 
       else
