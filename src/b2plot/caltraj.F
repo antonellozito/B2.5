@@ -814,19 +814,19 @@ c     --------------------------------------------------------------------------
       real (kind=R8) ::
      *   vr,vz
       real (kind=R8) ::
-     *   rechvv(1:2),rechuu(1:2),betrag
+     *   rechvv(1:2),rechuu(1:2),betrag,sb
 
       betrag=sqrt(geo%cvEb(iCv,0)**2+geo%cvEb(iCv,1)**2)
+      sb=sign(1.0_R8,geo%cvEb(iCv,2))
 
-C Projection of the vvtraj upon the axis of the cell (side middle points)
+C vvtraj along the poloidal field turned by +90 degrees times the sign
+C of the toroidal field, uutraj along the poloidal field (as arrow_rz)
 
-      rechvv(1)=(geo%signmf/betrag)*  geo%cvEb(iCv,1) *vvtraj(iCv,l)
-      rechvv(2)=(geo%signmf/betrag)*(-geo%cvEb(iCv,0))*vvtraj(iCv,l)
+      rechvv(1)=-(sb/betrag)*geo%cvEb(iCv,1)*vvtraj(iCv,l)
+      rechvv(2)= (sb/betrag)*geo%cvEb(iCv,0)*vvtraj(iCv,l)
 
-C Projection of the uutraj upon the axis of the cell (side middle points)
-
-      rechuu(1)=(geo%signmf/betrag)*geo%cvEb(iCv,0)*uutraj(iCv,l)
-      rechuu(2)=(geo%signmf/betrag)*geo%cvEb(iCv,1)*uutraj(iCv,l)
+      rechuu(1)=(1.0_R8/betrag)*geo%cvEb(iCv,0)*uutraj(iCv,l)
+      rechuu(2)=(1.0_R8/betrag)*geo%cvEb(iCv,1)*uutraj(iCv,l)
 
       vr=rechvv(1)+rechuu(1)
       vz=rechvv(2)+rechuu(2)

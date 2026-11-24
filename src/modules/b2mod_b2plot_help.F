@@ -5,7 +5,7 @@
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
       parameter(nlabels=525,nfns=240,nsparameters=34,nelabels=51,
-     *     nconstants=10,nefns=50,nwfns=62,nwlabels=126,ntrgfns=89)
+     *     nconstants=10,nefns=50,nwfns=62,nwlabels=161,ntrgfns=89)
 
       integer, save ::
      * dimensions(nlabels), wdimensions(nwlabels), edimensions(nelabels)
@@ -1117,6 +1117,58 @@
      2 2,       2,      2,      1,      2,
      3 2,       1,      2,      2,      2,
      4 1/
+      data wlabels(127:161) /
+     1 'wnapll'  , 'wnananm' , 'wnapanm' , 'wnapnch' , 'wnaecrb' ,
+     2 'wnadia'  , 'wnach'   , 'wmoflua' , 'wmocvsa' , 'wmohybr' ,
+     3 'wheconv' , 'whecond' , 'whethj'  , 'whedia'  , 'whestr' ,
+     4 'whiconv' , 'whicond' , 'whidia'  , 'whistr'  , 'whiinrt' ,
+     5 'whivspa' , 'whivspe' , 'whivisq' , 'whianml' , 'whivskt' ,
+     6 'whivzh'  , 'wchp'    , 'wchdia'  , 'wchanml' , 'wchinrt' ,
+     7 'wchvspa' , 'wchvspe' , 'wchvisq' , 'wchvskt' , 'wchn' /
+      data wdescriptions(127:161) /
+     1 'Wall parallel particle flux (m^{-2}.s^{-1})',
+     2 'Wall density diffusion particle flux (m^{-2}.s^{-1})',
+     3 'Wall pressure diffusion particle flux (m^{-2}.s^{-1})',
+     4 'Wall pinch particle flux (m^{-2}.s^{-1})',
+     5 'Wall ExB drift particle flux (m^{-2}.s^{-1})',
+     6 'Wall grad-B drift particle flux (m^{-2}.s^{-1})',
+     7 'Wall particle flux carried by currents (m^{-2}.s^{-1})',
+     8 'Wall convected momentum flux (N.m^{-2})',
+     9 'Wall viscous momentum flux (N.m^{-2})',
+     * 'Wall hybrid correction of momentum flux (N.m^{-2})',
+     1 'Wall convective electron heat flux (W.m^{-2})',
+     2 'Wall conductive electron heat flux (W.m^{-2})',
+     3 'Wall thermoelectric electron heat flux (W.m^{-2})',
+     4 'Wall diamagnetic electron heat flux (W.m^{-2})',
+     5 'Wall anomalous convective el. heat flux (W.m^{-2})',
+     6 'Wall convective ion heat flux (W.m^{-2})',
+     7 'Wall conductive ion heat flux (W.m^{-2})',
+     8 'Wall diamagnetic ion heat flux (W.m^{-2})',
+     9 'Wall anomalous convective ion heat flux (W.m^{-2})',
+     * 'Wall ion heat flux by inertia current (W.m^{-2})',
+     1 'Wall ion heat flux by par. visc. current (W.m^{-2})',
+     2 'Wall ion heat flux by perp. visc. current (W.m^{-2})',
+     3 'Wall ion heat flux by q visc. current (W.m^{-2})',
+     4 'Wall ion heat flux by anomalous current (W.m^{-2})',
+     5 'Wall ion heat flux by kt-model current (W.m^{-2})',
+     6 'Wall Zhdanov viscous ion heat flux (W.m^{-2})',
+     7 'Wall parallel current, poloidal part (A.m^{-2})',
+     8 'Wall diamagnetic current (A.m^{-2})',
+     9 'Wall anomalous current (A.m^{-2})',
+     * 'Wall inertia and gyroviscosity current (A.m^{-2})',
+     1 'Wall parallel viscosity current (A.m^{-2})',
+     2 'Wall perpendicular viscosity current (A.m^{-2})',
+     3 'Wall heat flux viscosity current (A.m^{-2})',
+     4 'Wall kt-model Reynolds stress current (A.m^{-2})',
+     5 'Wall current of the neutrals (A.m^{-2})'/
+      data wdimensions(127:161) /
+     1 2,       2,       2,       2,       2,
+     2 2,       2,       2,       2,       2,
+     3 1,       1,       1,       1,       1,
+     4 1,       1,       1,       1,       1,
+     5 1,       1,       1,       1,       1,
+     6 1,       1,       1,       1,       1,
+     7 1,       1,       1,       1,       1/
       data efns /
      1 'edims', 'sumt' , 'esurf', 'eabs' , 'esumz',
      2 'em+'  , 'em-'  , 'em*'  , 'em/'  , 'rem+' ,
