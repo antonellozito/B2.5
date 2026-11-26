@@ -5,7 +5,7 @@
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
       parameter(nlabels=525,nfns=240,nsparameters=34,nelabels=51,
-     *     nconstants=10,nefns=50,nwfns=62,nwlabels=161,ntrgfns=89)
+     *     nconstants=10,nefns=50,nwfns=62,nwlabels=162,ntrgfns=89)
 
       integer, save ::
      * dimensions(nlabels), wdimensions(nwlabels), edimensions(nelabels)
@@ -1169,6 +1169,10 @@
      5 1,       1,       1,       1,       1,
      6 1,       1,       1,       1,       1,
      7 1,       1,       1,       1,       1/
+      data wlabels(162:162) / 'wstrat' /
+      data wdescriptions(162:162) /
+     1 'The next EIRENE wall quantity of one stratum only'/
+      data wdimensions(162:162) / 1 /
       data efns /
      1 'edims', 'sumt' , 'esurf', 'eabs' , 'esumz',
      2 'em+'  , 'em-'  , 'em*'  , 'em/'  , 'rem+' ,

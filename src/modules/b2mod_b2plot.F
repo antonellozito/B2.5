@@ -135,8 +135,9 @@ cank
 c EIRENE wall (eirene_wall.F): the strata of fort.44, the number of
 c elements and, for each, its resolved segment of fort.44 and its EIRENE
 c surface (zero when it has none), and the element of each additional
-c surface (additional surfaces with the same ends share one element)
-      integer, save :: nstrai_eir = 1, n_ewall = 0
+c surface (additional surfaces with the same ends share one element);
+c the stratum of the next EIRENE wall quantity (wstrat, zero: all)
+      integer, save :: nstrai_eir = 1, n_ewall = 0, ew_stratum = 0
       integer, allocatable, save :: ew_res(:), ew_srf(:), ew_add(:)
       integer, save ::
      *  mcol,scol,vcol,ocol,ecol,fcol,acol,zcol,y_transform_l,
