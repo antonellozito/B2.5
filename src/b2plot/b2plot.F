@@ -10421,6 +10421,12 @@ c face area (as the target fluxes of b2time.nc over dsLT, dsRT)
           data(istack(iistack)+1:nbnd) = 0.0_R8
           write(*,*) '"iwle" option with ',ipop(istack,iistack)
           call wall_copy(data,1.0_R8,nz,textbl)
+        case ('wstrat')
+!         the next EIRENE wall quantity of this stratum only
+          stack_req=(/1,0,0,0,0,0,0/)
+          if(bad_args(stack_req)) return
+          ew_stratum=ipop(istack,iistack)
+          return
         case ('iweq')
           description='iweq'
           nz=1

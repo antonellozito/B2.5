@@ -149,7 +149,7 @@ c======================================================================
       use b2mod_constants, only : ev
       use b2mod_wall, only : nwall
       use b2mod_b2plot, only : natmi, nmoli, nioni, nlimi, n_ewall,
-     .  ew_res, ew_srf, ew_add, wall_area, nstrai_eir
+     .  ew_res, ew_srf, ew_add, wall_area, nstrai_eir, ew_stratum
 #ifdef B25_EIRENE
       use eirmod_parmmod, only : nlim
       use eirmod_wneutrals, only : wldna, wldnm, wldra, wldrm, ewlda,
@@ -162,9 +162,11 @@ c======================================================================
       character*(*), intent(in) :: key
       real (kind=R8), intent(out) :: w(nwall,0:*)
       integer, intent(out) :: nz, igrp
-      integer e, i, ix, is, ns
+      integer e, i, ix, is, ns, kk, k
       logical res
-      real (kind=R8) :: a
+      real (kind=R8) :: a, all
+      kk = ew_stratum                   ! wstrat: one stratum, once
+      ew_stratum = 0
       nz = 0
       igrp = 3
       select case (key)
@@ -187,6 +189,10 @@ c======================================================================
       w(1:nwall,0:nz-1) = 0.0_R8
 #ifdef B25_EIRENE
       ns = max(1,nstrai_eir)
+c by stratum: not the quantities EIRENE only resolves, nor the pumping
+      if (kk.ne.0 .and. (kk.lt.0 .or. kk.gt.ns .or.
+     .    key.eq.'ewldea' .or. key.eq.'ewldem' .or. key.eq.'wlpump'))
+     .  return
 c quantities EIRENE resolves on the faces of the standard surfaces
       select case (key)
       case ('wldna','wldnm','ewlda','ewldm','ewldea','ewldem','ewldt',
@@ -196,19 +202,41 @@ c quantities EIRENE resolves on the faces of the standard surfaces
         res = .false.
       end select
 c faces of the standard surfaces: their resolved segment, or the total
-c of their surface over its area
+c of their surface over its area; one stratum (kk): the resolved value
+c times the share of the stratum in the total of the surface (EIRENE does
+c not resolve the strata on the faces; for an energy flux whose surface
+c has no energies by stratum, the share of its incident particles), or
+c its total over the area
       do e = 1, n_ewall
         i = ew_res(e)
         ix = ew_srf(e)
         if (res .and. i.gt.0) then
           do is = 0, nz-1
             w(e,is) = face_value(i,is)
+            if (kk.gt.0) then
+              all = 0.0_R8
+              do k = 1, ns
+                all = all+surface_total(ix,is,k)
+              end do
+              if (all.ne.0.0_R8) then
+                w(e,is) = w(e,is)*surface_total(ix,is,kk)/all
+              else              ! no energies by stratum: by particles
+                do k = 1, ns
+                  all = all+particles(ix,is,k)
+                end do
+                if (all.ne.0.0_R8) then
+                  w(e,is) = w(e,is)*particles(ix,is,kk)/all
+                else
+                  w(e,is) = 0.0_R8
+                end if
+              end if
+            end if
           end do
         else if (ix.gt.nlim) then
           a = wlarea(ix)
           if (a.le.0.0_R8) cycle
           do is = 0, nz-1
-            w(e,is) = surface_total(ix,is)/a
+            w(e,is) = surface_total(ix,is,kk)/a
           end do
         end if
       end do
@@ -220,7 +248,7 @@ c additional surfaces: their totals over the area of their element
           a = wall_area(e)
           if (a.le.0.0_R8) cycle
           do is = 0, nz-1
-            w(e,is) = w(e,is)+surface_total(ix,is)/a
+            w(e,is) = w(e,is)+surface_total(ix,is,kk)/a
           end do
         end do
       end if
@@ -258,46 +286,67 @@ c value of column is on the resolved segment i
       end select
       end function face_value
 c total of column is on the EIRENE surface ix (zero for the energy of
-c the backscattered particles, which EIRENE only resolves)
-      real (kind=R8) function surface_total(ix,is)
-      integer, intent(in) :: ix, is
-      integer k
+c the backscattered particles, which EIRENE only resolves), of all the
+c strata (ks zero) or of stratum ks
+      real (kind=R8) function surface_total(ix,is,ks)
+      integer, intent(in) :: ix, is, ks
+      integer k, k1, k2, k0
       surface_total = 0.0_R8
+      k1 = 1                            ! the strata summed
+      k2 = ns
+      k0 = 0                            ! the totals EIRENE writes
+      if (ks.gt.0) then
+        k1 = ks
+        k2 = ks
+        k0 = ks
+      end if
       select case (key)
       case ('wldna')
-        surface_total = sum(wldna(ix,is+1,1:ns))
+        surface_total = sum(wldna(ix,is+1,k1:k2))
       case ('wldnm')
-        surface_total = sum(wldnm(ix,is+1,1:ns))
+        surface_total = sum(wldnm(ix,is+1,k1:k2))
       case ('wldra')
-        surface_total = sum(wldra(ix,is+1,1:ns))
+        surface_total = sum(wldra(ix,is+1,k1:k2))
       case ('wldrm')
-        surface_total = sum(wldrm(ix,is+1,1:ns))
+        surface_total = sum(wldrm(ix,is+1,k1:k2))
       case ('ewlda')
-        do k = 1, ns
+        do k = k1, k2
           surface_total = surface_total+
      .      wldna(ix,is+1,k)*ewlda(ix,is+1,k)*ev
         end do
       case ('ewldm')
-        do k = 1, ns
+        do k = k1, k2
           surface_total = surface_total+
      .      wldnm(ix,is+1,k)*ewldm(ix,is+1,k)*ev
         end do
       case ('ewldt')
-        surface_total = sum(wldnek(ix,1:ns))+sum(wldnep(ix,1:ns))
+        surface_total = sum(wldnek(ix,k1:k2))+sum(wldnep(ix,k1:k2))
       case ('wldpa')
-        surface_total = wldpa(ix,is+1,0)
+        surface_total = wldpa(ix,is+1,k0)
       case ('wldpm')
-        surface_total = wldpm(ix,is+1,0)
+        surface_total = wldpm(ix,is+1,k0)
       case ('ewldrp')
-        surface_total = wldpeb(ix,0)
+        surface_total = wldpeb(ix,k0)
       case ('wldspta')
-        surface_total = wldspta(ix,is+1,0)
+        surface_total = wldspta(ix,is+1,k0)
       case ('wldsptm')
-        surface_total = wldsptm(ix,is+1,0)
+        surface_total = wldsptm(ix,is+1,k0)
       case ('wlpump')
         surface_total = wlpump(is+1,ix)
       end select
       end function surface_total
+c incident particles of an energy flux on the EIRENE surface ix, of
+c stratum ks (zero for the other quantities)
+      real (kind=R8) function particles(ix,is,ks)
+      integer, intent(in) :: ix, is, ks
+      particles = 0.0_R8
+      select case (key)
+      case ('ewlda')
+        particles = wldna(ix,is+1,ks)
+      case ('ewldm')
+        particles = wldnm(ix,is+1,ks)
+      end select
+      end function particles
 #endif
       end subroutine eirene_wall_field
 
