@@ -1,5 +1,5 @@
 c GUI data commands guigeom, guifield, guiefld, guivect and guievect:
-c raw grid, overlays and fields for the b2plot GUI (inactive without)
+c raw grid, overlays and fields for b2viewer (inactive without)
 
 c Grid, X-points, overlays and EIRENE mesh (GEOMETRY, OVERLAY, TRIMESH)
       subroutine gui_send_geometry
