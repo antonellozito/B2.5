@@ -726,7 +726,16 @@ c     filling array and computing rate
         ELSE
 c         write(*,*) 'Do not yet know about ',h123
         ENDIF
-        dnnn=dnnn+log(1.0e-6_R8)
+c the cm of the file in m: rate coefficients (H.2 to H.4, cm^3/s; energy
+c weighted H.8 to H.10, eV cm^3/s) times 1e-6, cross sections (H.1, cm^2)
+c times 1e-4, the momentum weighted H.5 to H.7 times 1e-6 as before; the
+c other data of H.11 and H.12 (mostly dimensionless ratios, e.g. reduced
+c population coefficients) as the file gives them
+        if (h123.eq.'H.1') then
+          dnnn=dnnn+log(1.0e-4_R8)
+        else if (h123.ne.'H.11'.and.h123.ne.'H.12') then
+          dnnn=dnnn+log(1.0e-6_R8)
+        end if
         if(dnnn.gt.log(1.0e30_R8)) then
           dnnn=1.0e30_R8
         elseif(dnnn.lt.log(1.0e-30_R8)) then
