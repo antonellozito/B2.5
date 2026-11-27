@@ -10597,8 +10597,8 @@ c face area (as the target fluxes of b2time.nc over dsLT, dsRT)
           nz=ns
           call wall_copy(implant_depth,1.0_R8,nz,textpl)
         case('wldna','wldnm','wldra','wldrm','ewlda','ewldm','ewldea',
-     .       'ewldem','ewldt','wldpa','wldpm','ewldrp','wldspta',
-     .       'wldsptm','wlpump')
+     .       'ewldem','ewldt','ewldk','ewldp','wldpa','wldpm','ewldrp',
+     .       'wldspta','wldsptm','wlpump')
           select case(cval)
           case('wldna')
             description='Incident atom flux (m^{-2}.s^{-1})'
@@ -10620,6 +10620,12 @@ c face area (as the target fluxes of b2time.nc over dsLT, dsRT)
      .       'molecules (W.m^{-2})'
           case('ewldt')
             description='Net neutral energy load (W.m^{-2})'
+          case('ewldk')
+            description='Net kinetic energy load of the neutrals '//
+     .       '(W.m^{-2})'
+          case('ewldp')
+            description='Potential energy of molecules formed at '//
+     .       'the wall (W.m^{-2})'
           case('wldpa')
             description='Atoms released by backscattered and '//
      .       'thermally re-emitted ions (m^{-2}.s^{-1})'
@@ -10641,7 +10647,7 @@ c face area (as the target fluxes of b2time.nc over dsLT, dsRT)
             write(*,*) 'No EIRENE wall data (fort.44)'
             return
           end if
-          call eirene_wall_field(cval,wall_tmp,nz,igrp)
+          call eirene_wall_field(cval,wall_tmp,nz,igrp,ns)
           if (nz.le.0) then
             write(*,*) 'No EIRENE species for ',trim(cval)
             return
@@ -10664,9 +10670,9 @@ c face area (as the target fluxes of b2time.nc over dsLT, dsRT)
           data(1:nbnd)=data(1:nbnd)+wall_heatflux(1:nbnd)
           call eirene_wall_init
           if (n_ewall.gt.0) then
-            call eirene_wall_field('ewldt',wall_tmp,k,igrp)
+            call eirene_wall_field('ewldt',wall_tmp,k,igrp,ns)
             data(1:nbnd)=data(1:nbnd)+wall_tmp(1:nbnd,0)
-            call eirene_wall_field('ewldrp',wall_tmp,k,igrp)
+            call eirene_wall_field('ewldrp',wall_tmp,k,igrp,ns)
             data(1:nbnd)=data(1:nbnd)-wall_tmp(1:nbnd,0)
           else
             write(*,*) 'No EIRENE wall data: neutral terms left out'
