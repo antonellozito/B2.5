@@ -130,13 +130,15 @@
      .  ivar, vin, xtype, ndims, natts, irec, n, nin, ninp, nprf, i, j,
      .  k, nk, ntgt, igeo, ix, iy, it, ip, kind, iFc, iCv1, iCv2,
      .  iun, toff, nmx, ismain, ismain0, is, jx_in(-1:0), jx_us(-1:0),
-     .  icsep(-1:0),
+     .  icsep(-1:0), nbo, nbi, omode,
      .  dimids(NF_MAX_VAR_DIMS), nprof(-1:mxtgt), iy0(-1:mxtgt)
-      integer, allocatable :: fc2iy(:), plist(:,:), iyp(:,:)
+      integer, allocatable :: fc2iy(:), plist(:,:), iyp(:,:), vkind(:),
+     .  vvin(:), vn(:), vnin(:)
       real (kind=R8), allocatable :: bi(:), bo(:), sgn(:,:), ds(:),
-     .  dsT(:), dsP(:)
+     .  dsT(:), dsP(:), vfsgn(:)
       real (kind=R8) :: dval(1), off, fsgn
       logical :: ex, dn, facesgn, found, prof_ok(-1:mxtgt)
+      logical, allocatable :: vfcsgn(:)
 #ifdef LEGACYCOMP
       integer newunit
       external newunit
@@ -392,9 +394,18 @@
         call cdfh_put (nco, 'ntstep', dval)
       end if
 
-*   ..variables per record (time or batch), scalars of b2batch.nc
+*   ..variables per record (time or batch), scalars of b2batch.nc;
+*     how each variable is filled (vkind -99: not per record)
       iret = nf_inq_nvars (nco, nvars)
       call check_cdf_status (iret)
+      allocate (vkind(nvars), vvin(nvars), vn(nvars), vnin(nvars),
+     .  vfsgn(nvars), vfcsgn(nvars))
+      vkind = -99
+      vvin = 0
+      vn = 0
+      vnin = 0
+      nbo = 1
+      nbi = 1
       do ivar = 1, nvars
         iret = nf_inq_var (nco, ivar, name, xtype, ndims, dimids, natts)
         call check_cdf_status (iret)
@@ -467,30 +478,50 @@
             if (name(5:6).eq.'ap' .and. ntgt.ge.2) fsgn = sgn(1,4)
           end select
         end if
-        allocate (bo(n), bi(max(n,nin)))
-        do irec = 1, nrec
+        vkind(ivar) = kind
+        vvin(ivar) = vin
+        vn(ivar) = n
+        vnin(ivar) = nin
+        vfsgn(ivar) = fsgn
+        vfcsgn(ivar) = facesgn
+        nbo = max(nbo, n)
+        nbi = max(nbi, n, nin)
+      end do
+*   ..copy record by record, all the variables of a record together, in
+*     the order of the file (variable by variable over all the records
+*     takes minutes for a few thousand records); every value is written
+      iret = nf_set_fill (nco, NF_NOFILL, omode)
+      call check_cdf_status (iret)
+      allocate (bo(nbo), bi(nbi))
+      do irec = 1, nrec
+        do ivar = 1, nvars
+          kind = vkind(ivar)
+          if (kind.eq.-99) cycle
+          n = vn(ivar)
+          nin = vnin(ivar)
           select case (kind)
           case (98)
-            call cdfh_rec (nci, vin, irec, bo, n, .false.)
-            bo(1:n) = fsgn*bo(1:n)
+            call cdfh_rec (nci, vvin(ivar), irec, bo, n, .false.)
+            bo(1:n) = vfsgn(ivar)*bo(1:n)
           case (99)
             bo(1:n) = 0.0_R8
           case default
-            call cdfh_rec (nci, vin, irec, bi, nin, .false.)
+            call cdfh_rec (nci, vvin(ivar), irec, bi, nin, .false.)
             nprf = nprof(kind)
             nk = n/nprf
             ninp = nin/nk
             do k = 0, nk-1
               do j = 1, nprf
                 bo(k*nprf+j) = bi(k*ninp+iyp(j,kind)-iy0(kind)+1)
-                if (facesgn) bo(k*nprf+j) = sgn(j,kind)*bo(k*nprf+j)
+                if (vfcsgn(ivar))
+     .            bo(k*nprf+j) = sgn(j,kind)*bo(k*nprf+j)
               end do
             end do
           end select
           call cdfh_rec (nco, ivar, irec, bo, n, .true.)
         end do
-        deallocate (bo, bi)
       end do
+      deallocate (bo, bi, vkind, vvin, vn, vnin, vfsgn, vfcsgn)
       deallocate (plist, iyp, sgn)
       call cdfh_dropped (nci, nco, fin)
       iret = nf_close (nco)
@@ -573,7 +604,8 @@
       character*(NF_MAX_NAME) :: name
       integer :: nci, nco, iret, nvreg, nxreg, nyreg, nfreg, ns, nrec,
      .  nvars, ivar, vin, vx, vy, xtype, ndims, natts, irec, n, nx, ny,
-     .  nk, k, mode, ll, dimids(NF_MAX_VAR_DIMS), nnreg(0:1)
+     .  nk, k, mode, ll, omode, dimids(NF_MAX_VAR_DIMS), nnreg(0:1)
+      integer, allocatable :: vmode(:), vvin(:), vvx(:), vvy(:), vn(:)
       real (kind=R8), allocatable :: bo(:), bx(:), by(:)
       character*1, allocatable :: txt(:)
       logical :: ex
@@ -606,6 +638,14 @@
       allocate (bo(n), bx(nxreg*ns), by(nyreg*ns))
       iret = nf_inq_nvars (nco, nvars)
       call check_cdf_status (iret)
+*   ..how each variable is filled (vmode -1: text, copied here)
+      allocate (vmode(nvars), vvin(nvars), vvx(nvars), vvy(nvars),
+     .  vn(nvars))
+      vmode = -1
+      vvin = 0
+      vvx = 0
+      vvy = 0
+      vn = 0
       do ivar = 1, nvars
         iret = nf_inq_var (nco, ivar, name, xtype, ndims, dimids, natts)
         call check_cdf_status (iret)
@@ -625,6 +665,8 @@
         end if
         ll = len_trim(name)
         mode = 0
+        vx = 0
+        vy = 0
         iret = nf_inq_varid (nci, trim(name), vin)
         if (iret.eq.NF_NOERR) then
           mode = 1
@@ -639,13 +681,27 @@
         if (mode.eq.0) write (*,*) trim(fin)//': '//trim(name)//
      .    ' not in the run: written as zero'
         call cdfh_recsize (nco, ivar, n)
-        do irec = 1, nrec
+        vmode(ivar) = mode
+        vvin(ivar) = vin
+        vvx(ivar) = vx
+        vvy(ivar) = vy
+        vn(ivar) = n
+      end do
+*   ..copy record by record, all the variables of a record together, in
+*     the order of the file; every value is written
+      iret = nf_set_fill (nco, NF_NOFILL, omode)
+      call check_cdf_status (iret)
+      do irec = 1, nrec
+        do ivar = 1, nvars
+          mode = vmode(ivar)
+          if (mode.eq.-1) cycle
+          n = vn(ivar)
           select case (mode)
           case (1)
-            call cdfh_rec (nci, vin, irec, bo, n, .false.)
+            call cdfh_rec (nci, vvin(ivar), irec, bo, n, .false.)
           case (2)
-            call cdfh_rec (nci, vx, irec, bx, nx, .false.)
-            call cdfh_rec (nci, vy, irec, by, ny, .false.)
+            call cdfh_rec (nci, vvx(ivar), irec, bx, nx, .false.)
+            call cdfh_rec (nci, vvy(ivar), irec, by, ny, .false.)
             nk = n/nfreg
             do k = 0, nk-1
               bo(k*nfreg+1) = 0.0_R8
@@ -660,7 +716,7 @@
           call cdfh_rec (nco, ivar, irec, bo, n, .true.)
         end do
       end do
-      deallocate (bo, bx, by)
+      deallocate (bo, bx, by, vmode, vvin, vvx, vvy, vn)
       call cdfh_dropped (nci, nco, fin)
       iret = nf_close (nco)
       call check_cdf_status (iret)
