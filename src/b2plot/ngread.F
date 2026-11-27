@@ -56,6 +56,10 @@ c
       integer nstsi_in, nstrai_in, nplsi_in, jvft44_in
       integer, allocatable :: idum(:)
       integer i, j, k, ke, kw, ncl
+      integer nfl, nsp_s, nel_s, off_s, nsize
+      logical bad
+      character*120 tline
+      real (kind=R8), allocatable :: wtmp(:)
       integer geometryType
       real (kind=R8) :: recyctmp
       character charns*3
@@ -391,7 +395,7 @@ cank-960727
               wldra(ix,is,0)=wldra(ix,is,0)+
      +                             wldra(ix,is,istra)*recyctmp
               ewlda(ix,is,0)=ewlda(ix,is,0)+
-     +                             ewlda(ix,is,istra)*recyctmp
+     +         ewlda(ix,is,istra)*wldna(ix,is,istra)*recyctmp
             end do
             do is=1,nmoli
               if (lmolscl(is).gt.0 .and. lmolscl(is).le.natmi) then
@@ -402,14 +406,14 @@ cank-960727
                 wldrm(ix,is,0)=wldrm(ix,is,0)+
      +           wldrm(ix,is,istra)*recyctmp
                 ewldm(ix,is,0)=ewldm(ix,is,0)+
-     +           ewldm(ix,is,istra)*recyctmp
+     +           ewldm(ix,is,istra)*wldnm(ix,is,istra)*recyctmp
               else if (use_recyceir.gt.0) then !here we are rescaling by stratum, not by species
                 wldnm(ix,is,0)=wldnm(ix,is,0)+
      +           wldnm(ix,is,istra)*recyctmp
                 wldrm(ix,is,0)=wldrm(ix,is,0)+
      +           wldrm(ix,is,istra)*recyctmp
                 ewldm(ix,is,0)=ewldm(ix,is,0)+
-     +           ewldm(ix,is,istra)*recyctmp
+     +           ewldm(ix,is,istra)*wldnm(ix,is,istra)*recyctmp
               else
                 if (ix.eq.1 .and. istra.eq.1) then
                   write(*,*) 'Faulty or missing LMOLSCL assignment:'
@@ -421,9 +425,26 @@ cank-960727
                 endif
                 wldnm(ix,is,0)=wldnm(ix,is,0)+wldnm(ix,is,istra)
                 wldrm(ix,is,0)=wldrm(ix,is,0)+wldrm(ix,is,istra)
-                ewldm(ix,is,0)=ewldm(ix,is,0)+ewldm(ix,is,istra)
+                ewldm(ix,is,0)=ewldm(ix,is,0)+
+     +           ewldm(ix,is,istra)*wldnm(ix,is,istra)
               endif
             end do
+          end do
+c the mean energies over the strata weighted by the fluxes, as EIRENE
+c gives them
+          do is=1,natmi
+            if(wldna(ix,is,0).gt.0.0_R8) then
+              ewlda(ix,is,0)=ewlda(ix,is,0)/wldna(ix,is,0)
+            else
+              ewlda(ix,is,0)=0.0_R8
+            end if
+          end do
+          do is=1,nmoli
+            if(wldnm(ix,is,0).gt.0.0_R8) then
+              ewldm(ix,is,0)=ewldm(ix,is,0)/wldnm(ix,is,0)
+            else
+              ewldm(ix,is,0)=0.0_R8
+            end if
           end do
         end do
         if(nspecies .ne. natmi) then
@@ -917,6 +938,73 @@ cank
           do is = 1, nplsi_in
             call gfsub2(44,mpg%nCv,nCvp,erecrad(:,is,0))
           end do
+        end if
+c the fields of each stratum (wlstra; the resolved ones only with
+c resolved surfaces) and the totals of those without one above, in the
+c layout of wlstra_field; the size in each title checked
+        if(jvft44_in .ge. 20261126) then
+          if (NCL.gt.0) then
+            IF(.NOT.ALLOCATED(wldra_res))
+     >       ALLOCATE(wldra_res(natmi,NCL), wldrm_res(nmoli,NCL),
+     .                wldpa_res(natmi,NCL), wldpm_res(nmoli,NCL))
+            wldra_res = 0.0_R8
+            wldrm_res = 0.0_R8
+            wldpa_res = 0.0_R8
+            wldpm_res = 0.0_R8
+          end if
+          call wlstra_ready(nstrai_in)
+          call wlstra_res(0,.true.)
+          bad = .false.
+          do istra = 0, nstrai_in
+            do nfl = 1, nwlstra
+              if (bad) exit
+              if (istra.eq.0 .and. (nfl.lt.nwlstra_new .or.
+     .            nfl.gt.nwlstra_res+3)) cycle
+              call wlstra_field(nfl,nsp_s,nel_s,off_s)
+              if (nel_s.eq.0) cycle
+              read (44,'(a)',end=998) tline
+              nsize = -1
+              i = index(tline,' with size ')
+              if (index(tline,'*eirene data field ').eq.1 .and. i.gt.0)
+     .          read (tline(i+11:),*,err=997) nsize
+  997         continue
+              if (nfl.le.nwlstra_res) then
+                bad = nsize.ne.nsp_s*nel_s
+                if (.not.bad) read (44,'(6e15.7)')
+     .            (wlstra(off_s+i,istra),i=1,nsp_s*nel_s)
+              else
+                bad = nsize.ne.nsp_s*(nlimi+nstsi_in)
+                if (.not.bad) then
+                  allocate(wtmp(nsp_s*(nlimi+nstsi_in)))
+                  read (44,'(6e15.7)') wtmp
+                  do i = 1, nlimi
+                    wlstra(off_s+(i-1)*nsp_s+1:off_s+i*nsp_s,istra) =
+     .                wtmp((i-1)*nsp_s+1:i*nsp_s)
+                  end do
+                  do i = 1, min(nstsi,nstsi_in)
+                    wlstra(off_s+(nlim+i-1)*nsp_s+1:
+     .                     off_s+(nlim+i)*nsp_s,istra) =
+     .                wtmp((nlimi+i-1)*nsp_s+1:(nlimi+i)*nsp_s)
+                  end do
+                  deallocate(wtmp)
+                end if
+              end if
+              if (bad) write(*,*) 'ngread: unexpected size ',nsize,
+     .          ' of ',trim(tline),': fields by stratum left out'
+            end do
+          end do
+          goto 996
+  998     bad = .true.
+          write(*,*) 'ngread: fort.44 ends before the fields by ',
+     .      'stratum: left out'
+  996     continue
+          if (bad) then
+            deallocate(wlstra)
+            if (allocated(wldra_res))
+     .        deallocate(wldra_res, wldrm_res, wldpa_res, wldpm_res)
+          else
+            call wlstra_res(0,.false.)
+          end if
         end if
   999   continue
       else  ! NLWRMSH

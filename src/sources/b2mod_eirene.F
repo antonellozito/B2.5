@@ -125,6 +125,10 @@
      &  vydena_s(:,:), vydenm_s(:,:), vydeni_s(:,:),
      &  vzdena_s(:,:), vzdenm_s(:,:), vzdeni_s(:,:)
 ! _s is an abbreviation from 'sum'
+#ifdef B25_EIRENE
+! of the wall fields by stratum, wlstra (allocated with its first values)
+      real (kind=R8), save, allocatable :: wlstra_s(:,:)
+#endif
       real (kind=R8), save, allocatable ::                        !djm Jan2017
      &  sna_h_paat(:,:,:,:), sna_h_pmat(:,:,:,:),
      &  sna_h_piat(:,:,:,:), sna_h_paml(:,:,:,:),
@@ -5068,6 +5072,7 @@ c!###}
       deallocate(wlpump_s)
       deallocate(wlpump_res_s)
 #ifdef B25_EIRENE
+      if (allocated(wlstra_s)) deallocate(wlstra_s)
       deallocate(pdena_s)
       deallocate(pdenm_s)
       deallocate(pdeni_s)
@@ -5182,6 +5187,13 @@ c!###}
       wlpump_s = wlpump_s + wlpump
       wlpump_res_s = wlpump_res_s + wlpump_res
 #ifdef B25_EIRENE
+      if (allocated(wlstra)) then
+        if (.not.allocated(wlstra_s)) then
+          allocate(wlstra_s(size(wlstra,1),0:ubound(wlstra,2)))
+          wlstra_s = 0.0_R8
+        end if
+        wlstra_s = wlstra_s + wlstra
+      end if
       pdena_s = pdena_s + pdena
       pdenm_s = pdenm_s + pdenm
       pdeni_s = pdeni_s + pdeni
@@ -5300,6 +5312,7 @@ c!###}
       wlpump = wlpump_s/dble(n_avg_repeat)
       wlpump_res = wlpump_res_s/dble(n_avg_repeat)
 #ifdef B25_EIRENE
+      if (allocated(wlstra_s)) wlstra = wlstra_s/dble(n_avg_repeat)
       pdena = pdena_s/dble(n_avg_repeat)
       pdenm = pdenm_s/dble(n_avg_repeat)
       pdeni = pdeni_s/dble(n_avg_repeat)
@@ -5493,6 +5506,14 @@ c!###}
       wlpump_res_s = wlpump_res_s*rn + wlpump_res*wn
       wlpump_res = wlpump_res_s
 #ifdef B25_EIRENE
+      if (allocated(wlstra)) then
+        if (.not.allocated(wlstra_s)) then
+          allocate(wlstra_s(size(wlstra,1),0:ubound(wlstra,2)))
+          wlstra_s = 0.0_R8
+        end if
+        wlstra_s = wlstra_s*rn + wlstra*wn
+        wlstra = wlstra_s
+      end if
       pdena_s = pdena_s*rn + pdena*wn
       pdena = pdena_s
       pdenm_s = pdenm_s*rn + pdenm*wn
@@ -5614,6 +5635,7 @@ c!###}
       wlpump_s = 0.0_R8
       wlpump_res_s = 0.0_R8
 #ifdef B25_EIRENE
+      if (allocated(wlstra_s)) wlstra_s = 0.0_R8
       pdena_s = 0.0_R8
       pdenm_s = 0.0_R8
       pdeni_s = 0.0_R8

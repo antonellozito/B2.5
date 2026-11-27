@@ -5,7 +5,7 @@
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
       parameter(nlabels=525,nfns=240,nsparameters=34,nelabels=51,
-     *     nconstants=10,nefns=50,nwfns=62,nwlabels=162,ntrgfns=89)
+     *     nconstants=10,nefns=50,nwfns=62,nwlabels=164,ntrgfns=89)
 
       integer, save ::
      * dimensions(nlabels), wdimensions(nwlabels), edimensions(nelabels)
@@ -1173,6 +1173,11 @@
       data wdescriptions(162:162) /
      1 'The next EIRENE wall quantity of one stratum only'/
       data wdimensions(162:162) / 1 /
+      data wlabels(163:164) / 'ewldk', 'ewldp' /
+      data wdescriptions(163:164) /
+     1 'Net kinetic energy load of the neutrals (W.m^{-2})',
+     2 'Potential energy of molecules formed at the wall (W.m^{-2})'/
+      data wdimensions(163:164) / 1, 1 /
       data efns /
      1 'edims', 'sumt' , 'esurf', 'eabs' , 'esumz',
      2 'em+'  , 'em-'  , 'em*'  , 'em/'  , 'rem+' ,

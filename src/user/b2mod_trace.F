@@ -94,7 +94,7 @@ csw 2012 nlmpgs --> nnstsi+nnlimi (known after 1st EIRENE call)
               wldra(ix,is,0)=wldra(ix,is,0)+
      +         wldra(ix,is,istra)*recyctmp
               ewlda(ix,is,0)=ewlda(ix,is,0)+
-     +         ewlda(ix,is,istra)*recyctmp
+     +         ewlda(ix,is,istra)*wldna(ix,is,istra)*recyctmp
             end do
             do is=1,nnmoli
               if (lmolscl(is).gt.0 .and. lmolscl(is).le.nnatmi) then
@@ -105,14 +105,14 @@ csw 2012 nlmpgs --> nnstsi+nnlimi (known after 1st EIRENE call)
                 wldrm(ix,is,0)=wldrm(ix,is,0)+
      +           wldrm(ix,is,istra)*recyctmp
                 ewldm(ix,is,0)=ewldm(ix,is,0)+
-     +           ewldm(ix,is,istra)*recyctmp
+     +           ewldm(ix,is,istra)*wldnm(ix,is,istra)*recyctmp
               else if (use_recyceir.gt.0) then !here we are rescaling by stratum, not by species
                 wldnm(ix,is,0)=wldnm(ix,is,0)+
      +           wldnm(ix,is,istra)*recyctmp
                 wldrm(ix,is,0)=wldrm(ix,is,0)+
      +           wldrm(ix,is,istra)*recyctmp
                 ewldm(ix,is,0)=ewldm(ix,is,0)+
-     +           ewldm(ix,is,istra)*recyctmp
+     +           ewldm(ix,is,istra)*wldnm(ix,is,istra)*recyctmp
               else
                 if (ix.eq.1 .and. istra.eq.1) then
                   write(*,*) 'Faulty or missing LMOLSCL assignment:'
@@ -124,9 +124,26 @@ csw 2012 nlmpgs --> nnstsi+nnlimi (known after 1st EIRENE call)
                 endif
                 wldnm(ix,is,0)=wldnm(ix,is,0)+wldnm(ix,is,istra)
                 wldrm(ix,is,0)=wldrm(ix,is,0)+wldrm(ix,is,istra)
-                ewldm(ix,is,0)=ewldm(ix,is,0)+ewldm(ix,is,istra)
+                ewldm(ix,is,0)=ewldm(ix,is,0)+
+     +           ewldm(ix,is,istra)*wldnm(ix,is,istra)
               endif
             end do
+          end do
+c the mean energies over the strata weighted by the fluxes, as EIRENE
+c gives them
+          do is=1,nnatmi
+            if(wldna(ix,is,0).gt.0.0_R8) then
+              ewlda(ix,is,0)=ewlda(ix,is,0)/wldna(ix,is,0)
+            else
+              ewlda(ix,is,0)=0.0_R8
+            end if
+          end do
+          do is=1,nnmoli
+            if(wldnm(ix,is,0).gt.0.0_R8) then
+              ewldm(ix,is,0)=ewldm(ix,is,0)/wldnm(ix,is,0)
+            else
+              ewldm(ix,is,0)=0.0_R8
+            end if
           end do
         endif
       end do
