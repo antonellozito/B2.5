@@ -225,7 +225,9 @@ c the stratum of the next EIRENE wall quantity (wstrat, zero: all)
 
       nsw=max(nsd+3,(nsd+1)*(nsd+1)-1,ns_ext)
 
-      allocate(work(1:nCv,0:nsw,1:wklngd))
+c     one slot more than the stack: operations use the one above the
+c     top as scratch
+      allocate(work(1:nCv,0:nsw,1:wklngd+1))
       allocate(wrkc(1:nCv))
       allocate(wrkcs(1:nCv,0:max(2,max(nsd,ns_ext)-1)))
       allocate(wrkf(1:nFc))
@@ -291,7 +293,8 @@ c the stratum of the next EIRENE wall quantity (wstrat, zero: all)
       implicit none
       integer natmd,nmold,niond,ntrii,wklngd
 
-      allocate(eirene_stack(ntrii,0:max(1,natmd,nmold,niond)-1,wklngd))
+      allocate(eirene_stack(ntrii,0:max(1,natmd,nmold,niond)-1,
+     1  wklngd+1))
       allocate(triangle_area(ntrii))
       allocate(triangle_vol(ntrii))
       allocate(vxa(max(1,natmd),ntrii))
@@ -319,7 +322,8 @@ c the stratum of the next EIRENE wall quantity (wstrat, zero: all)
       allocate(wwrk_hlp(1:nwall))
       allocate(twrk_hlp(1:nwall*ndepth))
       allocate(indt_hlp(1:nwall*ndepth))
-      allocate(wall_stack(1:nwall,0:nsd-1+natmd+nmold+niond,1:wklngd))
+      allocate(wall_stack(1:nwall,0:nsd-1+natmd+nmold+niond,
+     1  1:wklngd+1))
       allocate(wall_flux(1:nwall,0:nsd-1+natmd+nmold+niond))
       allocate(wall_area(1:nwall))
       allocate(incident_energy(1:nwall,0:nsd-1+natmd+nmold+niond))

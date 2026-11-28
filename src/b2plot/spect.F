@@ -212,7 +212,8 @@ cc    -------------------------------------------------------------------------
          write(*,*) count,wla(count),CWAVEL(count)
          if (abs(wl-wla(count)) .le. dwl) then
             if (streql(CTYPE(count),'EXCIT')) then
-               if (streql(MIE,CINDM(count))) then
+               if (streql(MIE,CINDM(count)) .and.
+     &             countEX.lt.id) then
                   IBSELAE(countEX)=count
                   countEX=countEX+1
                   write(*,*)
@@ -222,7 +223,8 @@ cc    -------------------------------------------------------------------------
                endif
             endif
             if (streql(CTYPE(count),'RECOM')) then
-               if (streql(MIR,CINDM(count))) then
+               if (streql(MIR,CINDM(count)) .and.
+     &             countRE.lt.id) then
                   IBSELAR(countRE)=count
                   countRE=countRE+1
                   write(*,*)
@@ -232,7 +234,8 @@ cc    -------------------------------------------------------------------------
                endif
             endif
             if (streql(CTYPE(count),'CHEXC')) then
-               if (streql(MIC,CINDM(count))) then
+               if (streql(MIC,CINDM(count)) .and.
+     &             countCE.lt.id) then
                   IBSELAC(countCE)=count
                   countCE=countCE+1
                   write(*,*)
@@ -391,14 +394,8 @@ cc    -------------------------------------------------------------------------
       count=1
       do while (IBSELAR(count) .ne. 0)
          index=IBSELAR(count)
-c         do cc=1,dim
-c            if (TE(cc) .lt. LOT(index)) then
-c               locTE(cc)=LOT(index)
-c           else
-c               locTE(cc)=TE(cc)
-c           endif
-c         enddo
-         call SPEC(index,IZIN,IZ0IN,dim,locTE,NE,
+c     recombination and charge exchange at the cell temperature
+         call SPEC(index,IZIN,IZ0IN,dim,TE,NE,
      &             WL,PECA(1:dim),LTRNG,LDRNG,TITLX,IRCODE)
          do cc=1,dim
             PECR(cc)=PECR(cc)+PECA(cc)
@@ -409,14 +406,7 @@ c         enddo
       count=1
       do while (IBSELAC(count) .ne. 0)
          index=IBSELAC(count)
-c         do cc=1,dim
-c            if (TE(cc) .lt. LOT(index)) then
-c               locTE(cc)=LOT(cc)
-c            else
-c               locTE(cc)=TE(cc)
-c            endif
-c         enddo
-         call SPEC(index,IZIN,IZ0IN,dim,locTE,NE,
+         call SPEC(index,IZIN,IZ0IN,dim,TE,NE,
      &             WL,PECA(1:dim),LTRNG,LDRNG,TITLX,IRCODE)
          do cc=1,dim
             PECC(cc)=PECC(cc)+PECA(cc)
@@ -3055,13 +3045,17 @@ c coefficient (PEC, m^3/s) of these lines instead
       real (kind=R8) ::
      *   wl,dwl
       integer iCv,is
-      integer ic,nc,nz,iwl,idwl,mode
+      integer ic,nc,nz,iwl,idwl,mode,ip
+#     include "emissivity.dimensions"
       integer, allocatable, save :: iae(:),iar(:),iac(:)
       real (kind=R8) ::
-     *   lNe(1),lNi(1),lNi1(1),lNH(1),lTe(1),e(1),p(1)
+     *   lNe(maxdim),lNi(maxdim),lNi1(maxdim),lNH(maxdim),lTe(maxdim),
+     *   e(maxdim),p(maxdim)
       real (kind=R8) ::
      *   ea(1:mpg%nCv)
-      integer err
+      integer err,i0,k,n
+      integer, parameter :: nblock=20   ! points of one SPEC call at most
+c                                         (E3SPLN: NOUT)
       integer len_of_digits
       character extension*3,filename*256,MIE*2,MIR*2,MIC*2,stmp*256
       character textwvl*24, hlp_frm*24
@@ -3073,7 +3067,13 @@ c     initialising
       nc=nint(zn(is))
       wl=iwl*1.0_R8
       dwl=idwl*1.0_R8
+c     process of modes 1-3 (photons) and 4-6 (power, hc/lambda of each
+c     line): 1 excitation, 2 recombination, 3 charge exchange
+      ip=0
+      if (mode.gt.0) ip=mod(mode-1,3)+1
       nz=size(elements)
+c     the blocks selected (at most all of a file) and a zero after them
+      nz=NSTORE+1
       allocate(iae(nz),iar(nz),iac(nz))
 c      if(.not.open_file(99,'source.location',
 c    &     'data.local/adas|modules/adas')) return
@@ -3095,24 +3095,50 @@ c  a standard database file may be present
      &                  extension,filename,mie,mir,mic,err)
           call GetIBSEL(wl,dwl,mie,mir,mic,nz,iae,iar,iac,err)
         end if
-        do iCv=1,mpg%nCv
-          lNe(1)=state%dv%ne(iCv)/1.0e6_R8
-          lNi(1)=state%pl%na(iCv,is)/1.0e6_R8
-          lNi1(1)=state%pl%na(iCv,is+1)/1.0e6_R8
-          lNH(1)=NH(iCv)/1.0e6_R8
-          lTe(1)=state%pl%te(iCv)/eV
-          if (mode.gt.0) then
-            lNi(1)=merge(1.0_R8,0.0_R8,mode.eq.1)
-            lNi1(1)=merge(1.0_R8,0.0_R8,mode.eq.2)
-            lNH(1)=0.0_R8
+c     charge exchange coefficient alone: without the recombination
+c     blocks, which share the density of the recombining stage; when
+c     the file list names no charge exchange metastable (nspe then
+c     takes none), the blocks of the unresolved data: total (+T), else
+c     the ground state of the recombining ion (+1)
+        if (ip.eq.3 .and. mic.eq.'  ') then
+          mic='+T'
+          call GetIBSEL(wl,dwl,mie,mir,mic,nz,iae,iar,iac,err)
+          if (iac(1).eq.0) then
+            mic='+1'
+            call GetIBSEL(wl,dwl,mie,mir,mic,nz,iae,iar,iac,err)
           end if
+        end if
+        if (ip.eq.3) iar(1)=0
+c     the cells in blocks (SPEC interpolates a block at once)
+        do i0=1,mpg%nCv,nblock
+          n=min(nblock,mpg%nCv-i0+1)
+          do k=1,n
+            iCv=i0+k-1
+            lNe(k)=state%dv%ne(iCv)/1.0e6_R8
+            lNi(k)=state%pl%na(iCv,is)/1.0e6_R8
+            lNi1(k)=0.0_R8
+            if (is+1.lt.state%ns) lNi1(k)=state%pl%na(iCv,is+1)/1.0e6_R8
+            lNH(k)=NH(iCv)/1.0e6_R8
+            lTe(k)=state%pl%te(iCv)/eV
+            if (ip.gt.0) then
+              lNi(k)=merge(1.0_R8,0.0_R8,ip.eq.1)
+              lNi1(k)=merge(1.0_R8,0.0_R8,ip.ge.2)
+              lNH(k)=merge(1.0_R8,0.0_R8,ip.eq.3)
+            end if
+          enddo
           call GetEmissivity(nz,iae,iar,iac,
-     &     lNe(1),lNi(1),lNi1(1),lNH(1),lTe(1),1,e(1),p(1))
-          if (mode.gt.0) then
-            ea(iCv)=e(1)/lNe(1)*1.0e-6_R8
-          else
-            ea(iCv)=e(1)/(4.0_R8*PI)*1.0e6_R8
-          end if
+     &     lNe,lNi,lNi1,lNH,lTe,n,e,p)
+          do k=1,n
+            iCv=i0+k-1
+            if (mode.gt.3) e(k)=p(k)
+            if (ip.eq.3) then
+              ea(iCv)=e(k)*1.0e-6_R8
+            else if (ip.gt.0) then
+              ea(iCv)=e(k)/lNe(k)*1.0e-6_R8
+            else
+              ea(iCv)=e(k)/(4.0_R8*PI)*1.0e6_R8
+            end if
+          enddo
         enddo
       endif
       call copy(ea,1.0_R8,1,textbl)
@@ -3123,6 +3149,17 @@ c  a standard database file may be present
         stmp='Excitation PEC '//trim(textwvl)//' in m^{3}/s'
       else if (mode.eq.2) then
         stmp='Recombination PEC '//trim(textwvl)//' in m^{3}/s'
+      else if (mode.eq.3) then
+        stmp='Charge exchange PEC '//trim(textwvl)//' in m^{3}/s'
+      else if (mode.eq.4) then
+        stmp='Excitation power coefficient '//trim(textwvl)//
+     &       ' in W m^{3}'
+      else if (mode.eq.5) then
+        stmp='Recombination power coefficient '//trim(textwvl)//
+     &       ' in W m^{3}'
+      else if (mode.eq.6) then
+        stmp='Charge exchange power coefficient '//trim(textwvl)//
+     &       ' in W m^{3}'
       else
         stmp='Emissivity '//trim(textwvl)//
      &       ' in photons/(m^{3} sr s)'
