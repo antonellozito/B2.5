@@ -9,3 +9,4 @@ Added b2mod_chord_interp_tri for interpolation of Eirene triangle quantities ont
 Added b2mod_chords and cdfchord producing the chord output file b2chords.nc
 Added b2mod_umfpack as new optional matrix solver
 Added b2mod_heatdiff_common, the data of the plate heat diffusion model shared by heatdiff1D and its routines
+Added wall_tiles.F (sources), the toroidal tiles of the wall elements (TILE_SECTORS, TILE_TILT, TILE_GAP, TILE_MISALIGN of the wall namelist): the loads of an element split over its tile (field lines, ion orbits) and the heat conduction in the tile (toroidal position and depth); get_wall_data split (wall_depth_grid, wall_element_geometry) and wall_thermal_setup (init_wall.F), the thermal data of the wall elements without the sputtering models

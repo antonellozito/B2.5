@@ -17,6 +17,7 @@ cxpb  Namelist data
 #ifdef ALLOCATE_AND_NAMELIST
       integer, allocatable, save :: imapx(:), imapy(:)
       logical, allocatable :: inertial_cooling(:)
+      integer, allocatable, save :: tile_sectors(:)
       real (kind=R8), allocatable, save ::
      *  target_temp(:,:),
      *  target_depth(:,:),
@@ -27,6 +28,10 @@ cxpb  Namelist data
      *  backplate_temp(:),
      *  plate_thickness(:),
      *  plate_time_factor(:),
+     *  backplate_conductance(:),
+     *  tile_tilt(:),
+     *  tile_gap(:),
+     *  tile_misalign(:),
      *  coating_thickness(:),
      *  deposition(:,:),
      *  monolayer_deposition(:,:),
@@ -57,6 +62,7 @@ cxpb Data file material properties
      *  imapx(nwall), imapy(nwall)
       integer, save :: plate_model, plate_option
       logical inertial_cooling(nwall)
+      integer, save :: tile_sectors(nwall)
       real (kind=R8), save ::
      *  plate_temp, plate_thick,
      *  target_temp(nwall,ndepth),
@@ -68,6 +74,10 @@ cxpb Data file material properties
      *  backplate_temp(nwall),
      *  plate_thickness(nwall),
      *  plate_time_factor(nwall),
+     *  backplate_conductance(nwall),
+     *  tile_tilt(nwall),
+     *  tile_gap(nwall),
+     *  tile_misalign(nwall),
      *  coating_thickness(nwall),
      *  deposition(nwall,ntrack),
      *  monolayer_deposition(nwall,ntrack),
@@ -188,7 +198,8 @@ cxpb Data file material properties
      *  layer_relconstituents, layer_nrelconstituents,
      *  layer_thermal_contact,
      *  coating_thickness, coating_material_name,
-     *  layer_alloys, inertial_cooling
+     *  layer_alloys, inertial_cooling, backplate_conductance,
+     *  tile_tilt, tile_sectors, tile_gap, tile_misalign
 
 cxpb Mapping arrays:
 cxpb A wall element numbered iwall can be found in the B2 grid at the position
@@ -263,6 +274,7 @@ cxpb  Geometric information
 #ifdef ALLOCATE_AND_NAMELIST
 cxpb  Namelist data
       allocate(inertial_cooling(nwall))
+      allocate(tile_sectors(nwall))
       allocate(
      *  target_temp(nwall,ndepth),
      *  target_depth(nwall,ndepth),
@@ -273,6 +285,10 @@ cxpb  Namelist data
      *  backplate_temp(nwall),
      *  plate_thickness(nwall),
      *  plate_time_factor(nwall),
+     *  backplate_conductance(nwall),
+     *  tile_tilt(nwall),
+     *  tile_gap(nwall),
+     *  tile_misalign(nwall),
      *  coating_thickness(nwall),
      *  deposition(nwall,ntrack),
      *  monolayer_deposition(nwall,ntrack),
@@ -361,6 +377,15 @@ cxpb Data file material properties
       plate_thickness = 0.0_R8
       coating_thickness = 0.0_R8
       plate_time_factor = 0.0_R8
+c     Contact conductance of the back: negative for the default of
+c     cond_coef (active or inertial cooling), zero for an insulated back
+      backplate_conductance = -1.0_R8
+c     Toroidal tiles of the element (wall_tiles.F): none; TILE_TILT in
+c     degrees, TILE_GAP and TILE_MISALIGN in metres
+      tile_tilt = 0.0_R8
+      tile_sectors = 0
+      tile_gap = 0.0_R8
+      tile_misalign = 0.0_R8
       surface_material_name = ' '
       coating_material_name = ' '
       bulk_material_name = ' '
@@ -408,6 +433,7 @@ cxpb Data file material properties
       if(.not.allocated(surface_long_name)) return
 #ifdef ALLOCATE_AND_NAMELIST
       deallocate(inertial_cooling)
+      deallocate(tile_sectors)
       deallocate(
      *  target_temp,
      *  target_depth,
@@ -418,6 +444,10 @@ cxpb Data file material properties
      *  backplate_temp,
      *  plate_thickness,
      *  plate_time_factor,
+     *  backplate_conductance,
+     *  tile_tilt,
+     *  tile_gap,
+     *  tile_misalign,
      *  coating_thickness,
      *  deposition,
      *  monolayer_deposition,
@@ -729,6 +759,22 @@ cxpb For backward compatibility, NRELCONSTITUENTS --> RELCONSTITUENTS
      .      plate_time_factor(ibnd).ne.0.0_R8)
      .   write(nwrite,'(a18,i4,a2,1es15.8,a1)')
      .     'PLATE_TIME_FACTOR(',ibnd,')=',plate_time_factor(ibnd),','
+        if (backplate_conductance(ibnd).ge.0.0_R8)
+     .   write(nwrite,'(a22,i4,a2,1es15.8,a1)')
+     .     'BACKPLATE_CONDUCTANCE(',ibnd,')=',
+     .     backplate_conductance(ibnd),','
+        if (tile_sectors(ibnd).ne.0)
+     .   write(nwrite,'(a13,i4,a2,i6,a1)')
+     .     'TILE_SECTORS(',ibnd,')=',tile_sectors(ibnd),','
+        if (tile_tilt(ibnd).ne.0.0_R8)
+     .   write(nwrite,'(a10,i4,a2,1es15.8,a1)')
+     .     'TILE_TILT(',ibnd,')=',tile_tilt(ibnd),','
+        if (tile_gap(ibnd).ne.0.0_R8)
+     .   write(nwrite,'(a9,i4,a2,1es15.8,a1)')
+     .     'TILE_GAP(',ibnd,')=',tile_gap(ibnd),','
+        if (tile_misalign(ibnd).ne.0.0_R8)
+     .   write(nwrite,'(a14,i4,a2,1es15.8,a1)')
+     .     'TILE_MISALIGN(',ibnd,')=',tile_misalign(ibnd),','
       end do
       if (plate_model.ge.1) then
 cxpb  Use explicit writing of non-default elements only

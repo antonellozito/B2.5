@@ -7339,6 +7339,14 @@
 				</description>
 			</switch>
 			<switch>
+				<name>BACKPLATE_CONDUCTANCE</name>
+				<default>-1.0</default>
+				<type>real array of size (NWALL)</type>
+				<description>
+					Contains the contact heat conductance (in W/m^2/K) between the back end of wall element (iwall) and its cooling at BACKPLATE_TEMP, in the plate temperatures of heatdiff1D and of the tiles (TILE_SECTORS). Negative: 8e4 for active cooling, 100 for inertial cooling (INERTIAL_COOLING). Zero: an insulated back, the element losing heat only by radiation and evaporation from its surface.
+				</description>
+			</switch>
+			<switch>
 				<name>BACKPLATE_TEMP</name>
 				<default>b2stbr_plate_temp</default>
 				<type>real array of size (NWALL)</type>
@@ -7368,6 +7376,38 @@
 				<type>real array of size (NWALL)</type>
 				<description>
 					Multiplier to the time for the equations for temperature and composition evolution of wall element (iwall).
+				</description>
+			</switch>
+			<switch>
+				<name>TILE_SECTORS</name>
+				<default>0</default>
+				<type>integer array of size (NWALL)</type>
+				<description>
+					Contains the number of toroidal tiles around the torus on wall element (iwall). Zero: no tiles (the element uniform toroidally). With tiles, each tile spans the toroidal length of the element over TILE_SECTORS less the gap TILE_GAP, is PLATE_THICKNESS deep and is tilted toroidally by TILE_TILT; the loads of the element are split over the top, the sides and the floor of the gap of one tile (along the magnetic field: electrons on the field lines, ions on their orbits; the other loads evenly on the top), and the temperatures follow from the heat conduction in the tile (toroidal position and depth), with the surface and back conditions of heatdiff1D.
+				</description>
+			</switch>
+			<switch>
+				<name>TILE_TILT</name>
+				<default>0.0</default>
+				<type>real array of size (NWALL)</type>
+				<description>
+					Contains the toroidal tilt (in degrees) of the tiles of wall element (iwall) (TILE_SECTORS). Positive: the top of each tile rising along the toroidal motion of the particles reaching the element, facing them, so that each tile shadows the leading edge of the next one.
+				</description>
+			</switch>
+			<switch>
+				<name>TILE_GAP</name>
+				<default>0.0</default>
+				<type>real array of size (NWALL)</type>
+				<description>
+					Contains the toroidal gap (in metres) between neighbouring tiles of wall element (iwall) (TILE_SECTORS).
+				</description>
+			</switch>
+			<switch>
+				<name>TILE_MISALIGN</name>
+				<default>0.0</default>
+				<type>real array of size (NWALL)</type>
+				<description>
+					Contains the height (in metres) by which each tile of wall element (iwall) is raised above its upstream neighbour (TILE_SECTORS): the step at the leading edge is the rise of the tilted top over a tile less TILE_MISALIGN, and the leading edge is exposed when it falls below the gap times the tangent of the field-line angle. A raised tile receives more power than the element per tile (TILE_MISALIGN over that tangent, times the field-aligned heat flux); a tile lowered by more than the toroidal period times that tangent lies entirely in the shadow of its neighbour.
 				</description>
 			</switch>
 			<switch>
