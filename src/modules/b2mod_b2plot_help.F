@@ -4,8 +4,8 @@
 
       integer nlabels,nfns,nsparameters,nconstants
       integer nwlabels,nelabels,nwfns,ntrgfns
-      parameter(nlabels=525,nfns=240,nsparameters=34,nelabels=51,
-     *     nconstants=10,nefns=50,nwfns=62,nwlabels=164,ntrgfns=89)
+      parameter(nlabels=526,nfns=240,nsparameters=34,nelabels=51,
+     *     nconstants=10,nefns=50,nwfns=62,nwlabels=165,ntrgfns=89)
 
       integer, save ::
      * dimensions(nlabels), wdimensions(nwlabels), edimensions(nelabels)
@@ -152,6 +152,7 @@
      1  'deltabc'  , 'deltparc' /
       data labels(522:525) /
      1  'wpi'      , 'ldebye'   , 'betae'    , 'beta'     /
+      data labels(526:526) / 'ebrm' /
       data descriptions(1:10) /
      1    'Pitch',
      2    'b_{x} (T) (poloidal)',
@@ -736,6 +737,8 @@
      2    'Debye length (m)',
      3    'Electron plasma beta',
      4    'Plasma beta'/
+      data descriptions(526:526) /
+     1    'Bremsstrahlung per ion as Eirene computes it (W)'/
       data dimensions(1:50) /
      1    1,      1,      1,      1,      1,
      2    2,      2,      2,      2,      2,
@@ -867,6 +870,7 @@
      1    2,      2/
       data dimensions(522:525) /
      1    2,      1,      1,      1/
+      data dimensions(526:526) / 2 /
       data fns(1:50) /
      1 'sumx', 'sumy', 'f.x' , 'f.y' , 'intx',
      2 'inty', 'f.lx', 'f.ly', 'cont', 'surf',
@@ -1178,6 +1182,10 @@
      1 'Net kinetic energy load of the neutrals (W.m^{-2})',
      2 'Potential energy of molecules formed at the wall (W.m^{-2})'/
       data wdimensions(163:164) / 1, 1 /
+      data wlabels(165:165) / 'ewsurf' /
+      data wdescriptions(165:165) /
+     1 'Eirene surface of the element'/
+      data wdimensions(165:165) / 1 /
       data efns /
      1 'edims', 'sumt' , 'esurf', 'eabs' , 'esumz',
      2 'em+'  , 'em-'  , 'em*'  , 'em/'  , 'rem+' ,

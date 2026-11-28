@@ -81,6 +81,10 @@ cxpb The number 2 is dependent on the type of data being read
             id = 4
             first_stage = .false.
             last_stage = .true.
+          elseif(index(REAC,'prc').NE.0) then  ! charge exchange recombination radiation
+            id = 5
+            first_stage = .false.
+            last_stage = .true.
           elseif(index(REAC,'plt').NE.0) then  ! line radiation
             id = 8
             first_stage = .true.

@@ -152,6 +152,7 @@ c
       real (kind=R8), allocatable :: mach(:,:)
 #ifdef B25_EIRENE
       real (kind=R8), allocatable :: emach(:,:)
+      real (kind=R8), external :: eirene_brems
 #endif
       real (kind=R8), parameter :: eps = 1.0e-60_R8
 *   ..atomic mass unit (kg), for the EIRENE species masses
@@ -3011,6 +3012,26 @@ c gyro-frequencies, banana widths and gradient lengths of the module.
           description='Bremsstrahlung radiation rate (W)'
           nz=ns
           call copy(state%srw%rqbrm,1.0_R8,nz,textpl)
+        case ('ebrm')
+!         bremsstrahlung per ion of each charged species as Eirene
+!         computes it (W): EIRENE_BREMS at the te Eirene gets
+!         (eirene_te_min, eirene_te_max), ne in cm^-3 and the charge;
+!         Eirene takes it out of the ADAS recombination power (PRB) of
+!         its bulk ions, as B2.5 radiates the bremsstrahlung
+          description='Bremsstrahlung per ion as Eirene computes it (W)'
+          nz=ns
+          mach(:,0:nz-1)=0.0_R8
+#ifdef B25_EIRENE
+          do is=0,ns-1
+            if (zamin(is).le.0.0_R8) cycle
+            do iCv=1,mpg%nCv
+              mach(iCv,is)=eirene_brems(max(min(state%pl%te(iCv)/ev,
+     &         switch%eir_te_max),switch%eir_te_min),
+     &         state%dv%ne(iCv)*1.0e-6_R8,zamin(is))
+            enddo
+          enddo
+#endif
+          call copy(mach,1.0_R8,nz,textpl)
         case ('b2iz', 'b2rc')
 !         electron cooling (rqae) without line radiation and
 !         bremsstrahlung, split as in b2stel into ionisation and
@@ -10662,6 +10683,20 @@ c face area (as the target fluxes of b2time.nc over dsLT, dsRT)
           case default
             call eirene_wall_copy(wall_tmp,nz,textbl)
           end select
+        case('ewsurf')
+!         EIRENE surface of each EIRENE wall element: 1 to nlim the
+!         additional surfaces, nlim+i the non-default standard surface
+!         i (their type, ILIIN, in isrftype of fort.44), 0 none
+          description='Eirene surface of the element'
+          call eirene_wall_init
+          if (n_ewall.le.0) then
+            write(*,*) 'No EIRENE wall data (fort.44)'
+            return
+          end if
+          nz=1
+          wall_tmp(:,0)=0.0_R8
+          wall_tmp(1:n_ewall,0)=real(ew_srf(1:n_ewall),R8)
+          call eirene_wall_copy(wall_tmp,nz,textbl)
         case('walldep')
           description='Net deposited energy flux (W.m^{-2})'
           nz=1
@@ -13769,14 +13804,15 @@ c     <delta wavelength in A> nspe
      &     istack(iistack-1),
      &     istack(iistack),0)
           call pop_stack(stack_req)
-        case('npec')     ! photon emission coefficient of nspe lines
+        case('npec')     ! photon emission or power coefficient of nspe lines
 c     Parameters on istack: <species number> <wavelength in A>
-c     <delta wavelength in A> <1 excitation or 2 recombination> npec
+c     <delta wavelength in A> <1 excitation, 2 recombination or
+c     3 charge exchange; 4-6 the same as power> npec
           stack_req=(/4,0,0,0,0,0,0/)
           if(bad_args(stack_req)) return
           is1=istack(iistack-3)
           if(0.gt.is1.or.is1.ge.ns.or.istack(iistack).lt.1.or.
-     &       istack(iistack).gt.2) then
+     &       istack(iistack).gt.6) then
             write(*,*) 'Faulty parameters for npec!'
             return
           endif
