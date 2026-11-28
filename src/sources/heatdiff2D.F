@@ -116,9 +116,9 @@ c  Tp = Target surface temperature (K).
 
       real (kind=R8) ::
      *   Cp, Kappa, dKappabydT, Kappa_perp, dKappa_perpbydT,
-     *   qevap, qrad, mass_density, cond_coef
+     *   qevap, qrad, mass_density, heatdiff_contact
       external Cp, Kappa, dKappabydT, Kappa_perp, dKappa_perpbydT,
-     *   qevap, qrad, mass_density, cond_coef
+     *   qevap, qrad, mass_density, heatdiff_contact
       external slv5pt, fic
 
       call subini('heatdf2D')
@@ -205,7 +205,7 @@ c       function of the position "x" at ndepth_nml grid points.
 !! FIXME : Could also include radiative and evaporative cooling term here !!
 !!         But for this need correct properties of back side material
         rhs(iwall,i) = rhs(iwall,i) -
-     .    cond_coef(inertial_cooling(bndx(iwall)),Tp(iwall,i))*
+     .    heatdiff_contact(bndx(iwall),Tp(iwall,i))*
      .   (Tp(iwall,i)-backplate_temp(bndx(iwall)))
 cxpb        if (inertial_cooling(bndx(iwall))) then
 cxpb          rhs(iwall,i) = rhs(iwall,i) -

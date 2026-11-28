@@ -575,8 +575,6 @@ c Reverse classical map, if the grid fits the namelist arrays
       use b2mod_wall
       use b2mod_sputter
       use b2mod_subsys
-      use b2mod_b2cmfs
-     & , only : isymm
       use b2us_map
       use b2us_geo
       use b2us_plasma
@@ -589,15 +587,11 @@ c Reverse classical map, if the grid fits the namelist arrays
       real(kind=R8), intent(in) :: BoRiS
       logical, intent(in) :: wall_namelist_used
 
-      integer i, j, is, ix, iy, iFc, iCv, isign
-      integer ibnd, ibndm, icoat, itrack, ik, ikink, ikink0
-      real(kind=R8) :: xa, xb, ya, yb, xa2, ya2, xo, yo,
-     *  distance, distp, normal_r, normal_z, qex, qpl, torl,
-     *  nhalf_r, nhalf_z, nhalf, xint, yint, dint,
-     *  xap, yap, xbm, ybm, xbp, ybp, xbq, ybq, sum, area
+      integer i, is, ix, iy, iFc, iCv, isign
+      integer ibnd, itrack
+      real(kind=R8) :: qex, qpl, sum, area
       real(kind=R8) :: sput_frac(0:ntrack), wrk(ndepth_nml)
       character*16 hlp_frm
-      logical error, correct_quadrant
 
       integer, save :: output, hd_linlog, refl_model,
      *  sput_frac_flag, sput_phys_col, sput_phys_model
@@ -606,12 +600,8 @@ c Reverse classical map, if the grid fits the namelist arrays
       data sput_frac_flag/0/, sput_phys_col/3/, sput_phys_model/1/
       data width/1.0_R8/
 
-      real (kind=R8) :: onemeps
-      parameter (onemeps =  1.0_R8 - 1.0e-5_R8)
-
       real (kind=R8) :: mass_density
-      logical overlap
-      external mass_density, overlap
+      external mass_density
 
       call subini('get_wall_data')
 cxpb  Test namelist input
@@ -724,6 +714,96 @@ cxpb  and layer depth (sum of deposition),
 cxpb  i.e. minimum depth over which material mixing occurs
         layer_thickness(ibnd)=0.0_R8
         layer_depth(ibnd)=0.0_R8
+        call wall_depth_grid(ibnd,hd_linlog,hd_ratio)
+        if (sput_frac_flag.ne.0) then
+c mixed materials with layers
+          do itrack=1,ntargsp
+            layer_thickness(ibnd)=layer_thickness(ibnd)+
+     &       (monolayer_deposition(ibnd,itrack)-
+     &        monolayer_erosion(ibnd,itrack))*monolayer_l(itrack)
+            layer_depth(ibnd)=layer_depth(ibnd)+
+     &        monolayer_deposition(ibnd,itrack)*monolayer_l(itrack)
+          enddo
+          call add_layer_thickness(ns,ibnd)
+        else if (sput_frac_flag.eq.0) then
+c no mixed materials
+          layer_nconstituents(ibnd)=matsurf_nconstituents(ibnd)
+          layer_nzconstituents(ibnd,1:matsurf_nconstituents(ibnd))=
+     1      matsurf_nzconstituents
+     .       (ibnd,1:matsurf_nconstituents(ibnd))
+          layer_nrelconstituents(ibnd,1:matsurf_nconstituents(ibnd))=
+     1      matsurf_nrelconstituents
+     .       (ibnd,1:matsurf_nconstituents(ibnd))
+          layer_mass_density(ibnd)=mass_density(ibnd,2)
+          sput_frac(0)=1.0_R8
+          sput_frac(1:ntrack)=0.0_R8
+        endif
+        call compose_layer(ibnd,sput_frac)
+        if (ndepth_nml.gt.1) then
+          target_depth(ibnd,ndepth_nml) = plate_thickness(ibnd)
+        else
+          target_depth(ibnd,ndepth_nml) = 0.0_R8
+        endif
+      enddo
+
+      call wall_element_geometry(width)
+
+cxpb Compute any missing temperature profiles if necessary
+cxpb or change them according to plate_option setting
+      if (ndepth_nml.gt.1.and.plate_model.ge.1) then
+        do ibnd = 1, nbnd
+          call xertst(plate_thickness(ibnd).gt.0.0_R8,
+     &     'Incomplete PLATE_THICKNESS array!')
+          if (plate_option.eq.1) then
+cxpb Set constant temperature
+            target_temp(ibnd,:) = backplate_temp(ibnd)
+          else if (plate_option.eq.2 .or.
+     &      target_temp(ibnd,ndepth_nml).eq.0.0_R8) then
+cxpb Compute incoming heat flux
+            iFc = imapfc(ibnd)
+            iCv = max(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
+            isign = merge(1,-1,mpg%fcCv(iFc,2).eq.iCv)
+            qpl = max(0.0_R8,isign*(dv%fht(iFc,0)+dv%fht(iFc,1)))
+     &           /geo%fcS(iFc)
+            qex = max(0.0_R8,
+     &           isign*(st_ext%fhi(iFc,0)+st_ext%fhi(iFc,1)))
+     &           /geo%fcS(iFc)
+            do is=0,st_ext%ns-1
+              qex = qex + max(0.0_R8,
+     &           isign*(st_ext%fa(iFc,0,is)+st_ext%fa(iFc,1,is)))
+     &           /geo%fcS(iFc)*
+     &           ((0.5_R8*st_ext%am(is)*mp*
+     &             st_ext%ua(iCv,is)**2+
+     &             st_ext%ta(iCv,is))*(1.0_R8-BoRiS)
+     &           +st_ext%pt(iCv,is)*ev)
+            enddo
+cxpb Use 1-D equilibrium profile
+            wrk(1:ndepth_nml) = target_temp(ibnd,1:ndepth_nml)
+            call heatdiff1D(ibnd,ns,qpl+qex,0.0_R8,wrk,output)
+            target_temp(ibnd,1:ndepth_nml) = wrk(1:ndepth_nml)
+          endif   ! plate_option
+        enddo   !  ibnd
+      endif   !  ndepth_nml
+      call subend()
+      return
+      end subroutine get_wall_data
+
+c Depth points target_depth(ibnd,1:ndepth_nml-1) of wall element ibnd
+c from the surface (0): the coating and the bulk each spaced linearly
+c (hd_linlog 1) or geometrically (2: last interval over the first
+c hd_ratio), the coating-bulk boundary a point. The caller sets the
+c last point (the back, PLATE_THICKNESS).
+      subroutine wall_depth_grid(ibnd,hd_linlog,hd_ratio)
+      use b2mod_types
+      use b2mod_wall
+      implicit none
+      integer, intent(in) :: ibnd, hd_linlog
+      real(kind=R8), intent(in) :: hd_ratio
+
+      integer i, icoat
+      real (kind=R8) :: onemeps
+      parameter (onemeps =  1.0_R8 - 1.0e-5_R8)
+
         if (coating_thickness(ibnd).gt.0.0_R8) then
 cxpb  Figure out where to put the coating-bulk boundary
           if (hd_linlog.eq.1) then
@@ -763,36 +843,31 @@ cxpb  Figure out where to put the coating-bulk boundary
      .       (hd_ratio - 1.0_R8)
           endif
         enddo
-        if (sput_frac_flag.ne.0) then
-c mixed materials with layers
-          do itrack=1,ntargsp
-            layer_thickness(ibnd)=layer_thickness(ibnd)+
-     &       (monolayer_deposition(ibnd,itrack)-
-     &        monolayer_erosion(ibnd,itrack))*monolayer_l(itrack)
-            layer_depth(ibnd)=layer_depth(ibnd)+
-     &        monolayer_deposition(ibnd,itrack)*monolayer_l(itrack)
-          enddo
-          call add_layer_thickness(ns,ibnd)
-        else if (sput_frac_flag.eq.0) then
-c no mixed materials
-          layer_nconstituents(ibnd)=matsurf_nconstituents(ibnd)
-          layer_nzconstituents(ibnd,1:matsurf_nconstituents(ibnd))=
-     1      matsurf_nzconstituents
-     .       (ibnd,1:matsurf_nconstituents(ibnd))
-          layer_nrelconstituents(ibnd,1:matsurf_nconstituents(ibnd))=
-     1      matsurf_nrelconstituents
-     .       (ibnd,1:matsurf_nconstituents(ibnd))
-          layer_mass_density(ibnd)=mass_density(ibnd,2)
-          sput_frac(0)=1.0_R8
-          sput_frac(1:ntrack)=0.0_R8
-        endif
-        call compose_layer(ibnd,sput_frac)
-        if (ndepth_nml.gt.1) then
-          target_depth(ibnd,ndepth_nml) = plate_thickness(ibnd)
-        else
-          target_depth(ibnd,ndepth_nml) = 0.0_R8
-        endif
-      enddo
+      return
+      end subroutine wall_depth_grid
+
+c Geometry of the depth cells of the wall elements: corners
+c targetcr, targetcz (at each depth point, the start and end of the
+c element, the ends following the bisector between neighbours of a
+c segment), widths target_width and volumes target_vol (toroidal
+c length: width in slab geometry, else 2 pi R).
+      subroutine wall_element_geometry(width)
+      use b2mod_types
+      use b2mod_constants
+      use b2mod_wall
+      use b2mod_b2cmfs
+     & , only : isymm
+      implicit none
+      real(kind=R8), intent(in) :: width
+
+      integer i, j, is, ibnd, ibndm, ik, ikink, ikink0
+      real(kind=R8) :: xa, xb, ya, yb, xa2, ya2, xo, yo,
+     *  distance, distp, normal_r, normal_z, torl,
+     *  nhalf_r, nhalf_z, nhalf, xint, yint, dint,
+     *  xap, yap, xbm, ybm, xbp, ybp, xbq, ybq
+      logical error, correct_quadrant
+      logical overlap
+      external overlap
 
       error = .false.
       do is = 1, nsegments
@@ -978,45 +1053,64 @@ cxpb Do not know yet what to do here. Just a diagnostic in the meantime
         target_vol(1:nbnd,1) = target_width(1:nbnd,1)
       endif
 
-cxpb Compute any missing temperature profiles if necessary
-cxpb or change them according to plate_option setting
-      if (ndepth_nml.gt.1.and.plate_model.ge.1) then
-        do ibnd = 1, nbnd
-          call xertst(plate_thickness(ibnd).gt.0.0_R8,
-     &     'Incomplete PLATE_THICKNESS array!')
-          if (plate_option.eq.1) then
-cxpb Set constant temperature
-            target_temp(ibnd,:) = backplate_temp(ibnd)
-          else if (plate_option.eq.2 .or.
-     &      target_temp(ibnd,ndepth_nml).eq.0.0_R8) then
-cxpb Compute incoming heat flux
-            iFc = imapfc(ibnd)
-            iCv = max(mpg%fcCv(iFc,1),mpg%fcCv(iFc,2))
-            isign = merge(1,-1,mpg%fcCv(iFc,2).eq.iCv)
-            qpl = max(0.0_R8,isign*(dv%fht(iFc,0)+dv%fht(iFc,1)))
-     &           /geo%fcS(iFc)
-            qex = max(0.0_R8,
-     &           isign*(st_ext%fhi(iFc,0)+st_ext%fhi(iFc,1)))
-     &           /geo%fcS(iFc)
-            do is=0,st_ext%ns-1
-              qex = qex + max(0.0_R8,
-     &           isign*(st_ext%fa(iFc,0,is)+st_ext%fa(iFc,1,is)))
-     &           /geo%fcS(iFc)*
-     &           ((0.5_R8*st_ext%am(is)*mp*
-     &             st_ext%ua(iCv,is)**2+
-     &             st_ext%ta(iCv,is))*(1.0_R8-BoRiS)
-     &           +st_ext%pt(iCv,is)*ev)
-            enddo
-cxpb Use 1-D equilibrium profile
-            wrk(1:ndepth_nml) = target_temp(ibnd,1:ndepth_nml)
-            call heatdiff1D(ibnd,ns,qpl+qex,0.0_R8,wrk,output)
-            target_temp(ibnd,1:ndepth_nml) = wrk(1:ndepth_nml)
-          endif   ! plate_option
-        enddo   !  ibnd
-      endif   !  ndepth_nml
+      return
+      end subroutine wall_element_geometry
+
+c Thermal data of the wall elements when the sputtering models are off
+c (b2stbr_sput_dst < 0: get_wall_data stops before them): the materials
+c (read_b2mod_wall), the depth points without mixed layers and the
+c geometry of the depth cells, as get_wall_data gives them with
+c sputtering, for the plate temperatures (heatdiff0D, heatdiff1D,
+c heatdiff1D_steady). Called after get_wall_data; does nothing with the
+c sputtering models on (get_wall_data has done it) or a second time.
+      subroutine wall_thermal_setup
+      use b2mod_types
+      use b2mod_wall
+      use b2mod_subsys
+      implicit none
+
+      integer ibnd, isput, hd_linlog
+      real(kind=R8) :: hd_ratio, width
+      logical, save :: done = .false.
+      external ipgeti, ipgetr, xertst
+
+      call subini('wall_thermal_setup')
+      isput = -1
+      call ipgeti('b2stbr_sput_dst', isput)
+      if (isput.ge.0 .or. done) then
+        call subend()
+        return
+      endif
+      done = .true.
+      call read_b2mod_wall(ntargsp)
+      width = 1.0_R8
+      call ipgetr('b2agmt_1d_width', width)
+      call xertst(0.0_R8.lt.width, 'faulty input width')
+      hd_linlog = 1
+      call ipgeti('heatdiff1D_linlog', hd_linlog)
+      call xertst(hd_linlog.eq.1 .or. hd_linlog.eq.2,
+     .   'faulty parameter heatdiff1D_linlog')
+      hd_ratio = 100.0_R8
+      if (hd_linlog.eq.2) then
+        call ipgetr('heatdiff1D_ratio', hd_ratio)
+        call xertst(hd_ratio.gt.1.0_R8,
+     .   'faulty parameter heatdiff1D_ratio')
+      endif
+      do ibnd = 1, nbnd
+        layer_thickness(ibnd) = 0.0_R8
+        layer_depth(ibnd) = 0.0_R8
+        call wall_depth_grid(ibnd,hd_linlog,hd_ratio)
+        if (ndepth_nml.gt.1) then
+          target_depth(ibnd,ndepth_nml) = plate_thickness(ibnd)
+        else
+          target_depth(ibnd,ndepth_nml) = 0.0_R8
+        endif
+      enddo
+      call wall_element_geometry(width)
+
       call subend()
       return
-      end subroutine get_wall_data
+      end subroutine wall_thermal_setup
 
 * ..finalise time-dependent wall data
       subroutine wall_final(nx,ny,ns,wall_namelist_used)

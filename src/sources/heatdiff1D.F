@@ -21,9 +21,12 @@ c       DU = (1/rho/Cp) * (K*UXX + gradK*UX + S)
 c       DU is the rate of change of temperature
 c       UXX is "doe^2 T / doe^2 x"   and UX is "doe T / doe x"
 c with Neumann boundary condition at the plasma facing surface side
-c i.e.  UX is specified.
-c and a Dirichlet type boundary condition at the coolant side.
-c i.e. T is specified.
+c i.e.  UX is specified (the heat flux less radiation and evaporation),
+c and the contact with the coolant or support at the back
+c (heatdiff_contact: the heat flux h (T - Tcbc)). Without NAG
+c (NO_NAG) the finite-volume form of lines2c, all depth points
+c unknown, integrated implicitly (heatdiff_implicit); heatdiff1D_steady
+c gives its steady state.
 
 c Inputs:
 c  Q = incident total heat flux (Watts/m^2/sec).
@@ -50,12 +53,7 @@ c  Tp = Target surface temperature (K).
       real (kind=R8) :: t0, tn
 
 #ifdef NO_NAG
-      integer ier, iflg, iopt, neq, nmax, nstep
-      real (kind=R8) :: hstep, rerr
-      real (kind=R8) :: du(7*ndepth_nml), yf(ndepth_nml), ut(ndepth_nml)
-      real (kind=R8) :: wk(3*ndepth_nml + ndepth_nml*2*ndepth_nml)
-      integer iwk(ndepth_nml)
-      external mstep
+      external heatdiff_implicit
 #else
       integer :: itask, itrace, ind, ifail
       real (kind=R8) :: acc
@@ -126,26 +124,18 @@ c       function of the position "x" at ndepth_nml grid points.
         call subend ()
         return
       else
-        do i=1,ndepth_nml-1
+        do i=1,ndepth_nml
           u1(i)= Tp(i)
         enddo
       endif
 
-c No. of equations to be solved.
+c No. of equations to be solved: one per depth point (the back point
+c is in contact with the coolant, not at its temperature).
 #ifdef NO_NAG
-      neq = ndepth_nml - 1   ! since we specify T at one end and grad(T) at the other
-      iflg = 0
-      iopt = 1
-      hstep = dt
-      nmax = 100000000
-      rerr = 1.0e-8_R8
-      call mstep(ibnd,ns,neq,u1,ut,du,hstep,t0,tn,yf,
-     &  rerr,nstep,nmax,ier,iflg,iopt,wk,iwk)
-      call xertst(ier.eq.0,'ier.ne.0 in heatdiff1D')
-      if (output.ge.10) write(6,*) 'No. of successful steps = ',nstep
-      Tp(ndepth_nml) = Tcbc
-      do i=1,ndepth_nml-1
-        Tp(i) = min( yf(i), matsurf_vapor_temp(ibnd))
+      call xertst(ndepth_nml.ge.2,'heatdiff1D needs NDEPTH_NML >= 2')
+      call heatdiff_implicit(ibnd,ns,ndepth_nml,u1,dt,output)
+      do i=1,ndepth_nml
+        Tp(i) = min( u1(i), matsurf_vapor_temp(ibnd))
       enddo
 #else
 cxpb   New NAG solution to replace MSTEP calls
@@ -237,134 +227,473 @@ c        print*,x(i),' ',uu(i),' ',i,' ',xn,' ',xn
       end subroutine fic
 
 c_______________________________________________________________________
-c Dirichlet condition(u) at xn. !Neumann condition(du/dx) at x0.
-c No. of equations to be solved = ndepth_nml - 1
+c Finite-volume form of the conduction through the plate (NO_NAG): the
+c temperatures u(1:n) at the n = ndepth_nml depth points x(1:n), node i
+c holding the volume between the midpoints to its neighbours; the
+c fluxes of heatdiff_fluxes: the energy is conserved exactly. (The
+c right-hand side for mstep; heatdiff1D integrates the same form with
+c heatdiff_implicit.)
 c_______________________________________________________________________
       subroutine lines2c(ibnd,ns,t,n,u,du)
       use b2mod_types
       use b2mod_wall
       use b2mod_heatdiff_common
-     &    , only: x, dx
+     &    , only: x
 
       implicit none
 
-      integer ns,n,i,j,ibnd
-      real (kind=R8) :: ux,uxx
-      real (kind=R8) :: u(ndepth_nml),uu(ndepth_nml+1),
-     .                  du(ndepth_nml),t
-      real (kind=R8) :: a0, b0, c0, an, bn, cn
-      real (kind=R8) :: Ts, Td
+      integer ns,n,i,ibnd
+      real (kind=R8) :: u(n),du(n),t
+      real (kind=R8) :: f(0:n), vol
+      real (kind=R8) :: Cp, mass_density
+      external Cp, mass_density, heatdiff_fluxes
 
-c      print*,t,' ',n,' InpVars ',u
-c Maximum no. of equations that can be solved is np.
-
-c Call to coefbc to get the b.cs
-      Ts = u(1)
-      Td = u(ndepth_nml)
-      call coefbc(ibnd,ndepth_nml,ns,t,Ts,Td,a0,b0,c0,an,bn,cn)
-
-c Neumann condition at x = x0.
-c u0 = u(x0-dx,t)
-      uu(1) = u(2) + 2.0_R8*dx(1)*(a0*u(1) - c0)/b0
-
-c Storing intermediate values.
-      do i = 1,ndepth_nml-1
-        uu(i+1) = u(i)
-      enddo
-
-c Dirichlet condition(u) at xn.
-      uu(ndepth_nml+1) = cn/an
-
-c Calculate du/dt at all grid points.
-      do j = 1,ndepth_nml-1
-        i = j + 1
-        ux=(uu(i+1) - uu(i-1))/(dx(i)+dx(i-1))
-        uxx=((uu(i+1)-uu(i))/dx(i) - (uu(i)-uu(i-1))/dx(i-1))/
-     .      ((dx(i)+dx(i-1))/2.0_R8)
-        call fcn(ibnd,j,x(j),t,uu(i),ux,uxx,du(j))
+      call heatdiff_fluxes(ibnd,ns,n,u,f)
+      do i = 1, n
+        if (i.eq.1) then
+          vol = 0.5_R8*(x(2)-x(1))
+        else if (i.eq.n) then
+          vol = 0.5_R8*(x(n)-x(n-1))
+        else
+          vol = 0.5_R8*(x(i+1)-x(i-1))
+        endif
+        du(i) = (f(i-1)-f(i))/
+     .   (mass_density(ibnd,i)*Cp(ibnd,i,u(i))*vol)
       enddo
 
       return
       end subroutine lines2c
 
 c..................................................................
-c                     SUBROUTINE FCN
+c Fluxes of the finite-volume form (W/m^2, positive towards the back):
+c f(0) into the surface (the heat flux less radiation and evaporation),
+c f(i) from node i to node i+1 (the harmonic mean of their
+c conductivities), f(n) out through the back (heatdiff_contact).
+      subroutine heatdiff_fluxes(ibnd,ns,n,u,f)
+      use b2mod_types
+      use b2mod_heatdiff_common
+     &    , only: x, Qtot, Tcbc
 
-c  The diffusion equation in our case looks like ->
-c       du = (1/rho/Cp(T)) * (K(T)*UXX + gradK(T)*UX + S)
-c  where gradK = dK/dx and S is a heat flux source which is a delta
-c  function at the plasma facing surface, which is implemented as a
-c  boundary condition. Therefore here S = 0.
-c  The second term on RHS is grad(K*UX) = dK/dx * UX = dK/dU*(UX)^2
+      implicit none
 
-      subroutine fcn(ibnd,i,x,t,u,ux,uxx,du)
+      integer ibnd, ns, n, i
+      real (kind=R8) :: u(n), f(0:n), k1, k2
+      real (kind=R8) :: Kappa, qrad, qevap, heatdiff_contact
+      external Kappa, qrad, qevap, heatdiff_contact
+
+      f(0) = Qtot-qrad(ibnd,u(1),.true.)-qevap(ibnd,ns,u(1))
+      do i = 1, n-1
+        k1 = Kappa(ibnd,i,u(i))
+        k2 = Kappa(ibnd,i+1,u(i+1))
+        f(i) = 2.0_R8*k1*k2/((k1+k2)*(x(i+1)-x(i)))*(u(i)-u(i+1))
+      enddo
+      f(n) = heatdiff_contact(ibnd,u(n))*(u(n)-Tcbc)
+
+      return
+      end subroutine heatdiff_fluxes
+
+c..................................................................
+c Contact conductance (W m^-2 K^-1) between the back of element ibnd
+c and its coolant or support at temperature T: BACKPLATE_CONDUCTANCE
+c if given (zero: an insulated back), else cond_coef (active or
+c inertial cooling, INERTIAL_COOLING).
+      function heatdiff_contact(ibnd,T)
       use b2mod_types
       use b2mod_wall
 
       implicit none
-      integer ibnd, i
-      real (kind=R8) :: x, t, u, du, ux, uxx
-      real (kind=R8) :: Kappa, dKappabydT, Cp, mass_density, Ts
 
-      Ts = u
-      du = (1.0_R8/mass_density(ibnd,i)/Cp(ibnd,i,Ts))*
-     &     (Kappa(ibnd,i,Ts)*uxx + dKappabydT(ibnd,i,Ts)*ux*ux)
+      integer ibnd
+      real (kind=R8) :: heatdiff_contact, T
+      real (kind=R8) :: cond_coef
+      external cond_coef
+
+      if (backplate_conductance(ibnd).ge.0.0_R8) then
+        heatdiff_contact = backplate_conductance(ibnd)
+      else
+        heatdiff_contact = cond_coef(inertial_cooling(ibnd),T)
+      endif
 
       return
-      end subroutine fcn
-c______________________________________________________________________
+      end function heatdiff_contact
 
-c                 subroutine coefbc
-
-c Subroutine to specify the boundary condition.
-c general boundary condition.
-c a0*u + b0*du/dx = c0  at the plasma facing surface.
-c an*u + bn*du/dx = cn  at the cooling tube surface.
-
-c t, Ts and Td are inputs to the subroutine and a0, b0, c0, an, bn, and cn
-c are the outputs from the subroutine.
-
-      subroutine coefbc(ibnd,nd,ns,t,Ts,Td,a0,b0,c0,an,bn,cn)
+c..................................................................
+c Steady state of the finite-volume form (heatdiff_fluxes): the depth
+c temperatures at which the flux through every face equals the heat
+c flux Q less radiation and evaporation at the surface and the contact
+c flux at the back, by Newton iterations (tridiagonal Jacobian by
+c differences, backtracking). From Tp if it holds a profile (Tp(1) > 0),
+c else from a linear profile through the contact temperature. With an
+c insulated back the plate settles where radiation and evaporation take
+c Q away; if they cannot (and above the vaporisation temperature) the
+c plate is at the vaporisation temperature (a message says so).
+      subroutine heatdiff1D_steady(ibnd,ns0,Q,Tp,output)
       use b2mod_types
+      use b2mod_wall
       use b2mod_heatdiff_common
-     &    , only: Qtot, Tcbc, active
+     &    , only: dx, x0, xn, x, Qtot, Tcbc, active, iwall, ns
+      use b2mod_subsys
 
       implicit none
-      integer ibnd, nd, ns
-      real (kind=R8) :: a0,b0,c0,an,bn,cn,t,Ts,Td
-      real (kind=R8) :: Kappa, qevap, qrad, cond_coef
-      external Kappa, qevap, qrad, cond_coef
 
-c  Coefficients at x=x0
-      a0 = 0.0_R8
-      b0 = 1.0_R8
-      c0 = 1.0_R8/Kappa(ibnd,1,Ts)*
-     . (-Qtot+qevap(ibnd,ns,Ts)+qrad(ibnd,Ts,.true.))
+      integer ibnd, ns0, output
+      real (kind=R8) :: Q, Tp(ndepth_nml)
 
-c  Coefficients at x=xn
-      an = 0.0_R8
-      bn = 1.0_R8
-      cn = 1.0_R8/Kappa(ibnd,nd,Td)*
-     . (-cond_coef(.not.active,Td)*(Td-Tcbc))
-!! FIXME: Could use additionally the code below once we have a way of applying
-!!        the correct emissivity
-cxpb        if (.not.active)
-cxpb     >    cn=cn-qrad(ibnd,Td,.false.)
-cxpb     .        -qevap(ibnd,ns,Td)
-c$$$ Old treatment where conductivity to coolant was assumed to be perfect
-c$$$      if (active) then
-c$$$        an = 1.0_R8
-c$$$        bn = 0.0_R8
-c$$$        cn = Tcbc
-c$$$      else
-c$$$        an = 0.0_R8
-c$$$        bn = 1.0_R8
-c$$$        cn = 1.0_R8/Kappa(ibnd,nd,Td)* !xpb we assume the contact heat conductivity of 100 W.m-2.K-1
-c$$$     .   (-100.0_R8*(Td-Tcbc))
-c$$$      endif
+      integer itmax, nback
+      parameter (itmax=200, nback=40)
+      integer n, i, j, it, m, ib
+      real (kind=R8) :: u(ndepth_nml), un(ndepth_nml), r(ndepth_nml),
+     .  rp(ndepth_nml), du(ndepth_nml), sub(ndepth_nml),
+     .  dia(ndepth_nml), sup(ndepth_nml), cc(ndepth_nml),
+     .  f(0:ndepth_nml)
+      real (kind=R8) :: hb, tb, tv, tlo, thi, tmid, k0, tol, rnorm,
+     .  rnew, lam, step, del, denom
+      logical ok
+      real (kind=R8) :: Kappa, qrad, qevap, heatdiff_contact
+      external Kappa, qrad, qevap, heatdiff_contact, heatdiff_fluxes
+
+      call subini('heatdiff1D_steady')
+      call xertst(ndepth_nml.ge.2,
+     . 'heatdiff1D_steady needs NDEPTH_NML >= 2')
+      n = ndepth_nml
+      Qtot = Q
+      Tcbc = backplate_temp(ibnd)
+      active = .not.inertial_cooling(ibnd)
+      iwall = ibnd
+      ns = ns0
+      x(1:n) = target_depth(ibnd,1:n)
+      x0 = x(1)
+      xn = x(n)
+      do i=1,n-1
+        dx(i) = x(i+1)-x(i)
+      enddo
+      tv = matsurf_vapor_temp(ibnd)
+
+c Initial guess
+      if (Tp(1).gt.0.0_R8) then
+        u(1:n) = Tp(1:n)
+      else
+        hb = heatdiff_contact(ibnd,Tcbc)
+        if (hb.gt.0.0_R8) then
+          tb = Tcbc+max(Q,0.0_R8)/hb
+          k0 = Kappa(ibnd,n,tb)
+          do i=1,n
+            u(i) = min(tb+max(Q,0.0_R8)*(xn-x(i))/k0, tv)
+          enddo
+        else
+c         insulated: the temperature where radiation and evaporation
+c         take Q away (bisection)
+          tlo = Tcbc
+          thi = tv
+          do it=1,100
+            tmid = 0.5_R8*(tlo+thi)
+            if (qrad(ibnd,tmid,.true.)+qevap(ibnd,ns,tmid).lt.Q) then
+              tlo = tmid
+            else
+              thi = tmid
+            endif
+          enddo
+          u(1:n) = 0.5_R8*(tlo+thi)
+        endif
+      endif
+
+c Newton iterations
+      tol = 1.0e-10_R8*max(abs(Q),1.0_R8)
+      call heatdiff_fluxes(ibnd,ns,n,u,f)
+      do i=1,n
+        r(i) = f(i-1)-f(i)
+      enddo
+      rnorm = maxval(abs(r(1:n)))
+      ok = rnorm.le.tol
+      it = 0
+      do while (.not.ok .and. it.lt.itmax)
+        it = it+1
+c       tridiagonal Jacobian dr(i)/du(j), j = i-1, i, i+1, by
+c       differences, three colours of nodes
+        sub = 0.0_R8
+        dia = 0.0_R8
+        sup = 0.0_R8
+        do m = 0, 2
+          un(1:n) = u(1:n)
+          do j = 1+m, n, 3
+            un(j) = u(j)+1.0e-6_R8*max(abs(u(j)),1.0_R8)
+          enddo
+          call heatdiff_fluxes(ibnd,ns,n,un,f)
+          do i=1,n
+            rp(i) = f(i-1)-f(i)
+          enddo
+          do j = 1+m, n, 3
+            del = un(j)-u(j)
+            dia(j) = (rp(j)-r(j))/del
+            if (j.gt.1) sup(j-1) = (rp(j-1)-r(j-1))/del
+            if (j.lt.n) sub(j+1) = (rp(j+1)-r(j+1))/del
+          enddo
+        enddo
+c       solve J du = -r (Thomas)
+        cc(1) = sup(1)/dia(1)
+        du(1) = -r(1)/dia(1)
+        do i=2,n
+          denom = dia(i)-sub(i)*cc(i-1)
+          if (i.lt.n) cc(i) = sup(i)/denom
+          du(i) = (-r(i)-sub(i)*du(i-1))/denom
+        enddo
+        do i=n-1,1,-1
+          du(i) = du(i)-cc(i)*du(i+1)
+        enddo
+c       backtracking, steps of at most 500 K; a correction at round-off
+c       level ends the iterations
+        step = maxval(abs(du(1:n)))
+        if (step.le.1.0e-11_R8*maxval(abs(u(1:n)))) then
+          u(1:n) = u(1:n)+du(1:n)
+          call heatdiff_fluxes(ibnd,ns,n,u,f)
+          do i=1,n
+            r(i) = f(i-1)-f(i)
+          enddo
+          rnorm = maxval(abs(r(1:n)))
+          ok = .true.
+          exit
+        endif
+        lam = min(1.0_R8, 500.0_R8/max(step,1.0e-300_R8))
+        do ib = 1, nback
+          un(1:n) = max(u(1:n)+lam*du(1:n), 1.0_R8)
+          call heatdiff_fluxes(ibnd,ns,n,un,f)
+          do i=1,n
+            rp(i) = f(i-1)-f(i)
+          enddo
+          rnew = maxval(abs(rp(1:n)))
+          if (rnew.lt.rnorm .or. rnew.le.tol) exit
+          lam = 0.5_R8*lam
+        enddo
+        u(1:n) = un(1:n)
+        r(1:n) = rp(1:n)
+        rnorm = rnew
+        ok = rnorm.le.tol .or. lam*step.le.1.0e-12_R8*maxval(u(1:n))
+      enddo
+      if (.not.ok) write(*,'(a,i5,a,1p,e12.4,a)')
+     . ' heatdiff1D_steady: element ',ibnd,
+     . ' not converged (flux residual ',rnorm,' W/m^2)'
+      if (maxval(u(1:n)).gt.tv) write(*,'(a,i5,a)')
+     . ' heatdiff1D_steady: element ',ibnd,
+     . ' above the vaporisation temperature (capped)'
+      do i=1,n
+        Tp(i) = min(u(i), tv)
+      enddo
+      if (output.ge.10) write(*,*) 'heatdiff1D_steady: element ',ibnd,
+     . ', iterations ',it,', surface ',Tp(1),' K, back ',Tp(n),' K'
+
+      call subend()
+      return
+      end subroutine heatdiff1D_steady
+
+c..................................................................
+c Time integration of the finite-volume form (NO_NAG) over dt from the
+c temperatures u: implicit (backward Euler) steps (heatdiff_be), the
+c heat stored in enthalpy form. Each step h is taken whole and as two
+c halves; their difference sets the next step (1e-2 K; the error at the
+c end is about half of it), and the enthalpies are extrapolated,
+c 2 H(two halves) - H(whole), which is second order and keeps the
+c energy exact (the change of each node is a sum of face fluxes).
+c Stable for any step: long discharges and cool-downs take few steps,
+c and long steps tend to the steady state (heatdiff1D_steady).
+      subroutine heatdiff_implicit(ibnd,ns,n,u,dt,output)
+      use b2mod_types
+      use b2mod_heatdiff_common
+     &    , only: dx
+
+      implicit none
+
+      integer ibnd, ns, n, output
+      real (kind=R8) :: u(n), dt
+
+      real (kind=R8) :: tol
+      parameter (tol=1.0e-2_R8)
+      integer i, it, nstep, nrej
+      real (kind=R8) :: uf(n), uh(n), u2(n), t, h, err, hexp, alpha,
+     .  dh, ue, du
+      logical ok1, ok2, ok3
+      real (kind=R8) :: Kappa, Cp, mass_density, heatdiff_enthalpy
+      external Kappa, Cp, mass_density, heatdiff_be, heatdiff_enthalpy
+
+      if (dt.le.0.0_R8) return
+c     first step: ten explicit steps of the finest cell
+      hexp = dt
+      do i=1,n-1
+        alpha = Kappa(ibnd,i,u(i))/
+     .   (mass_density(ibnd,i)*Cp(ibnd,i,u(i)))
+        hexp = min(hexp, 0.25_R8*dx(i)**2/max(alpha,1.0e-30_R8))
+      enddo
+      h = min(dt, 10.0_R8*hexp)
+      t = 0.0_R8
+      nstep = 0
+      nrej = 0
+      do while (dt-t.gt.1.0e-12_R8*dt)
+        h = min(h, dt-t)
+        ok3 = .false.
+        call heatdiff_be(ibnd,ns,n,u,h,uf,ok1)
+        call heatdiff_be(ibnd,ns,n,u,0.5_R8*h,uh,ok2)
+        if (ok2) call heatdiff_be(ibnd,ns,n,uh,0.5_R8*h,u2,ok3)
+        if (.not.(ok1.and.ok2.and.ok3)) then
+          h = 0.25_R8*h
+          nrej = nrej+1
+          call xertst(h.gt.1.0e-14_R8*dt .and. nrej.lt.100000,
+     .     'heatdiff1D: no convergence')
+          cycle
+        endif
+        err = maxval(abs(u2(1:n)-uf(1:n)))
+        if (err.le.tol .or. h.le.1.0e-14_R8*dt) then
+c         extrapolated enthalpy of each node, its temperature by Newton
+          do i=1,n
+            dh = 2.0_R8*heatdiff_enthalpy(ibnd,i,u(i),u2(i))
+     .        -heatdiff_enthalpy(ibnd,i,u(i),uf(i))
+            ue = 2.0_R8*u2(i)-uf(i)
+            do it=1,30
+              du = (dh-heatdiff_enthalpy(ibnd,i,u(i),ue))/
+     .          Cp(ibnd,i,ue)
+              ue = ue+du
+              if (abs(du).le.1.0e-12_R8*abs(ue)) exit
+            enddo
+            if (ue.gt.0.0_R8 .and. abs(du).le.1.0e-9_R8*abs(ue)) then
+              u(i) = ue
+            else
+              u(i) = u2(i)
+            endif
+          enddo
+          t = t+h
+          nstep = nstep+1
+          h = h*min(4.0_R8, max(0.5_R8,
+     .     0.9_R8*sqrt(tol/max(err,1.0e-300_R8))))
+        else
+          h = h*max(0.1_R8, 0.9_R8*sqrt(tol/err))
+          nrej = nrej+1
+        endif
+      enddo
+      if (output.ge.10) write(6,*) 'heatdiff1D: element ',ibnd,
+     . ', steps ',nstep,', rejected ',nrej
 
       return
-      end subroutine coefbc
+      end subroutine heatdiff_implicit
+
+c..................................................................
+c One implicit step h of the finite-volume form from u0: u solves
+c rho V (H(u) - H(u0))/h = f(i-1) - f(i) at every node (H: the enthalpy,
+c the integral of Cp; f: heatdiff_fluxes), by Newton iterations with a
+c tridiagonal Jacobian (the fluxes by differences); ok false if they
+c do not converge.
+      subroutine heatdiff_be(ibnd,ns,n,u0,h,u,ok)
+      use b2mod_types
+      use b2mod_heatdiff_common
+     &    , only: x
+
+      implicit none
+
+      integer ibnd, ns, n
+      real (kind=R8) :: u0(n), h, u(n)
+      logical ok
+
+      integer i, j, m, it
+      real (kind=R8) :: vol, rv(n), r(n), rf(n), rp(n), un(n), du(n),
+     .  sub(n), dia(n), sup(n), cc(n), f(0:n), del, denom, step
+      real (kind=R8) :: Cp, mass_density, heatdiff_enthalpy
+      external Cp, mass_density, heatdiff_enthalpy, heatdiff_fluxes
+
+      do i=1,n
+        if (i.eq.1) then
+          vol = 0.5_R8*(x(2)-x(1))
+        else if (i.eq.n) then
+          vol = 0.5_R8*(x(n)-x(n-1))
+        else
+          vol = 0.5_R8*(x(i+1)-x(i-1))
+        endif
+        rv(i) = mass_density(ibnd,i)*vol/h
+      enddo
+      u(1:n) = u0(1:n)
+      ok = .false.
+      do it = 1, 60
+        call heatdiff_fluxes(ibnd,ns,n,u,f)
+        do i=1,n
+          rf(i) = -(f(i-1)-f(i))
+          r(i) = rv(i)*heatdiff_enthalpy(ibnd,i,u0(i),u(i))+rf(i)
+        enddo
+c       Jacobian: the storage rho V Cp/h on the diagonal, the fluxes by
+c       differences (three colours of nodes)
+        sub = 0.0_R8
+        sup = 0.0_R8
+        do i=1,n
+          dia(i) = rv(i)*Cp(ibnd,i,u(i))
+        enddo
+        do m = 0, 2
+          un(1:n) = u(1:n)
+          do j = 1+m, n, 3
+            un(j) = u(j)+1.0e-6_R8*max(abs(u(j)),1.0_R8)
+          enddo
+          call heatdiff_fluxes(ibnd,ns,n,un,f)
+          do i=1,n
+            rp(i) = -(f(i-1)-f(i))
+          enddo
+          do j = 1+m, n, 3
+            del = un(j)-u(j)
+            dia(j) = dia(j)+(rp(j)-rf(j))/del
+            if (j.gt.1) sup(j-1) = (rp(j-1)-rf(j-1))/del
+            if (j.lt.n) sub(j+1) = (rp(j+1)-rf(j+1))/del
+          enddo
+        enddo
+c       J du = -r (Thomas)
+        cc(1) = sup(1)/dia(1)
+        du(1) = -r(1)/dia(1)
+        do i=2,n
+          denom = dia(i)-sub(i)*cc(i-1)
+          if (i.lt.n) cc(i) = sup(i)/denom
+          du(i) = (-r(i)-sub(i)*du(i-1))/denom
+        enddo
+        do i=n-1,1,-1
+          du(i) = du(i)-cc(i)*du(i+1)
+        enddo
+        step = maxval(abs(du(1:n)))
+        if (.not.(step.lt.1.0e30_R8)) return
+        if (step.gt.500.0_R8) du(1:n) = du(1:n)*500.0_R8/step
+        u(1:n) = u(1:n)+du(1:n)
+        if (minval(u(1:n)).le.0.0_R8) return
+        if (step.le.1.0e-10_R8*max(maxval(abs(u(1:n))),1.0_R8)) then
+          ok = .true.
+          return
+        endif
+      enddo
+
+      return
+      end subroutine heatdiff_be
+
+c..................................................................
+c Enthalpy change (J/kg) of node i of element ibnd from temperature a to
+c b: the integral of Cp, five-point Gauss-Legendre (exact for the cubic
+c fits of Cp).
+      function heatdiff_enthalpy(ibnd,i,a,b)
+      use b2mod_types
+
+      implicit none
+
+      integer ibnd, i
+      real (kind=R8) :: heatdiff_enthalpy, a, b
+
+      integer k
+      real (kind=R8) :: xg(5), wg(5), mid, half, sum
+      real (kind=R8) :: Cp
+      external Cp
+      data xg /-0.906179845938664_R8, -0.538469310105683_R8, 0.0_R8,
+     .  0.538469310105683_R8, 0.906179845938664_R8/
+      data wg /0.236926885056189_R8, 0.478628670499366_R8,
+     .  0.568888888888889_R8, 0.478628670499366_R8,
+     .  0.236926885056189_R8/
+
+      mid = 0.5_R8*(a+b)
+      half = 0.5_R8*(b-a)
+      sum = 0.0_R8
+      do k=1,5
+        sum = sum+wg(k)*Cp(ibnd,i,mid+half*xg(k))
+      enddo
+      heatdiff_enthalpy = half*sum
+
+      return
+      end function heatdiff_enthalpy
 
 c.................................................................
 c                      function Kappa
@@ -739,6 +1068,8 @@ c  at temperature T.
       end function Cp
 
 c Getting the heat loss due to evaporation and radiation from surface.
+c Radiation: grey body, the Stefan-Boltzmann constant
+c 2 pi^5 k^4/(15 h^3 c^2).
 c....................................................................
       function qrad(ibnd,Ts,top_layer)
       use b2mod_types
@@ -750,7 +1081,7 @@ c....................................................................
       real (kind=R8) :: Ts, Tw, SBconst, qrad
       logical top_layer
       parameter (SBconst =
-     . pi**5 * (4.0_R8/15.0_R8) * (KBolt/const_h)**3
+     . pi**5 * (2.0_R8/15.0_R8) * (KBolt/const_h)**3
      . * KBolt / c**2)
       real (kind=R8) :: layer_emissivity
       external layer_emissivity
@@ -821,6 +1152,11 @@ c  qevap -> Energy lost (Joules / m^2 / s)
 #endif
       endif
 
+      qevap = 0.0_R8
+      if (therm_evap.eq.0.0_R8) then
+        call subend ()
+        return
+      endif
       do is = 0, ns-1
         itrack = track_index(is)
         if (is_neutral(is)) then
@@ -838,7 +1174,7 @@ c  Checking inputs
      >     'Input error; Correct so that Ts <= Vapor_temp',
      .                                   Ts,   Vapor_temp
           call thermev(ibnd,is,Tv,flxthev,qthev)
-          qevap = qthev * therm_evap
+          qevap = qevap + qthev * therm_evap
         endif
       enddo
 
@@ -892,11 +1228,12 @@ c  Checking inputs
       subroutine bndary (npde, T, U, UX, iposb, beta, gamma, ires)
       use b2mod_types
       use b2mod_heatdiff_common
-     &    , only: Qtot, Tcbc, active, iwall, ns
+     &    , only: Qtot, Tcbc, iwall, ns
       implicit none
       integer npde, iposb, ires
       real (kind=R8) :: T, U(npde), UX(npde), beta(npde), gamma(npde)
-      real (kind=R8) :: cond_coef
+      real (kind=R8) :: heatdiff_contact
+      external heatdiff_contact
 
       real (kind=R8) :: qrad, qevap
       external qrad, qevap
@@ -906,7 +1243,7 @@ c  Checking inputs
         gamma(1)=Qtot-qrad(iwall,U(1),.true.)-qevap(iwall,ns,U(1))
       else if (iposb.eq.1) then ! RHS BC : Cooling with some contact heat conductivity (low for inertial cooling, high for active cooling)
         beta(1)= 1.0_R8
-        gamma(1)=-cond_coef(.not.active,U(1))*(U(1)-Tcbc)
+        gamma(1)=-heatdiff_contact(iwall,U(1))*(U(1)-Tcbc)
 !! FIXME: Could use additionally the code below once we have a way of applying
 !!        the correct emissivity
 cxpb        if (.not.active)
